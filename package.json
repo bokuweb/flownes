@@ -1,0 +1,36 @@
+{
+  "name": "njs",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server",
+    "flow": "flow",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bokuweb/njs.git"
+  },
+  "author": "bokuweb",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bokuweb/njs/issues"
+  },
+  "homepage": "https://github.com/bokuweb/njs#readme",
+  "devDependencies": {
+    "babel-core": "^6.18.2",
+    "babel-eslint": "^7.1.1",
+    "babel-loader": "^6.2.8",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-stage-2": "^6.18.0",
+    "eslint": "^3.10.2",
+    "eslint-config-airbnb": "^13.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "3",
+    "eslint-plugin-react": "^6.7.1",
+    "flow-bin": "^0.36.0",
+    "webpack": "2.1.0-beta.27",
+    "webpack-dev-server": "^1.16.2"
+  }
+}
