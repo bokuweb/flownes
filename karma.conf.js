@@ -35,7 +35,8 @@ module.exports = function(config) {
     plugins: [
       'karma-webpack',
       'karma-mocha',
-      'karma-nightmare'
+      'karma-nightmare',
+      'karma-mocha-reporter',
     ],
 
     nightmareOptions: {
@@ -44,7 +45,7 @@ module.exports = function(config) {
       show: false,
     },
 
-    reporters: ['progress'],
+    reporters: ['mocha'],
     port: 9876,
     logLevel: config.LOG_INFO,
     autoWatch: true,

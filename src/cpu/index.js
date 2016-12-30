@@ -27,7 +27,7 @@ type Registors = {
   PC: Word;
 };
 
-export const defaultRegistors: Registors = {
+const defaultRegistors: Registors = {
   A: 0x00,
   X: 0x00,
   Y: 0x00,
@@ -53,13 +53,13 @@ export default class Cpu {
   emitter: EventEmitter;
 
   constructor(emitter: EventEmitter) {
-    this.registors = defaultRegistors;
+    this.registors = { ...defaultRegistors };
     this.emitter = emitter;
   }
 
   async reset() {
     log.info('cpu reset...');
-    this.registors = defaultRegistors;
+    this.registors = { ...defaultRegistors };
     const pc: number[] = await this.fetch(0xFFFC, 2);
     log.debug(`pc = ${bytes2Word(pc).toString(16)}`);
     this.registors.PC = bytes2Word(pc);
@@ -118,7 +118,7 @@ export default class Cpu {
 
   async exec(): Promise<number> {
     const opcode = (await this.fetch(this.registors.PC))[0];
-    const { fullName, baseName, mode, cycle } = op.dict[opcode.toString(16)];
+    const { fullName, baseName, mode, cycle } = op.dict[opcode.toString(16).toUpperCase()];
     const opeland = await this.getOpeland(mode);
     log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
     await this.execInstruction(opcode, opeland, mode);
