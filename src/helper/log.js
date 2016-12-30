@@ -1,3 +1,5 @@
+/* @flow */
+
 import log from 'loglevel';
 
 if (process.env.NODE_ENV !== 'production') {

@@ -1,5 +1,6 @@
 /* @flow */
 
+// flow-disable-line
 import 'babel-polyfill';
 import { NES } from './nes';
 
