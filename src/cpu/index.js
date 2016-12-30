@@ -27,7 +27,7 @@ type Registors = {
   PC: Word;
 };
 
-const defaultRegistors: Registors = {
+export const defaultRegistors: Registors = {
   A: 0x00,
   X: 0x00,
   Y: 0x00,

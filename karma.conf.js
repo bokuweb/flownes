@@ -19,10 +19,6 @@ module.exports = function(config) {
             test: /\.js$/,
             loader: 'babel-loader',
             exclude: path.resolve(__dirname, 'node_modules'),
-            query: {
-              presets: ['es2015', 'stage-2', 'power-assert'],
-              plugins: ['babel-plugin-transform-flow-strip-types']
-            }
           },
           {
             test: /\.json$/,
