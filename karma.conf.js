@@ -13,12 +13,17 @@ module.exports = function(config) {
     },
 
     webpack: { //kind of a copy of your webpack config
+      devtool: 'inline-source-map',
       module: {
         loaders: [
           {
             test: /\.js$/,
             loader: 'babel-loader',
             exclude: path.resolve(__dirname, 'node_modules'),
+            query: {
+              presets: ['es2015', 'stage-2'],
+              plugins: [["babel-plugin-espower", { "embedAst": true }]]
+            }
           },
           {
             test: /\.json$/,

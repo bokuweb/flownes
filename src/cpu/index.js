@@ -88,13 +88,13 @@ export default class Cpu {
     });
   }
 
-  write(addr: Word, data: Byte[]) {
-    this.emitter.emit('cpu:write', data);
+  write(addr: Word, data: Uint8Array) {
+    this.emitter.emit('cpu:write', [addr, data]);
   }
 
-  async execInstruction(opcode: Byte, opeland: Byte[], mode: AddressingMode) {
-    switch(opcode) {
-      case op.LSR: {
+  async execInstruction(baseName: string, opeland: Byte[], mode: AddressingMode) {
+    switch(baseName) {
+      case 'LSR': {
         if (mode === 'accumulator') {
           const acc = this.registors.A;
           this.registors.P.carry = !!(acc & 0x01);
@@ -103,13 +103,13 @@ export default class Cpu {
           const addr = bytes2Word(opeland);
           const data = (await this.read(addr))[0];
           this.registors.P.carry = !!(data & 0x01);
-          await this.write(addr, [data >> 1]);
+          await this.write(addr, new Uint8Array([data >> 1]));
         }
       }
-      case op.SEI: {
+      case 'SEI': {
         return this.registors.P.interupt = true;
       }
-      case op.CLI: {
+      case 'CLI': {
         return this.registors.P.interupt = false;
       }
       default: throw new Error('Unknown opecode ${opecode} deteced.');
@@ -121,7 +121,7 @@ export default class Cpu {
     const { fullName, baseName, mode, cycle } = op.dict[opcode.toString(16).toUpperCase()];
     const opeland = await this.getOpeland(mode);
     log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
-    await this.execInstruction(opcode, opeland, mode);
+    await this.execInstruction(baseName, opeland, mode);
     return await cycle;
   }
 }

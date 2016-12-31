@@ -12,7 +12,7 @@ export default class Rom {
     this.rom = data;
   }
 
-  read(addr: Word, size: number = 1): Array<Byte> {
-    return range(size).map(i => this.rom[addr + i]);
+  read(addr: Word, size: number = 1): Uint8Array {
+    return new Uint8Array(range(size).map(i => this.rom[addr + i]));
   }
 }

@@ -7,7 +7,8 @@
     "start": "node server",
     "lint": "eslint src",
     "flow": "flow",
-    "test": "karma start"
+    "test": "npm run lint && npm run flow && karma start",
+    "test:watch": "NODE_ENV='development' karma start --auto-watch --no-single-run"
   },
   "repository": {
     "type": "git",
@@ -23,9 +24,9 @@
     "babel-core": "^6.18.2",
     "babel-eslint": "^7.1.1",
     "babel-loader": "^6.2.8",
+    "babel-plugin-espower": "^2.3.1",
     "babel-plugin-transform-flow-strip-types": "^6.18.0",
     "babel-preset-es2015": "^6.18.0",
-    "babel-preset-power-assert": "^1.0.0",
     "babel-preset-stage-2": "^6.18.0",
     "eslint": "^3.10.2",
     "eslint-plugin-flow-vars": "^0.5.0",
