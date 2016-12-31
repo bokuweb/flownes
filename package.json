@@ -8,7 +8,7 @@
     "lint": "eslint src",
     "flow": "flow",
     "test": "npm run lint && npm run flow && karma start",
-    "test:watch": "NODE_ENV='development' karma start --auto-watch --no-single-run"
+    "test:watch": "karma start --auto-watch --no-single-run"
   },
   "repository": {
     "type": "git",

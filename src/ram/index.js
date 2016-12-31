@@ -22,8 +22,6 @@ export default class RAM {
   }
 
   write(addr: Word, data: Uint8Array): void {
-    for (let i = 0; i < data.length; i++) {
-      this.ram[addr + i] = data[i];
-    }
+    this.ram.set(Array.from(data), addr);
   }
 }

@@ -7,7 +7,7 @@ import * as op from './opcode';
 
 import type { AddressingMode } from './opcode';
 
-type CpuStatus = {
+interface CpuStatus {
   nagative: boolean;
   overflow: boolean;
   reserved: boolean;
@@ -18,7 +18,7 @@ type CpuStatus = {
   carry: boolean;
 };
 
-type Registors = {
+interface Registors {
   A: Byte;
   X: Byte;
   Y: Byte;
@@ -26,6 +26,11 @@ type Registors = {
   SP: Byte;
   PC: Word;
 };
+
+interface OpelandAndAdditionalCycle {
+  opeland: Word;
+  additionalCycle: number;
+}
 
 const defaultRegistors: Registors = {
   A: 0x00,
@@ -53,7 +58,10 @@ export default class Cpu {
   emitter: EventEmitter;
 
   constructor(emitter: EventEmitter) {
-    this.registors = { ...defaultRegistors };
+    this.registors = {
+      ...defaultRegistors,
+      P: { ...defaultRegistors.P }
+    };
     this.emitter = emitter;
   }
 
@@ -65,13 +73,60 @@ export default class Cpu {
     this.registors.PC = bytes2Word(pc);
   }
 
-  async getOpeland(mode: AddressingMode): Promise<Byte[]> {
+  async getOpelandAndAdditionalCycle(mode: AddressingMode): Promise<OpelandAndAdditionalCycle> {
     switch (mode) {
-      case 'accumulator':
-      case 'implied': return await []; // Ignored.
-      case 'relative':
-      case 'zeroPage': return await this.fetch(this.registors.PC);
-      case 'absolute': return await this.fetch(this.registors.PC, 2);
+      case 'accumulator': {
+        return await {
+          opeland: 0x00,
+          additionalCycle: 0,
+        }
+      }
+      case 'implied': {
+        return await {
+          opeland: 0x00,
+          additionalCycle: 0,
+        }
+      }
+      case 'relative': {
+        return {
+          opeland: bytes2Word(await this.fetch(this.registors.PC)),
+          additionalCycle: 0,
+        }
+      }
+      case 'zeroPage': {
+        return {
+          opeland: bytes2Word(await this.fetch(this.registors.PC)),
+          additionalCycle: 0,
+        }
+      }
+      case 'zeroPageX': {
+        const addr = (await this.fetch(this.registors.PC))[0];
+        return {
+          opeland: (addr + this.registors.X) & 0xFF,
+          additionalCycle: 0,
+        }
+      }
+      case 'zeroPageY': {
+        const addr = (await this.fetch(this.registors.PC))[0];
+        return {
+          opeland: (addr + this.registors.Y & 0xFF),
+          additionalCycle: 0,
+        }
+      }
+      case 'absolute': {
+        return {
+          opeland: bytes2Word(await this.fetch(this.registors.PC, 2)),
+          additionalCycle: 0,
+        }
+      }
+      case 'absoluteX': {
+        const addr = bytes2Word(await this.fetch(this.registors.PC, 2));
+        const additionalCycle = (addr & 0xFF00) !== ((addr + this.registors.X ) & 0xFF00) ? 1 : 0;
+        return {
+          opeland: addr + this.registors.X,
+          additionalCycle,
+        }
+      }
       default: throw new Error(`Unknown addressing mode ${mode} detected.`);
     }
   }
@@ -92,18 +147,32 @@ export default class Cpu {
     this.emitter.emit('cpu:write', [addr, data]);
   }
 
-  async execInstruction(baseName: string, opeland: Byte[], mode: AddressingMode) {
+  async execInstruction(baseName: string, opeland: Word, mode: AddressingMode) {
     switch(baseName) {
+      case 'ASL': {
+        if (mode === 'accumulator') {
+          const acc = this.registors.A;
+          this.registors.P.carry = !!(acc & 0x80);
+          this.registors.A = (acc << 1) & 0xFF;
+          return;
+        } else {
+          const data = (await this.read(opeland))[0];
+          this.registors.P.carry = !!(data & 0x80);
+          await this.write(opeland, new Uint8Array([(data << 1) & 0xFF]));
+          return;
+        }
+      }
       case 'LSR': {
         if (mode === 'accumulator') {
           const acc = this.registors.A;
           this.registors.P.carry = !!(acc & 0x01);
           this.registors.A = acc >> 1;
+          return;
         } else {
-          const addr = bytes2Word(opeland);
-          const data = (await this.read(addr))[0];
+          const data = (await this.read(opeland))[0];
           this.registors.P.carry = !!(data & 0x01);
-          await this.write(addr, new Uint8Array([data >> 1]));
+          await this.write(opeland, new Uint8Array([data >> 1]));
+          return;
         }
       }
       case 'SEI': {
@@ -119,9 +188,9 @@ export default class Cpu {
   async exec(): Promise<number> {
     const opcode = (await this.fetch(this.registors.PC))[0];
     const { fullName, baseName, mode, cycle } = op.dict[opcode.toString(16).toUpperCase()];
-    const opeland = await this.getOpeland(mode);
+    const { opeland, additionalCycle } = await this.getOpelandAndAdditionalCycle(mode);
     log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
     await this.execInstruction(baseName, opeland, mode);
-    return await cycle;
+    return await cycle + additionalCycle;
   }
 }
