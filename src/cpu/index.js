@@ -50,7 +50,7 @@ const defaultRegistors: Registors = {
   PC: 0x0000,
 };
 
-const bytes2Word = (bytes: number[]) => bytes[0] | (bytes[1] || 0x00) << 8;
+const bytes2Word = (bytes: number[]): Word => bytes[0] | (bytes[1] || 0x00) << 8;
 
 export default class Cpu {
 
@@ -147,39 +147,39 @@ export default class Cpu {
     this.emitter.emit('cpu:write', [addr, data]);
   }
 
-  async execInstruction(baseName: string, opeland: Word, mode: AddressingMode) {
+  async execInstruction(baseName: string, opeland: Word, mode: AddressingMode): void {
     switch(baseName) {
       case 'ASL': {
         if (mode === 'accumulator') {
           const acc = this.registors.A;
           this.registors.P.carry = !!(acc & 0x80);
           this.registors.A = (acc << 1) & 0xFF;
-          return;
         } else {
           const data = (await this.read(opeland))[0];
           this.registors.P.carry = !!(data & 0x80);
           await this.write(opeland, new Uint8Array([(data << 1) & 0xFF]));
-          return;
         }
+        break;
       }
       case 'LSR': {
         if (mode === 'accumulator') {
           const acc = this.registors.A;
           this.registors.P.carry = !!(acc & 0x01);
           this.registors.A = acc >> 1;
-          return;
         } else {
           const data = (await this.read(opeland))[0];
           this.registors.P.carry = !!(data & 0x01);
           await this.write(opeland, new Uint8Array([data >> 1]));
-          return;
         }
+        break;
       }
       case 'SEI': {
-        return this.registors.P.interupt = true;
+        this.registors.P.interupt = true;
+        break;
       }
       case 'CLI': {
-        return this.registors.P.interupt = false;
+        this.registors.P.interupt = false;
+        break;
       }
       default: throw new Error('Unknown opecode ${opecode} deteced.');
     }
