@@ -1,6 +1,6 @@
 /* @flow */
 
-import type { Byte, Word } from '../types/common';
+import type { Word } from '../types/common';
 
 const range = (n: number): number[] => Array.from(Array(n).keys());
 

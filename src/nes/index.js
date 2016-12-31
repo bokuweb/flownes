@@ -7,7 +7,7 @@ import ROM from '../rom';
 import RAM from '../ram';
 import log from '../helper/log';
 
-import type { Byte, Word } from '../types/common';
+import type { Word } from '../types/common';
 // export type Dispatch = (event: string, params: Array<any>) => {};
 
 export class NES {
@@ -53,7 +53,7 @@ export class NES {
     } else if (addr >= 0x8000) {
       data = this.programROM.read(addr - 0x8000, size);
     }
-    log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, data);    
+    log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, data);
     this.emitter.emit('cpu:read-response', data);
   }
 

@@ -16,7 +16,7 @@ interface CpuStatus {
   interupt: boolean;
   zero: boolean;
   carry: boolean;
-};
+}
 
 interface Registors {
   A: Byte;
@@ -25,7 +25,7 @@ interface Registors {
   P: CpuStatus;
   SP: Byte;
   PC: Word;
-};
+}
 
 interface OpelandAndAdditionalCycle {
   opeland: Word;
@@ -68,7 +68,7 @@ export default class Cpu {
   async reset() {
     log.info('cpu reset...');
     this.registors = { ...defaultRegistors };
-    const pc: number[] = await this.fetch(0xFFFC, 2);
+    const pc: Byte[] = await this.fetch(0xFFFC, 2);
     log.debug(`pc = ${bytes2Word(pc).toString(16)}`);
     this.registors.PC = bytes2Word(pc);
   }
