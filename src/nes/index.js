@@ -31,17 +31,17 @@ export class NES {
   //
   // Memory map
   /*
-  | addr           |  description       	      |   mirror       |
+  | addr           |  description               |   mirror       |
   +----------------+----------------------------+----------------+
-  | 0x0000-0x07FF	 |  RAM                       |                |
-  | 0x0800-0x1FFF	 |  reserve	                  | 0x0000-0x07FF  |
-  | 0x2000-0x2007	 |  I/O(PPU)                  |                |
-  | 0x2008-0x3FFF	 |  reserve 	                | 0x2000-0x2007  |
-  | 0x4000-0x401F	 |  I/O(APU, etc)             |                |
+  | 0x0000-0x07FF  |  RAM                       |                |
+  | 0x0800-0x1FFF  |  reserve                   | 0x0000-0x07FF  |
+  | 0x2000-0x2007  |  I/O(PPU)                  |                |
+  | 0x2008-0x3FFF  |  reserve                   | 0x2000-0x2007  |
+  | 0x4000-0x401F  |  I/O(APU, etc)             |                |
   | 0x4020-0x5FFF  |  ex RAM                    |                |
-  | 0x6000-0x7FFF	 |  battery backup RAM        |                |
-  | 0x8000-0xBFFF	 |  program ROM LOW           |                |
-  | 0xC000-0xFFFF	 |  program ROM HIGH          |                |
+  | 0x6000-0x7FFF  |  battery backup RAM        |                |
+  | 0x8000-0xBFFF  |  program ROM LOW           |                |
+  | 0xC000-0xFFFF  |  program ROM HIGH          |                |
   */
   cpuRead([addr, size]: [Word, number]) {
     let data: Uint8Array;
