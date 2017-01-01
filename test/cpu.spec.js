@@ -175,6 +175,156 @@ describe ('cpu spec', () => {
       });
     });
 
+    describe ('LDX', () => {
+      it('LDX_IMM', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDX_IMM, 0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8002,
+          X: 0xAA,
+        };
+        assert.equal(cycle, 2);
+        assert.deepEqual(cpu.registors, expected);
+      });
+
+      it('LDX_ZERO', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDX_ZERO, 0xA5]));
+        mockedMemory.write(0xA5, new Uint8Array([0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8002,
+          X: 0xAA,
+        };
+        assert.equal(cycle, 3);
+        assert.deepEqual(cpu.registors, expected);
+      });
+
+      it('LDX_ZEROY', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDX_ZEROY, 0xA5]));
+        cpu.registors.Y = 0x05;
+        mockedMemory.write(0xAA, new Uint8Array([0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8002,
+          X: 0xAA,
+          Y: 0x05,
+        };
+        assert.equal(cycle, 4);
+        assert.deepEqual(cpu.registors, expected);
+      });
+
+      it('LDX_ABS', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDX_ABS, 0xA5, 0x10]));
+        mockedMemory.write(0x10A5, new Uint8Array([0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8003,
+          X: 0xAA,
+        };
+        assert.equal(cycle, 4);
+        assert.deepEqual(cpu.registors, expected);
+      });
+
+      it('LDX_ABSY', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDX_ABSY, 0xA5, 0x10]));
+        cpu.registors.Y = 0x05;
+        mockedMemory.write(0x10AA, new Uint8Array([0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8003,
+          X: 0xAA,
+          Y: 0x05,
+        };
+        assert.equal(cycle, 4);
+        assert.deepEqual(cpu.registors, expected);
+      });
+    });
+
+    describe ('LDY', () => {
+      it('LDY_IMM', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDY_IMM, 0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8002,
+          Y: 0xAA,
+        };
+        assert.equal(cycle, 2);
+        assert.deepEqual(cpu.registors, expected);
+      });
+
+      it('LDY_ZERO', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDY_ZERO, 0xA5]));
+        mockedMemory.write(0xA5, new Uint8Array([0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8002,
+          Y: 0xAA,
+        };
+        assert.equal(cycle, 3);
+        assert.deepEqual(cpu.registors, expected);
+      });
+
+      it('LDY_ZEROX', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDY_ZEROX, 0xA5]));
+        cpu.registors.X = 0x05;
+        mockedMemory.write(0xAA, new Uint8Array([0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8002,
+          Y: 0xAA,
+          X: 0x05,
+        };
+        assert.equal(cycle, 4);
+        assert.deepEqual(cpu.registors, expected);
+      });
+
+      it('LDY_ABS', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDY_ABS, 0xA5, 0x10]));
+        mockedMemory.write(0x10A5, new Uint8Array([0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8003,
+          Y: 0xAA,
+        };
+        assert.equal(cycle, 4);
+        assert.deepEqual(cpu.registors, expected);
+      });
+
+      it('LDY_ABSX', async () => {
+        mockedROM = new ROM(new Uint8Array([op.LDY_ABSX, 0xA5, 0x10]));
+        cpu.registors.X = 0x05;
+        mockedMemory.write(0x10AA, new Uint8Array([0xAA]));
+        const cycle = await cpu.exec();
+        const expected = {
+          ...defaultRegistors,
+          P: { ...defaultRegistors.P, negative: true },
+          PC: 0x8003,
+          Y: 0xAA,
+          X: 0x05,
+        };
+        assert.equal(cycle, 4);
+        assert.deepEqual(cpu.registors, expected);
+      });
+    });
+
     it('SEI', async () => {
       mockedROM = new ROM(new Uint8Array([op.SEI]));
       const cycle = await cpu.exec();

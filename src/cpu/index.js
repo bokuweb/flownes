@@ -203,6 +203,12 @@ export default class Cpu {
         this.registors.P.zero = !this.registors.X;
         break;
       }
+      case 'LDY': {
+        this.registors.Y = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        this.registors.P.negative = !!(this.registors.Y & 0x80);
+        this.registors.P.zero = !this.registors.Y;
+        break;
+      }
       case 'ASL': {
         if (mode === 'accumulator') {
           const acc = this.registors.A;
