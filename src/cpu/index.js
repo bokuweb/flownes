@@ -209,6 +209,18 @@ export default class Cpu {
         this.registors.P.zero = !this.registors.Y;
         break;
       }
+      case 'STA': {
+        this.write(addrOrData, new Uint8Array([this.registors.A]));
+        break;
+      }
+      case 'STX': {
+        this.write(addrOrData, new Uint8Array([this.registors.X]));
+        break;
+      }
+      case 'STY': {
+        this.write(addrOrData, new Uint8Array([this.registors.Y]));
+        break;
+      }
       case 'ASL': {
         if (mode === 'accumulator') {
           const acc = this.registors.A;

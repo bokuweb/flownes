@@ -325,6 +325,109 @@ describe ('cpu spec', () => {
       });
     });
 
+    describe ('STA', () => {
+      it('STA_ZERO', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_ZERO, 0xDE]));
+        cpu.registors.A = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0xDE);
+        assert.equal(cycle, 3);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_ZEROX', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_ZEROX, 0xA0]));
+        cpu.registors.X = 0x05;
+        cpu.registors.A = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0xA5);
+        assert.equal(cycle, 4);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_ABS', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_ABS, 0xA5, 0x10]));
+        cpu.registors.A = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x10A5);
+        assert.equal(cycle, 4);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_ABSX without page cross', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_ABSX, 0xA5, 0x10]));
+        cpu.registors.X = 0x05;
+        cpu.registors.A = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x10AA);
+        assert.equal(cycle, 4);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_ABSX with page cross', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_ABSX, 0xA5, 0x10]));
+        cpu.registors.X = 0x65;
+        cpu.registors.A = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x110A);
+        assert.equal(cycle, 5);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_ABSY without page cross', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_ABSY, 0xA5, 0x10]));
+        cpu.registors.Y = 0x05;
+        cpu.registors.A = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x10AA);
+        assert.equal(cycle, 4);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_ABSY with page cross', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_ABSY, 0xA5, 0x10]));
+        cpu.registors.Y = 0x65;
+        cpu.registors.A = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x110A);
+        assert.equal(cycle, 5);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_INDX', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_INDX, 0xA5]));
+        cpu.registors.A = 0xA5;
+        cpu.registors.X = 0x05;
+        await mockedMemory.write(0xAA, [0xDE, 0x10]);
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x10DE);
+        assert.equal(cycle, 6);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_INDY without page cross', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_INDY, 0xA5]));
+        cpu.registors.A = 0xA5;
+        cpu.registors.Y = 0x05;
+        await mockedMemory.write(0xA5, [0xDE, 0x10]);
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x10E3);
+        assert.equal(cycle, 6);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STA_INDY with page cross', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STA_INDY, 0xA5]));
+        cpu.registors.A = 0xA5;
+        cpu.registors.Y = 0x25;
+        await mockedMemory.write(0xA5, [0xDE, 0x10]);
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x1103);
+        assert.equal(cycle, 7);
+        assert.deepEqual(data[0], 0xA5);
+      });
+    });
+
     it('SEI', async () => {
       mockedROM = new ROM(new Uint8Array([op.SEI]));
       const cycle = await cpu.exec();
