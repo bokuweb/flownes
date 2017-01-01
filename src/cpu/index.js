@@ -221,6 +221,52 @@ export default class Cpu {
         this.write(addrOrData, new Uint8Array([this.registors.Y]));
         break;
       }
+      case 'TAX': {
+        this.registors.X = this.registors.A;
+        this.registors.P.negative = !!(this.registors.X & 0x80);
+        this.registors.P.zero = !this.registors.X;
+        break;
+      }
+      case 'TAY': {
+        this.registors.Y = this.registors.A;
+        this.registors.P.negative = !!(this.registors.Y & 0x80);
+        this.registors.P.zero = !this.registors.Y;
+        break;
+      }
+      case 'TSX': {
+        this.registors.X = this.registors.SP;
+        this.registors.P.negative = !!(this.registors.X & 0x80);
+        this.registors.P.zero = !this.registors.X;
+        break;
+      }
+      case 'TXA': {
+        this.registors.A = this.registors.X;
+        this.registors.P.negative = !!(this.registors.A & 0x80);
+        this.registors.P.zero = !this.registors.A;
+        break;
+      }
+      case 'TXS': {
+        this.registors.SP = this.registors.X;
+        this.registors.P.negative = !!(this.registors.SP & 0x80);
+        this.registors.P.zero = !this.registors.SP;
+        break;
+      }
+      case 'TYA': {
+        this.registors.A = this.registors.Y;
+        this.registors.P.negative = !!(this.registors.A & 0x80);
+        this.registors.P.zero = !this.registors.A;
+        break;
+      }
+      case 'ADC': {
+        const data = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        const operated = data + this.registors.A + this.registors.P.carry;
+        this.registors.P.overflow = !((this.registors.A ^ operated) & 0x80);
+        this.registors.P.carry = operated > 0xFF;
+        this.registors.P.negative = !!(operated & 0x80);
+        this.registors.P.zero = !operated;
+        this.registors.A = operated & 0xFF;
+        break;
+      }
       case 'ASL': {
         if (mode === 'accumulator') {
           const acc = this.registors.A;
