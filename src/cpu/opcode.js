@@ -102,11 +102,11 @@ export const cycles = [
   /*0x00*/ 7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6,
   /*0x10*/ 2,5,2,8,4,4,6,6,2,4,2,7,4,4,6,7,
   /*0x20*/ 6,6,2,8,3,3,5,5,4,2,2,2,4,4,6,6,
-  /*0x30*/ 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
+  /*0x30*/ 2,5,2,8,4,4,6,6,2,4,2,7,4,4,6,7,
   /*0x40*/ 6,6,2,8,3,3,5,5,3,2,2,2,3,4,6,6,
   /*0x50*/ 2,5,2,8,4,4,6,6,2,4,2,7,4,4,6,7,
   /*0x60*/ 6,6,2,8,3,3,5,5,4,2,2,2,5,4,6,6,
-  /*0x70*/ 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
+  /*0x70*/ 2,5,2,8,4,4,6,6,2,4,2,7,4,4,6,7,
   /*0x80*/ 2,6,2,6,3,3,3,3,2,2,2,2,4,4,4,4,
   /*0x90*/ 2,6,2,6,4,4,4,4,2,5,2,5,5,5,5,5,
   /*0xA0*/ 2,6,2,6,3,3,3,3,2,2,2,2,4,4,4,4,
@@ -119,6 +119,14 @@ export const cycles = [
 
 /* eslint-disable */
 export const dict: { [code: string]: OpecodeProps } = {
+  'A9': { fullName: 'LDA_IMM',   baseName: 'LDA', mode: 'immediate',           cycle: cycles[0xA9] },
+  'A5': { fullName: 'LDA_ZERO',  baseName: 'LDA', mode: 'zeroPage',            cycle: cycles[0xA5] },
+  'AD': { fullName: 'LDA_ABS',   baseName: 'LDA', mode: 'absolute',            cycle: cycles[0xAD] },
+  'B5': { fullName: 'LDA_ZEROX', baseName: 'LDA', mode: 'zeroPageX',           cycle: cycles[0xB5] },
+  'BD': { fullName: 'LDA_ABSX',  baseName: 'LDA', mode: 'absoluteX',           cycle: cycles[0xBD] },
+  'B9': { fullName: 'LDA_ABSY',  baseName: 'LDA', mode: 'absoluteY',           cycle: cycles[0xB9] },
+  'A1': { fullName: 'LDA_INDX',  baseName: 'LDA', mode: 'preIndexedIndirect',  cycle: cycles[0xA1] },
+  'B1': { fullName: 'LDA_INDY',  baseName: 'LDA', mode: 'postIndexedIndirect', cycle: cycles[0xB1] },
   'A2': { fullName: 'LDX_IMM',   baseName: 'LDX', mode: 'immediate',           cycle: cycles[0xA2] },
   'A6': { fullName: 'LDX_ZERO',  baseName: 'LDX', mode: 'zeroPage',            cycle: cycles[0xA6] },
   'AE': { fullName: 'LDX_ABS',   baseName: 'LDX', mode: 'absolute',            cycle: cycles[0xAE] },
