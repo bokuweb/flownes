@@ -206,6 +206,18 @@ export default class Cpu {
     this.hasBranched = true;
   }
 
+  pushStatus() {
+    const status: Byte = parseInt(this.registors.P.negative) << 7 |
+    parseInt(this.registors.P.overflow) << 6 |
+    parseInt(this.registors.P.reserved) << 5 |
+    parseInt(this.registors.P.break) << 4 |
+    parseInt(this.registors.P.decimal) << 3 |
+    parseInt(this.registors.P.interrupt) << 2 |
+    parseInt(this.registors.P.zero) << 1 |
+    parseInt(this.registors.P.carry);
+    this.push(status);
+  }
+
   async popStatus() {
     const status = await this.pop();
     this.registors.P.negative = !!(status & 0x80);
@@ -469,15 +481,7 @@ export default class Cpu {
         break;
       }
       case 'PHP': {
-        const status: Byte = parseInt(this.registors.P.negative) << 7 |
-          parseInt(this.registors.P.overflow) << 6 |
-          parseInt(this.registors.P.reserved) << 5 |
-          parseInt(this.registors.P.break) << 4 |
-          parseInt(this.registors.P.decimal) << 3 |
-          parseInt(this.registors.P.interrupt) << 2 |
-          parseInt(this.registors.P.zero) << 1 |
-          parseInt(this.registors.P.carry);
-        this.push(status);
+        this.pushStatus();
         break;
       }
       case 'PLA': {
@@ -537,12 +541,36 @@ export default class Cpu {
         if (!this.registors.P.overflow) this.branch(addrOrData);
         break;
       }
-      case 'SEI': {
-        this.registors.P.interrupt = true;
+      case 'CLC': {
+        this.registors.P.carry = false;
         break;
       }
       case 'CLI': {
         this.registors.P.interrupt = false;
+        break;
+      }
+      case 'CLV': {
+        this.registors.P.overflow = false;
+        break;
+      }
+      case 'SEC': {
+        this.registors.P.carry = true;
+        break;
+      }
+      case 'SEI': {
+        this.registors.P.interrupt = true;
+        break;
+      }
+      case 'BRK': {
+        this.push((this.registors.PC >> 8) & 0xFF);
+        this.push(this.registors.PC & 0xFF);
+        this.registors.P.break = true;
+        this.pushStatus();
+        this.registors.P.interrupt = true;
+        this.registors.PC = bytes2Word(await this.read(0xFFFE ,2));
+        break;
+      }
+      case 'NOP': {
         break;
       }
       default: throw new Error('Unknown opecode ${opecode} deteced.');
@@ -550,6 +578,9 @@ export default class Cpu {
   }
 
   async exec(): Promise<number> {
+    const { P, PC, SP, A, X, Y } = this.registors;
+    log.debug(`PC = ${PC}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
+    log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
     const opcode = (await this.fetch(this.registors.PC))[0];
     const { fullName, baseName, mode, cycle } = op.dict[opcode.toString(16).toUpperCase()];
     const { addrOrData, additionalCycle } = await this.getAddrOrDataAndAdditionalCycle(mode);
