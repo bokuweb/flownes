@@ -99,10 +99,11 @@ export default class Cpu {
         }
       }
       case 'relative': {
-        const addr = bytes2Word(await this.fetch(this.registors.PC));
+        const baseAddr = bytes2Word(await this.fetch(this.registors.PC));
+        const addr = baseAddr < 0x80 ? baseAddr + this.registors.PC : baseAddr + this.registors.PC - 256;
         return {
-          addrOrData: addr < 0x80 ? addr + this.registors.PC : addr + this.registors.PC - 256,
-          additionalCycle: 0,
+          addrOrData: addr,
+          additionalCycle: (addr & 0xFF00) !== (this.registors.PC & 0xFF00) ? 1 : 0,
         }
       }
       case 'zeroPage': {
