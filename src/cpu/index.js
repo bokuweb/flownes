@@ -56,12 +56,14 @@ export default class Cpu {
 
   registors: Registors;
   emitter: EventEmitter;
+  hasBranched: boolean;
 
   constructor(emitter: EventEmitter) {
     this.registors = {
       ...defaultRegistors,
       P: { ...defaultRegistors.P }
     };
+    this.hasBranched = false;
     this.emitter = emitter;
   }
 
@@ -194,12 +196,35 @@ export default class Cpu {
     this.registors.SP--;
   }
 
-  async pull(): Promise<Byte> {
+  async pop(): Promise<Byte> {
     this.registors.SP++;
     return (await this.read(this.registors.SP))[0];
   }
 
+  branch(addr: Word) {
+    this.registors.PC = addr;
+    this.hasBranched = true;
+  }
+
+  async popStatus() {
+    const status = await this.pop();
+    this.registors.P.negative = !!(status & 0x80);
+    this.registors.P.overflow = !!(status & 0x40);
+    this.registors.P.reserved = !!(status & 0x20);
+    this.registors.P.break = !!(status & 0x10);
+    this.registors.P.decimal = !!(status & 0x08);
+    this.registors.P.interrupt = !!(status & 0x04);
+    this.registors.P.zero = !!(status & 0x02);
+    this.registors.P.carry = !!(status & 0x01);
+  }
+
+  async popPC() {
+    this.registors.PC = await this.pop();
+    this.registors.PC += (await this.pop()) << 8;
+  }
+
   async execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode) {
+    this.hasBranched = false;
     switch(baseName) {
       case 'LDA': {
         this.registors.A = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
@@ -456,21 +481,13 @@ export default class Cpu {
         break;
       }
       case 'PLA': {
-        this.registors.A = await this.pull();
+        this.registors.A = await this.pop();
         this.registors.P.negative = !!(this.registors.A & 0x80);
         this.registors.P.zero = !this.registors.A;
         break;
       }
       case 'PLP': {
-        const status = await this.pull();
-        this.registors.P.negative = !!(status & 0x80);
-        this.registors.P.overflow = !!(status & 0x40);
-        this.registors.P.reserved = !!(status & 0x20);
-        this.registors.P.break = !!(status & 0x10);
-        this.registors.P.decimal = !!(status & 0x08);
-        this.registors.P.interrupt = !!(status & 0x04);
-        this.registors.P.zero = !!(status & 0x02);
-        this.registors.P.carry = !!(status & 0x01);
+        this.popStatus();
         break;
       }
       case 'JMP': {
@@ -484,8 +501,40 @@ export default class Cpu {
         break;
       }
       case 'RTS': {
-        this.registors.PC = await this.pull();
-        this.registors.PC += (await this.pull()) << 8;
+        await this.popPC();
+        break;
+      }
+      case 'RTI': {
+        await this.popStatus();
+        await this.popPC();
+        break;
+      }
+      case 'BCC': {
+        if (!this.registors.P.carry) this.branch(addrOrData);
+        break;
+      }
+      case 'BCS': {
+        if (this.registors.P.carry) this.branch(addrOrData);
+        break;
+      }
+      case 'BEQ': {
+        if (this.registors.P.zero) this.branch(addrOrData);
+        break;
+      }
+      case 'BMI': {
+        if (this.registors.P.negative) this.branch(addrOrData);
+        break;
+      }
+      case 'BNE': {
+        if (!this.registors.P.zero) this.branch(addrOrData);
+        break;
+      }
+      case 'BPL': {
+        if (!this.registors.P.negative) this.branch(addrOrData);
+        break;
+      }
+      case 'BVS': {
+        if (!this.registors.P.overflow) this.branch(addrOrData);
         break;
       }
       case 'SEI': {
@@ -506,6 +555,6 @@ export default class Cpu {
     const { addrOrData, additionalCycle } = await this.getAddrOrDataAndAdditionalCycle(mode);
     log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
     await this.execInstruction(baseName, addrOrData, mode);
-    return await cycle + additionalCycle;
+    return await cycle + additionalCycle + this.hasBranched ? 1 : 0;
   }
 }
