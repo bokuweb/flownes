@@ -189,6 +189,16 @@ export default class Cpu {
     this.emitter.emit('cpu:write', [addr, data]);
   }
 
+  push(data: Byte) {
+    this.write(this.registors.SP, new Uint8Array([data]));
+    this.registors.SP--;
+  }
+
+  async pull(): Promise<Byte> {
+    this.registors.SP++;
+    return (await this.read(this.registors.SP))[0];
+  }
+
   async execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode): Promise<null> {
     switch(baseName) {
       case 'LDA': {
@@ -380,19 +390,12 @@ export default class Cpu {
         this.registors.P.zero = !this.registors.A;
         break;
       }
-      case 'ROR': {
-        if (mode === 'accumulator') {
-          const acc = this.registors.A;
-          this.registors.A = acc >> 1 | (this.registors.P.carry ? 0x80 : 0x00);
-          this.registors.P.carry = !!(acc & 0x01);
-        } else {
-          const data = (await this.read(addrOrData))[0];
-          const writeData = data >> 1 | (this.registors.P.carry ? 0x80 : 0x00);
-          this.write(addrOrData, new Uint8Array([writeData]));
-          this.registors.P.carry = !!(data & 0x01);
-        }
-        this.registors.P.negative = false;
-        this.registors.P.zero = !this.registors.A;
+      case 'ORA': {
+        const data = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        const operated = data | this.registors.A;
+        this.registors.P.negative = !!(operated & 0x80);
+        this.registors.P.zero = !operated;
+        this.registors.A = operated & 0xFF;
         break;
       }
       case 'ROL': {
@@ -409,6 +412,65 @@ export default class Cpu {
         }
         this.registors.P.negative = false;
         this.registors.P.zero = !this.registors.A;
+        break;
+      }
+      case 'ROR': {
+        if (mode === 'accumulator') {
+          const acc = this.registors.A;
+          this.registors.A = acc >> 1 | (this.registors.P.carry ? 0x80 : 0x00);
+          this.registors.P.carry = !!(acc & 0x01);
+        } else {
+          const data = (await this.read(addrOrData))[0];
+          const writeData = data >> 1 | (this.registors.P.carry ? 0x80 : 0x00);
+          this.write(addrOrData, new Uint8Array([writeData]));
+          this.registors.P.carry = !!(data & 0x01);
+        }
+        this.registors.P.negative = false;
+        this.registors.P.zero = !this.registors.A;
+        break;
+      }
+      case 'SBC': {
+        const data = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        const operated = data - this.registors.A - parseInt(!this.registors.P.carry);
+        this.registors.P.overflow = !((this.registors.A ^ operated) & 0x80);
+        this.registors.P.carry = operated > 0xFF;
+        this.registors.P.negative = !!(operated & 0x80);
+        this.registors.P.zero = !operated;
+        this.registors.A = operated & 0xFF;
+        break;
+      }
+      case 'PHA': {
+        this.push(this.registors.A);
+        break;
+      }
+      case 'PHP': {
+        const status: Byte = parseInt(this.registors.P.negative) << 7 |
+          parseInt(this.registors.P.overflow) << 6 |
+          parseInt(this.registors.P.reserved) << 5 |
+          parseInt(this.registors.P.break) << 4 |
+          parseInt(this.registors.P.decimal) << 3 |
+          parseInt(this.registors.P.interrupt) << 2 |
+          parseInt(this.registors.P.zero) << 1 |
+          parseInt(this.registors.P.carry);
+        this.push(status);
+        break;
+      }
+      case 'PLA': {
+        this.registors.A = await this.pull();
+        this.registors.P.negative = !!(this.registors.A & 0x80);
+        this.registors.P.zero = !this.registors.A;
+        break;
+      }
+      case 'PLP': {
+        const status = await this.pull();
+        this.registors.P.negative = !!(status & 0x80);
+        this.registors.P.overflow = !!(status & 0x40);
+        this.registors.P.reserved = !!(status & 0x20);
+        this.registors.P.break = !!(status & 0x10);
+        this.registors.P.decimal = !!(status & 0x08);
+        this.registors.P.interrupt = !!(status & 0x04);
+        this.registors.P.zero = !!(status & 0x02);
+        this.registors.P.carry = !!(status & 0x01);
         break;
       }
       case 'SEI': {
