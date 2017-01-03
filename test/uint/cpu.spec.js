@@ -1,10 +1,10 @@
 import 'babel-polyfill';
 import assert from 'power-assert';
 import EventEmitter from 'events';
-import CPU from '../src/cpu';
-import RAM from '../src/ram';
-import ROM from '../src/rom';
-import * as op from '../src/cpu/opcode';
+import CPU from '../../src/cpu';
+import RAM from '../../src/ram';
+import ROM from '../../src/rom';
+import * as op from '../../src/cpu/opcode';
 
 const defaultRegistors = {
   A: 0x00,

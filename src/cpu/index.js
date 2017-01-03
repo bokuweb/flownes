@@ -199,7 +199,7 @@ export default class Cpu {
     return (await this.read(this.registors.SP))[0];
   }
 
-  async execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode): Promise<null> {
+  async execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode) {
     switch(baseName) {
       case 'LDA': {
         this.registors.A = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
@@ -473,6 +473,21 @@ export default class Cpu {
         this.registors.P.carry = !!(status & 0x01);
         break;
       }
+      case 'JMP': {
+        this.registors.PC = addrOrData;
+        break;
+      }
+      case 'JSR': {
+        this.push((this.registors.PC >> 8) & 0xFF);
+        this.push(this.registors.PC & 0xFF);
+        this.registors.PC = addrOrData;
+        break;
+      }
+      case 'RTS': {
+        this.registors.PC = await this.pull();
+        this.registors.PC += (await this.pull()) << 8;
+        break;
+      }
       case 'SEI': {
         this.registors.P.interrupt = true;
         break;
@@ -483,7 +498,6 @@ export default class Cpu {
       }
       default: throw new Error('Unknown opecode ${opecode} deteced.');
     }
-    return await null;
   }
 
   async exec(): Promise<number> {
