@@ -555,6 +555,6 @@ export default class Cpu {
     const { addrOrData, additionalCycle } = await this.getAddrOrDataAndAdditionalCycle(mode);
     log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
     await this.execInstruction(baseName, addrOrData, mode);
-    return await cycle + additionalCycle + this.hasBranched ? 1 : 0;
+    return await cycle + additionalCycle + (this.hasBranched ? 1 : 0);
   }
 }
