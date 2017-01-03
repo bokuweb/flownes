@@ -267,6 +267,14 @@ export default class Cpu {
         this.registors.A = operated & 0xFF;
         break;
       }
+      case 'AND': {
+        const data = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        const operated = data & this.registors.A;
+        this.registors.P.negative = !!(operated & 0x80);
+        this.registors.P.zero = !operated;
+        this.registors.A = operated & 0xFF;
+        break;
+      }
       case 'ASL': {
         if (mode === 'accumulator') {
           const acc = this.registors.A;
@@ -279,6 +287,83 @@ export default class Cpu {
         }
         this.registors.P.negative = false;
         this.registors.P.zero = !this.registors.A;
+        break;
+      }
+      case 'BIT': {
+        const data = (await this.read(addrOrData))[0];
+        this.registors.P.negative = !!(data & 0x80);
+        this.registors.P.overflow = !!(data & 0x40);
+        this.registors.P.zero = !(this.registors.A & data);
+        break;
+      }
+      case 'CMP': {
+        const data = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        const compared = this.registors.A - data;
+        this.registors.P.carry = compared >= 0;
+        this.registors.P.negative = !!(compared & 0x80);
+        this.registors.P.zero = !compared;
+        break;
+      }
+      case 'CPX': {
+        const data = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        const compared = this.registors.X - data;
+        this.registors.P.carry = compared >= 0;
+        this.registors.P.negative = !!(compared & 0x80);
+        this.registors.P.zero = !compared;
+        break;
+      }
+      case 'CPY': {
+        const data = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        const compared = this.registors.Y - data;
+        this.registors.P.carry = compared >= 0;
+        this.registors.P.negative = !!(compared & 0x80);
+        this.registors.P.zero = !compared;
+        break;
+      }
+      case 'DEC': {
+        const data = (await this.read(addrOrData))[0] - 1;
+        this.registors.P.negative = !!(data & 0x80);
+        this.registors.P.zero = !data;
+        this.write(addrOrData, new Uint8Array([data]));
+        break;
+      }
+      case 'DEX': {
+        this.registors.X = (this.registors.X - 1) & 0xFF;
+        this.registors.P.negative = !!(this.registors.X & 0x80);
+        this.registors.P.zero = !this.registors.X;
+        break;
+      }
+      case 'DEY': {
+        this.registors.Y = (this.registors.Y - 1) & 0xFF;
+        this.registors.P.negative = !!(this.registors.Y & 0x80);
+        this.registors.P.zero = !this.registors.Y;
+        break;
+      }
+      case 'EOR': {
+        const data = mode === 'immediate' ? addrOrData : (await this.read(addrOrData))[0];
+        const operated = data ^ this.registors.A;
+        this.registors.P.negative = !!(operated & 0x80);
+        this.registors.P.zero = !operated;
+        this.registors.A = operated & 0xFF;
+        break;
+      }
+      case 'INC': {
+        const data = (await this.read(addrOrData))[0] + 1;
+        this.registors.P.negative = !!(data & 0x80);
+        this.registors.P.zero = !data;
+        this.write(addrOrData, new Uint8Array([data]));
+        break;
+      }
+      case 'INX': {
+        this.registors.X = (this.registors.X + 1) & 0xFF;
+        this.registors.P.negative = !!(this.registors.X & 0x80);
+        this.registors.P.zero = !this.registors.X;
+        break;
+      }
+      case 'INY': {
+        this.registors.Y = (this.registors.Y + 1) & 0xFF;
+        this.registors.P.negative = !!(this.registors.Y & 0x80);
+        this.registors.P.zero = !this.registors.Y;
         break;
       }
       case 'LSR': {

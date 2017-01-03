@@ -428,6 +428,66 @@ describe ('cpu spec', () => {
       });
     });
 
+    describe ('STX', () => {
+      it('STX_ZERO', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STX_ZERO, 0xDE]));
+        cpu.registors.X = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0xDE);
+        assert.equal(cycle, 3);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STX_ZEROY', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STX_ZEROY, 0xA0]));
+        cpu.registors.X = 0xA5;
+        cpu.registors.Y = 0x05;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0xA5);
+        assert.equal(cycle, 4);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STX_ABS', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STX_ABS, 0xA5, 0x10]));
+        cpu.registors.X = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x10A5);
+        assert.equal(cycle, 4);
+        assert.deepEqual(data[0], 0xA5);
+      });
+    });
+
+    describe ('STY', () => {
+      it('STY_ZERO', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STY_ZERO, 0xA5]));
+        cpu.registors.Y = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0xA5);
+        assert.equal(cycle, 3);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STY_ZEROX', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STY_ZEROX, 0xA0]));
+        cpu.registors.X = 0x05;
+        cpu.registors.Y = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0xA5);
+        assert.equal(cycle, 4);
+        assert.deepEqual(data[0], 0xA5);
+      });
+
+      it('STY_ABS', async () => {
+        mockedROM = new ROM(new Uint8Array([op.STY_ABS, 0xA5, 0x10]));
+        cpu.registors.Y = 0xA5;
+        const cycle = await cpu.exec();
+        const data = await mockedMemory.read(0x10A5);
+        assert.equal(cycle, 4);
+        assert.deepEqual(data[0], 0xA5);
+      });
+    });
+
     it('SEI', async () => {
       mockedROM = new ROM(new Uint8Array([op.SEI]));
       const cycle = await cpu.exec();
