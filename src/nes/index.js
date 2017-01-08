@@ -3,6 +3,7 @@
 import { parse } from '../parser';
 import EventEmitter from 'events';
 import CPU from '../cpu';
+import PPU from '../ppu';
 import ROM from '../rom';
 import RAM from '../ram';
 import log from '../helper/log';
@@ -12,6 +13,7 @@ import type { Word } from '../types/common';
 
 export class NES {
   cpu: CPU;
+  ppu: PPU;
   charactorROM: ROM;
   programROM: ROM;
   ram: RAM;
@@ -51,6 +53,7 @@ export class NES {
       // mirror
       data = this.ram.read(addr - 0x0800, size);
     } else if (addr >= 0x8000) {
+      // ROM
       data = this.programROM.read(addr - 0x8000, size);
     }
     log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, data);
@@ -60,16 +63,21 @@ export class NES {
   cpuWrite([addr, data]: [Word, Uint8Array]) {
     log.debug(`cpu:write addr = ${addr}`, data);
     if (addr < 0x0800) {
+      // RAM
       this.ram.write(addr, data);
     } else if (addr < 0x2000) {
       // mirror
       this.ram.write(addr - 0x0800, data);
+    } else if (addr < 0x2008) {
+      // PPU
+      this.ppu.write(addr - 0x2000, data);
     }
   }
 
   async setup() {
     const nes = await fetch('./static/roms/hello.nes').then((res) => res.arrayBuffer());
     const { charactorROM, programROM } = parse(nes);
+    this.ppu = new PPU();
     this.ram = new RAM(2048);
     this.charactorROM = new ROM(charactorROM);
     this.programROM = new ROM(programROM);
