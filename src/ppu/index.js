@@ -34,8 +34,42 @@ export default class Ppu {
   | 0x3F10-0x3F1F  |  sprite pallete            |
   | 0x3F20-0x3FFF  |  mirror of 0x3F00-0x3F1F   |
   */
+
+  /*
+    Control Registor1 0x2000
+
+  | bit  | descripti   on                              |
+  +------+---------------------------------------------+
+  |  7   | Assert NMI when VBlank 0: disable, 1:enable |
+  |  6   | PPU master/slave, always 1                  |
+  |  5   | Sprite size 0: 8x8, 1: 8x16                 |
+  |  4   | Bg pattern table 0:0x0000, 1:0x1000         |
+  |  3   | sprite pattern table 0:0x0000, 1:$1000      |
+  |  2   | PPU memory increment 0: +=1, 1:+=32         |
+  |  1-0 | Name table 0x00: 0x2000                     |
+  |      |            0x01: 0x2400                     |
+  |      |            0x02: 0x2800                     |
+  |      |            0x03: 0x2C00                     |
+  */
+
+  /*
+    Control Registor2 0x2001
+
+  | bit  | descripti   on                              |
+  +------+---------------------------------------------+
+  |  7-5 | Background color  0x00: Black               |
+  |      |                   0x01: Geen                |
+  |      |                   0x02: Blue                |
+  |      |                   0x04: Red                 |
+  |  4   | Enable sprite                               |
+  |  3   | Enable background                           |
+  |  2   | Sprite mask       render left end           |
+  |  1   | Background mask   render left end           |
+  |  0   | Display type      0: color, 1: mono         |
+  */
   registors: Uint8Array;
   cycleCount: number;
+  lineCount: number;
   isValidVramAddr: boolean;
   isLowerVramAddr: boolean;
   vramAddr: Word;
@@ -44,6 +78,7 @@ export default class Ppu {
   constructor() {
     this.registors = new Uint8Array(0x08);
     this.cycleCount = 0;
+    this.lineCount = 0;
     this.isValidVramAddr = false;
     this.isLowerVramAddr = false;
     this.vramAddr = 0x0000;
@@ -55,14 +90,27 @@ export default class Ppu {
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
   exec() {
+    this.cycleCount++;
+		const isScreenEnable = !!(this.registors[0x01] & 0x08);
+		const isSpriteEnable = !!(this.registors[0x01] & 0x10);
+    if (this.cycleCount >= 341) {
+      this.cycleCount = 0;
+      this.lineCount++;
+      if(this.lineCount < 8) {
 
+      } else if (this.lineCount < 240) {
+
+      } else if (this.lineCount === 240) {
+
+      }
+    }
   }
 
   read(addr: Word): Uint8Array {
     log.debug(`Read PPU, addr = ${addr}.`);
     if (addr === 0x0007) {
       const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
-      this.vramAddr += offset;      
+      this.vramAddr += offset;
       return this.vram.read(this.vramAddr);
     }
     throw new Error('PPU read error occured. It is a prohibited PPU address.');
@@ -92,7 +140,7 @@ export default class Ppu {
 
   writeVramData(data: Uint8Array) {
     this.writeVram(this.vramAddr, data)
-    const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
+    const offset = this.registors[0x00] & 0x04 ? 32 : 1;
     this.vramAddr += offset;
   }
 

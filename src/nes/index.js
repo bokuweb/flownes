@@ -87,6 +87,9 @@ export class NES {
     });
     this.cpu = new CPU(this.emitter);
     await this.cpu.reset();
-    await this.cpu.exec();
+    const cycle = await this.cpu.exec();
+    for (let i = 0; i < cycle; i++) {
+      this.ppu.exec();
+    }
   }
 }
