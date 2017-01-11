@@ -183,7 +183,7 @@ export default class Cpu {
 
   read(addr: Word, size?: Byte = 1): Promise<Array<Byte>> {
     return new Promise((resolve) => {
-      this.emitter.on('cpu:read-response', resolve);
+      this.emitter.once('cpu:read-response', resolve);
       this.emitter.emit('cpu:read', [addr, size]);
     });
   }
