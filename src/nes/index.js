@@ -6,34 +6,43 @@ import CPU from '../cpu';
 import PPU from '../ppu';
 import ROM from '../rom';
 import RAM from '../ram';
-import log from '../helper/log';
+// import log from '../helper/log';
 
 import type { Word } from '../types/common';
 // export type Dispatch = (event: string, params: Array<any>) => {};
 
-/*
 class Bus {
   constructor(ram, programROM) {
     this.ram = ram;
     this.programROM = programROM;
   }
 
-  cpuRead(addr: Word, size: number) {
-    let data: Uint8Array;
+  cpuRead(addr: Word) {
     if (addr < 0x0800) {
-      data = this.ram.read(addr, size);
+      return this.ram.read(addr);
     } else if (addr < 0x2000) {
       // mirror
-      data = this.ram.read(addr - 0x0800, size);
+      return this.ram.read(addr - 0x0800);
     } else if (addr >= 0x8000) {
       // ROM
-      data = this.programROM.read(addr - 0x8000, size);
+      return this.programROM.read(addr - 0x8000);
     }
-    // log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, Array.from(data).map(d => d.toString(16)));
-    return data;
+  }
+
+  cpuWrite(addr, data) {
+    // log.debug(`cpu:write addr = ${addr}`, data);
+    if (addr < 0x0800) {
+      // RAM
+      this.ram.write(addr, data);
+    } else if (addr < 0x2000) {
+      // mirror
+      this.ram.write(addr - 0x0800, data);
+    } else if (addr < 0x2008) {
+      // PPU
+      // this.ppu.write(addr - 0x2000, data);
+    }
   }
 }
-*/
 
 export class NES {
   cpu: CPU;
@@ -45,22 +54,23 @@ export class NES {
 
   constructor() {
     this.emitter = new EventEmitter();
+    this.frame = this.frame.bind(this);
   }
 
-  subscribe(events: Object) {
-    Object.keys(events).forEach(name => {
-      const handler = events[name];
-      this.emitter.on(name, handler.bind(this));
-    });
-  }
+  //  subscribe(events: Object) {
+  //    Object.keys(events).forEach(name => {
+  //      const handler = events[name];
+  //      this.emitter.on(name, handler.bind(this));
+  //    });
+  //  }
 
   ppuRead([addr, size]: [Word, number]) {
     let data: Uint8Array;
     if (addr < 0x2000) {
       data = this.charactorROM.read(addr, size);
     }
-    log.debug('ppu read');
-    log.debug(`ppu:read addr = ${addr}`, `size = ${size}`, data);
+    // log.debug('ppu read');
+    // log.debug(`ppu:read addr = ${addr}`, `size = ${size}`, data);
     this.emitter.emit('ppu:read-response', data);
   }
   //
@@ -78,34 +88,34 @@ export class NES {
   | 0x8000-0xBFFF  |  program ROM LOW           |                |
   | 0xC000-0xFFFF  |  program ROM HIGH          |                |
   */
-  cpuRead([addr, size]: [Word, number]) {
-    let data: Uint8Array;
-    if (addr < 0x0800) {
-      data = this.ram.read(addr, size);
-    } else if (addr < 0x2000) {
-      // mirror
-      data = this.ram.read(addr - 0x0800, size);
-    } else if (addr >= 0x8000) {
-      // ROM
-      data = this.programROM.read(addr - 0x8000, size);
-    }
-    // log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, Array.from(data).map(d => d.toString(16)));
-    this.emitter.emit('cpu:read-response', data);
-  }
+  // cpuRead([addr, size]: [Word, number]) {
+  //   let data: Uint8Array;
+  //   if (addr < 0x0800) {
+  //     data = this.ram.read(addr, size);
+  //   } else if (addr < 0x2000) {
+  //     // mirror
+  //     data = this.ram.read(addr - 0x0800, size);
+  //   } else if (addr >= 0x8000) {
+  //     // ROM
+  //     data = this.programROM.read(addr - 0x8000, size);
+  //   }
+  //   // log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, Array.from(data).map(d => d.toString(16)));
+  //   this.emitter.emit('cpu:read-response', data);
+  // }
 
-  cpuWrite([addr, data]: [Word, Uint8Array]) {
-    log.debug(`cpu:write addr = ${addr}`, data);
-    if (addr < 0x0800) {
-      // RAM
-      this.ram.write(addr, data);
-    } else if (addr < 0x2000) {
-      // mirror
-      this.ram.write(addr - 0x0800, data);
-    } else if (addr < 0x2008) {
-      // PPU
-      this.ppu.write(addr - 0x2000, data);
-    }
-  }
+  // cpuWrite([addr, data]: [Word, Uint8Array]) {
+  //   // log.debug(`cpu:write addr = ${addr}`, data);
+  //   if (addr < 0x0800) {
+  //     // RAM
+  //     //this.ram.write(addr, data);
+  //   } else if (addr < 0x2000) {
+  //     // mirror
+  //     //this.ram.write(addr - 0x0800, data);
+  //   } else if (addr < 0x2008) {
+  //     // PPU
+  //     //this.ppu.write(addr - 0x2000, data);
+  //   }
+  // }
 
   setup() {
     return fetch('./static/roms/hello.nes')
@@ -117,28 +127,28 @@ export class NES {
         this.charactorROM = new ROM(charactorROM);
         this.programROM = new ROM(programROM);
         // console.log(this.programROM)
-        this.subscribe({
-          'cpu:read': this.cpuRead.bind(this),
-          'cpu:write': this.cpuWrite.bind(this),
-          'ppu:read': this.ppuRead.bind(this),
-        });
-        // this.bus = new Bus(this.ram, this.programROM);
-        this.cpu = new CPU(this.emitter);
+        // this.subscribe({
+        // 'cpu:read': this.cpuRead.bind(this),
+        // 'cpu:write': this.cpuWrite.bind(this),
+        // 'ppu:read': this.ppuRead.bind(this),
+        // });
+        this.bus = new Bus(this.ram, this.programROM);
+        this.cpu = new CPU(this.emitter, this.bus);
         this.cpu.reset();
       })
   }
 
   frame() {
-    let isFrameEnd;
+    //let isFrameEnd;
     console.time('loop')
-    while (!isFrameEnd) {
-      const cycle = this.cpu.exec();
-      isFrameEnd = this.ppu.exec(cycle);
+    while (!this.ppu.exec(this.cpu.exec() * 3)) {
+      // TODO
     }
-    console.timeEnd('loop')
+    console.timeEnd('loop');
+    requestAnimationFrame(this.frame);
   }
 
   start() {
-    this.frame();
+    requestAnimationFrame(this.frame);
   }
 }

@@ -4,7 +4,7 @@ import type { Byte, Word } from '../types/common';
 import type EventEmitter from 'events';
 
 import RAM from '../ram';
-import log from '../helper/log';
+// import log from '../helper/log';
 
 // interface Registriors {
 //   spriteMemoryAddr: Byte;
@@ -95,6 +95,7 @@ export default class Ppu {
   // Get the pattern of the sprite searched with the remaining clock.
   exec(cycle: number) {
     this.cycleCount += cycle;
+
     // const isScreenEnable = !!(this.registors[0x01] & 0x08);
     // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
     if (this.cycleCount >= 341) {
@@ -106,7 +107,7 @@ export default class Ppu {
       //}
       if (this.lineCount === 240) {
         // const rom = this.readCharactorROM(0x0000, 0x2000);
-        console.log('frame end');
+        this.lineCount = 0;
         return true;
       }
     }
@@ -120,7 +121,7 @@ export default class Ppu {
   }
 
   read(addr: Word): Uint8Array {
-    log.debug(`Read PPU, addr = ${addr}.`);
+    //log.debug(`Read PPU, addr = ${addr}.`);
     if (addr === 0x0007) {
       const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
       this.vramAddr += offset;
@@ -130,7 +131,7 @@ export default class Ppu {
   }
 
   write(addr: Word, data: Uint8Array): void {
-    log.debug(`Write PPU, addr = ${addr}, data = ${data[0]}.`);
+    // log.debug(`Write PPU, addr = ${addr}, data = ${data[0]}.`);
     if (addr === 0x0006) {
       return this.writeVramAddr(addr, data[0]);
     }
