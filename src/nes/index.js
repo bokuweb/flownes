@@ -11,6 +11,30 @@ import log from '../helper/log';
 import type { Word } from '../types/common';
 // export type Dispatch = (event: string, params: Array<any>) => {};
 
+/*
+class Bus {
+  constructor(ram, programROM) {
+    this.ram = ram;
+    this.programROM = programROM;
+  }
+
+  cpuRead(addr: Word, size: number) {
+    let data: Uint8Array;
+    if (addr < 0x0800) {
+      data = this.ram.read(addr, size);
+    } else if (addr < 0x2000) {
+      // mirror
+      data = this.ram.read(addr - 0x0800, size);
+    } else if (addr >= 0x8000) {
+      // ROM
+      data = this.programROM.read(addr - 0x8000, size);
+    }
+    // log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, Array.from(data).map(d => d.toString(16)));
+    return data;
+  }
+}
+*/
+
 export class NES {
   cpu: CPU;
   ppu: PPU;
@@ -30,6 +54,15 @@ export class NES {
     });
   }
 
+  ppuRead([addr, size]: [Word, number]) {
+    let data: Uint8Array;
+    if (addr < 0x2000) {
+      data = this.charactorROM.read(addr, size);
+    }
+    log.debug('ppu read');
+    log.debug(`ppu:read addr = ${addr}`, `size = ${size}`, data);
+    this.emitter.emit('ppu:read-response', data);
+  }
   //
   // Memory map
   /*
@@ -56,7 +89,7 @@ export class NES {
       // ROM
       data = this.programROM.read(addr - 0x8000, size);
     }
-    log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, data);
+    // log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, Array.from(data).map(d => d.toString(16)));
     this.emitter.emit('cpu:read-response', data);
   }
 
@@ -74,29 +107,35 @@ export class NES {
     }
   }
 
-  async setup() {
-    const nes = await fetch('./static/roms/hello.nes').then((res) => res.arrayBuffer());
-    const { charactorROM, programROM } = parse(nes);
-    this.ppu = new PPU();
-    this.ram = new RAM(2048);
-    this.charactorROM = new ROM(charactorROM);
-    this.programROM = new ROM(programROM);
-    this.subscribe({
-      'cpu:read': this.cpuRead.bind(this),
-      'cpu:write': this.cpuWrite.bind(this),
-    });
-    this.cpu = new CPU(this.emitter);
-    await this.cpu.reset();
+  setup() {
+    return fetch('./static/roms/hello.nes')
+      .then((res) => res.arrayBuffer())
+      .then((nes) => {
+        const { charactorROM, programROM } = parse(nes);
+        this.ppu = new PPU(this.emitter);
+        this.ram = new RAM(2048);
+        this.charactorROM = new ROM(charactorROM);
+        this.programROM = new ROM(programROM);
+        // console.log(this.programROM)
+        this.subscribe({
+          'cpu:read': this.cpuRead.bind(this),
+          'cpu:write': this.cpuWrite.bind(this),
+          'ppu:read': this.ppuRead.bind(this),
+        });
+        // this.bus = new Bus(this.ram, this.programROM);
+        this.cpu = new CPU(this.emitter);
+        this.cpu.reset();
+      })
   }
 
   frame() {
-    requestAnimationFrame(async () => {
-      const cycle = await this.cpu.exec();
-      for (let i = 0; i < cycle; i++) {
-        this.ppu.exec();
-      }
-      this.frame();
-    });
+    let isFrameEnd;
+    console.time('loop')
+    while (!isFrameEnd) {
+      const cycle = this.cpu.exec();
+      isFrameEnd = this.ppu.exec(cycle);
+    }
+    console.timeEnd('loop')
   }
 
   start() {

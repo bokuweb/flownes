@@ -1,6 +1,8 @@
 /* @flow */
 
 import type { Byte, Word } from '../types/common';
+import type EventEmitter from 'events';
+
 import RAM from '../ram';
 import log from '../helper/log';
 
@@ -44,7 +46,7 @@ export default class Ppu {
   |  6   | PPU master/slave, always 1                  |
   |  5   | Sprite size 0: 8x8, 1: 8x16                 |
   |  4   | Bg pattern table 0:0x0000, 1:0x1000         |
-  |  3   | sprite pattern table 0:0x0000, 1:$1000      |
+  |  3   | sprite pattern table 0:0x0000, 1:0x1000     |
   |  2   | PPU memory increment 0: +=1, 1:+=32         |
   |  1-0 | Name table 0x00: 0x2000                     |
   |      |            0x01: 0x2400                     |
@@ -74,8 +76,10 @@ export default class Ppu {
   isLowerVramAddr: boolean;
   vramAddr: Word;
   vram: RAM;
+  emitter: EventEmitter;
 
-  constructor() {
+  constructor(emitter: EventEmitter) {
+    this.emitter = emitter;
     this.registors = new Uint8Array(0x08);
     this.cycleCount = 0;
     this.lineCount = 0;
@@ -89,21 +93,30 @@ export default class Ppu {
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec() {
-    this.cycleCount++;
-		const isScreenEnable = !!(this.registors[0x01] & 0x08);
-		const isSpriteEnable = !!(this.registors[0x01] & 0x10);
+  exec(cycle: number) {
+    this.cycleCount += cycle;
+    // const isScreenEnable = !!(this.registors[0x01] & 0x08);
+    // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
     if (this.cycleCount >= 341) {
-      this.cycleCount = 0;
+      this.cycleCount -= 341;
       this.lineCount++;
-      if(this.lineCount < 8) {
-
-      } else if (this.lineCount < 240) {
-
-      } else if (this.lineCount === 240) {
-
+      //if(this.lineCount < 8) {
+      //} else if (this.lineCount < 240) {
+      //} else if (this.lineCount === 240) {
+      //}
+      if (this.lineCount === 240) {
+        // const rom = this.readCharactorROM(0x0000, 0x2000);
+        console.log('frame end');
+        return true;
       }
     }
+  }
+
+  readCharactorROM(addr: Word, size?: Byte = 1): Array<Byte> {
+    let data: Array<Byte> = [];
+    this.emitter.once('ppu:read-response', (d: Array<Byte>) => { data = d; });
+    this.emitter.emit('ppu:read', [addr, size]);
+    return data;
   }
 
   read(addr: Word): Uint8Array {
