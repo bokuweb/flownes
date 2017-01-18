@@ -1,9 +1,9 @@
 /* @flow */
 
 import type { Byte, Word } from '../types/common';
-import type EventEmitter from 'events';
 
 import RAM from '../ram';
+import Bus from '../bus';
 // import log from '../helper/log';
 
 // interface Registriors {
@@ -76,10 +76,9 @@ export default class Ppu {
   isLowerVramAddr: boolean;
   vramAddr: Word;
   vram: RAM;
-  emitter: EventEmitter;
+  bus: Bus;
 
-  constructor(emitter: EventEmitter) {
-    this.emitter = emitter;
+  constructor(bus: Bus) {
     this.registors = new Uint8Array(0x08);
     this.cycleCount = 0;
     this.lineCount = 0;
@@ -87,6 +86,7 @@ export default class Ppu {
     this.isLowerVramAddr = false;
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
+    this.bus = bus;
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
@@ -113,14 +113,13 @@ export default class Ppu {
     }
   }
 
-  readCharactorROM(addr: Word, size?: Byte = 1): Array<Byte> {
+  readCharactorROM(addr: Word, size: "Byte" | "Word"): Array<Byte> {
     let data: Array<Byte> = [];
-    this.emitter.once('ppu:read-response', (d: Array<Byte>) => { data = d; });
-    this.emitter.emit('ppu:read', [addr, size]);
+    this.bus.ppuRead(addr, size);
     return data;
   }
 
-  read(addr: Word): Uint8Array {
+  read(addr: Word): Byte {
     //log.debug(`Read PPU, addr = ${addr}.`);
     if (addr === 0x0007) {
       const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
@@ -130,10 +129,10 @@ export default class Ppu {
     throw new Error('PPU read error occured. It is a prohibited PPU address.');
   }
 
-  write(addr: Word, data: Uint8Array): void {
+  write(addr: Word, data: Byte): void {
     // log.debug(`Write PPU, addr = ${addr}, data = ${data[0]}.`);
     if (addr === 0x0006) {
-      return this.writeVramAddr(addr, data[0]);
+      return this.writeVramAddr(addr, data);
     }
     if (addr === 0x0007) {
       return this.writeVramData(data);
@@ -152,13 +151,13 @@ export default class Ppu {
     }
   }
 
-  writeVramData(data: Uint8Array) {
+  writeVramData(data: Byte) {
     this.writeVram(this.vramAddr, data)
     const offset = this.registors[0x00] & 0x04 ? 32 : 1;
     this.vramAddr += offset;
   }
 
-  writeVram(addr: Word, data: Uint8Array) {
+  writeVram(addr: Word, data: Byte) {
     this.vram.write(addr - 0x2000, data);
   }
 }

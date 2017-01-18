@@ -24,7 +24,6 @@ export type AddressingMode =
 
 
 /* eslint-disable */
-/*
 export const
   
   //
@@ -98,8 +97,6 @@ export const
   BCS = 0xB0,
   BNE = 0xD0,
   BEQ = 0xF0;
-
-  */
 
 export const cycles = [
   /*0x00*/ 7, 6, 2, 8, 3, 3, 5, 5, 3, 2, 2, 2, 4, 4, 6, 6,

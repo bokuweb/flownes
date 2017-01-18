@@ -1,11 +1,11 @@
 /* @flow */
 
 import type { Byte, Word } from '../types/common';
-import type EventEmitter from 'events';
 import log from '../helper/log';
+import Bus from '../bus';
 import * as op from './opcode';
 
-import type { AddressingMode } from './opcode';
+import type { AddressingMode, OpecodeProps } from './opcode';
 
 interface CpuStatus {
   negative: boolean;
@@ -53,26 +53,22 @@ const defaultRegistors: Registors = {
 export default class Cpu {
 
   registors: Registors;
-  emitter: EventEmitter;
   hasBranched: boolean;
+  bus: Bus;
+  opecodeList: Array<OpecodeProps>;
 
-  constructor(emitter: EventEmitter, bus) {
+  constructor(bus: Bus) {
     this.registors = {
       ...defaultRegistors,
       P: { ...defaultRegistors.P }
     };
     this.hasBranched = false;
-    this.emitter = emitter;
     this.bus = bus;
+    this.opecodeList = []
 
-    this.m = []
-
-    this.additionalCycle = 0;
-    this.addrOrData;
-
-    Object.keys(op.dict).forEach((key) => {
+    Object.keys(op.dict).forEach((key: string) => {
       const { fullName, baseName, mode, cycle } = op.dict[key];
-      this.m[parseInt(key, 16)] = {
+      this.opecodeList[parseInt(key, 16)] = {
         fullName, baseName, mode, cycle,
       }
     })
@@ -84,163 +80,120 @@ export default class Cpu {
       ...defaultRegistors,
       P: { ...defaultRegistors.P }
     };
-    this.registors.PC = this.read(0xFFFC, 2);
+    this.registors.PC = this.read(0xFFFC, "Word");
     log.debug(`pc = ${(this.registors.PC).toString(16)}`);
   }
 
   getAddrOrDataAndAdditionalCycle(mode: AddressingMode): AddrOrDataAndAdditionalCycle {
     switch (mode) {
       case 'accumulator': {
-        this.addrOrData = 0x00;
-        this.additionalCycle = 0;
-        break;
-        //return {
-        //  addrOrData: 0x00, // dummy
-        //  additionalCycle: 0,
-        //}
+        return {
+          addrOrData: 0x00, // dummy
+          additionalCycle: 0,
+        }
       }
       case 'implied': {
-        this.addrOrData = 0x00;
-        this.additionalCycle = 0;
-        break;
-        // return {
-        //   addrOrData: 0x00, // dummy
-        //   additionalCycle: 0,
-        // }
+        return {
+          addrOrData: 0x00, // dummy
+          additionalCycle: 0,
+        };
       }
       case 'immediate': {
-        this.addrOrData = this.fetch(this.registors.PC);
-        this.additionalCycle = 0;
-        break;
-        // return {
-        //  addrOrData: (),
-        //  additionalCycle: 0,
-        // }
+        return {
+          addrOrData: this.fetch(this.registors.PC),
+          additionalCycle: 0,
+        }
       }
       case 'relative': {
-        const baseAddr = (this.fetch(this.registors.PC));
+        const baseAddr = this.fetch(this.registors.PC);
         const addr = baseAddr < 0x80 ? baseAddr + this.registors.PC : baseAddr + this.registors.PC - 256;
-        this.addrOrData = addr;
-        this.additionalCycle = (addr & 0xFF00) !== (this.registors.PC & 0xFF00) ? 1 : 0;
-        break;
-        // return {
-        //  addrOrData: addr,
-        //  additionalCycle: (addr & 0xFF00) !== (this.registors.PC & 0xFF00) ? 1 : 0,
-        //}
+        return {
+          addrOrData: addr,
+          additionalCycle: (addr & 0xFF00) !== (this.registors.PC & 0xFF00) ? 1 : 0,
+        }
       }
       case 'zeroPage': {
-        this.addrOrData = this.fetch(this.registors.PC);
-        this.additionalCycle = 0;
-        break;
-        // return {
-        //  addrOrData: (this.fetch(this.registors.PC)),
-        //  additionalCycle: 0,
-        // }
+        return {
+         addrOrData: this.fetch(this.registors.PC),
+         additionalCycle: 0,
+        }
       }
       case 'zeroPageX': {
         const addr = this.fetch(this.registors.PC);
-        this.addrOrData = (addr + this.registors.X) & 0xFF;
-        this.additionalCycle = 0;
-        break;
-        // return {
-        //   addrOrData: (addr + this.registors.X) & 0xFF,
-        //   additionalCycle: 0,
-        // }
+        return {
+          addrOrData: (addr + this.registors.X) & 0xFF,
+          additionalCycle: 0,
+        }
       }
       case 'zeroPageY': {
         const addr = this.fetch(this.registors.PC);
-        this.addrOrData = addr + this.registors.Y & 0xFF;
-        this.additionalCycle = 0;
-        break;
-        // return {
-        //  addrOrData: (addr + this.registors.Y & 0xFF),
-        //  additionalCycle: 0,
-        // }
+        return {
+         addrOrData: (addr + this.registors.Y & 0xFF),
+         additionalCycle: 0,
+        }
       }
       case 'absolute': {
-        this.addrOrData = this.fetch(this.registors.PC, 2);
-        this.additionalCycle = 0;
-        break;
-        // return {
-        //   addrOrData: (this.fetch(this.registors.PC, 2)),
-        //   additionalCycle: 0,
-        // }
+        return {
+          addrOrData: (this.fetch(this.registors.PC, "Word")),
+          additionalCycle: 0,
+        }
       }
       case 'absoluteX': {
-        const addr = (this.fetch(this.registors.PC, 2));
+        const addr = (this.fetch(this.registors.PC, "Word"));
         const additionalCycle = (addr & 0xFF00) !== ((addr + this.registors.X) & 0xFF00) ? 1 : 0;
-        this.addrOrData = addr + this.registors.X;
-        this.additionalCycle = additionalCycle;
-        break;
-        // return {
-        //   addrOrData: addr + this.registors.X,
-        //   additionalCycle,
-        // }
+        return {
+          addrOrData: addr + this.registors.X,
+          additionalCycle,
+        }
       }
       case 'absoluteY': {
-        const addr = (this.fetch(this.registors.PC, 2));
+        const addr = (this.fetch(this.registors.PC, "Word"));
         const additionalCycle = (addr & 0xFF00) !== ((addr + this.registors.Y) & 0xFF00) ? 1 : 0;
-        this.addrOrData = addr + this.registors.Y;
-        this.additionalCycle = additionalCycle;
-        break;
-        // return {
-        //   addrOrData: addr + this.registors.Y,
-        //   additionalCycle,
-        // }
+        return {
+          addrOrData: addr + this.registors.Y,
+          additionalCycle,
+        }
       }
       case 'preIndexedIndirect': {
         const addr = ((this.fetch(this.registors.PC)) + this.registors.X) & 0xFF;
-        this.addrOrData = this.read(addr, 2);
-        this.additionalCycle = 0;
-        break;
-        // return {
-        //   addrOrData: (this.read(addr, 2)),
-        //   additionalCycle: 0,
-        // }
+        return {
+          addrOrData: this.read(addr, "Word"),
+          additionalCycle: 0,
+        }
       }
       case 'postIndexedIndirect': {
         const addrOrData = this.fetch(this.registors.PC);
-        const baseAddr = (this.read(addrOrData, 2));
+        const baseAddr = (this.read(addrOrData, "Word"));
         const addr = baseAddr + this.registors.Y;
-        this.addrOrData = addr;
-        this.additionalCycle = (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0;
-        break;
-        // return {
-        //   addrOrData: addr,
-        //   additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
-        // }
+        return {
+          addrOrData: addr,
+          additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
+        }
       }
       case 'indirectAbsolute': {
-        const addrOrData = (this.fetch(this.registors.PC, 2));
-        const addr = (this.read(addrOrData, 2));
-        this.addrOrData = addr;
-        this.additionalCycle = 0;
-        break;
-        // return {
-        //   addrOrData: addr,
-        //   additionalCycle: 0,
-        // }
+        const addrOrData = this.fetch(this.registors.PC, "Word");
+        const addr = this.read(addrOrData, "Word");
+        return {
+          addrOrData: addr,
+          additionalCycle: 0,
+        }
       }
       default: throw new Error(`Unknown addressing mode ${mode} detected.`);
     }
   }
 
-  fetch(addr: Word, size?: Byte = 1): Array<Byte> {
-    this.registors.PC += size;
+  fetch(addr: Word, size?: "Byte" | "Word"): Byte {
+    this.registors.PC += size === "Word" ? 2 : 1;
     return this.read(addr, size);
   }
 
-  read(addr: Word, size?: Byte = 1): Array<Byte> {
-    // let data: Array<Byte> = [];
-    //this.emitter.once('cpu:read-response', (d: Array<Byte>) => { data = d; });
-    //this.emitter.emit('cpu:read', [addr, size]);
-    // return data;
-    // FIXME: 
-    return size === 2 ? (this.bus.cpuRead(addr) | this.bus.cpuRead(addr + 1) << 8) : this.bus.cpuRead(addr);
-    // return this.bus.cpuRead(addr, size);
+  read(addr: Word, size?: "Byte" | "Word"): Byte {
+    return size === "Word"
+      ? (this.bus.cpuRead(addr) | this.bus.cpuRead(addr + 1) << 8)
+      : this.bus.cpuRead(addr);
   }
 
-  write(addr: Word, data: Uint8Array) {
+  write(addr: Word, data: Byte) {
     this.bus.cpuWrite(addr, data);
   }
 
@@ -622,7 +575,7 @@ export default class Cpu {
         this.registors.P.break = true;
         this.pushStatus();
         this.registors.P.interrupt = true;
-        this.registors.PC = this.read(0xFFFE, 2);
+        this.registors.PC = this.read(0xFFFE, "Word");
         break;
       }
       case 'NOP': {
@@ -633,19 +586,14 @@ export default class Cpu {
   }
 
   exec(): number {
-    const { PC, SP, A, X, Y } = this.registors;
-    // log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
-    // log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
+    const { PC, SP, A, X, Y, P } = this.registors;
+     log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
+     log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
     const opecode = this.fetch(this.registors.PC);
-    // return 7;
-    const { fullName, baseName, mode, cycle } = this.m[opecode];
-    // const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(opecodeProps.mode);
-    // this.getAddrOrDataAndAdditionalCycle(opecodeProps && opecodeProps.mode || 'accumulator');
-    this.getAddrOrDataAndAdditionalCycle(mode);
-    // log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
-    // this.execInstruction('PHA',/*opecodeProps.baseName,*/ this.addrOrData, opecodeProps && opecodeProps.mode);
-    this.execInstruction(baseName, this.addrOrData, mode);
-    // return opecodeProps && opecodeProps.cycle || 7 + this.additionalCycle + (this.hasBranched ? 1 : 0);
-    return cycle + this.additionalCycle + (this.hasBranched ? 1 : 0);
+    const { fullName, baseName, mode, cycle } = this.opecodeList[opecode];
+    const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
+     log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
+    this.execInstruction(baseName, addrOrData, mode);
+    return cycle + additionalCycle + (this.hasBranched ? 1 : 0);
   }
 }

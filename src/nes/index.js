@@ -1,77 +1,34 @@
 /* @flow */
 
 import { parse } from '../parser';
-import EventEmitter from 'events';
 import CPU from '../cpu';
 import PPU from '../ppu';
 import ROM from '../rom';
 import RAM from '../ram';
-// import log from '../helper/log';
+import Bus from '../bus';
+// import log from '../helper/log';vsc 
 
 import type { Word } from '../types/common';
-// export type Dispatch = (event: string, params: Array<any>) => {};
-
-class Bus {
-  constructor(ram, programROM) {
-    this.ram = ram;
-    this.programROM = programROM;
-  }
-
-  cpuRead(addr: Word) {
-    if (addr < 0x0800) {
-      return this.ram.read(addr);
-    } else if (addr < 0x2000) {
-      // mirror
-      return this.ram.read(addr - 0x0800);
-    } else if (addr >= 0x8000) {
-      // ROM
-      return this.programROM.read(addr - 0x8000);
-    }
-  }
-
-  cpuWrite(addr, data) {
-    // log.debug(`cpu:write addr = ${addr}`, data);
-    if (addr < 0x0800) {
-      // RAM
-      this.ram.write(addr, data);
-    } else if (addr < 0x2000) {
-      // mirror
-      this.ram.write(addr - 0x0800, data);
-    } else if (addr < 0x2008) {
-      // PPU
-      // this.ppu.write(addr - 0x2000, data);
-    }
-  }
-}
 
 export class NES {
   cpu: CPU;
   ppu: PPU;
+  bus: Bus;
   charactorROM: ROM;
   programROM: ROM;
   ram: RAM;
-  emitter: EventEmitter;
+  frame: () => void;
 
   constructor() {
-    this.emitter = new EventEmitter();
     this.frame = this.frame.bind(this);
   }
 
-  //  subscribe(events: Object) {
-  //    Object.keys(events).forEach(name => {
-  //      const handler = events[name];
-  //      this.emitter.on(name, handler.bind(this));
-  //    });
-  //  }
-
-  ppuRead([addr, size]: [Word, number]) {
-    let data: Uint8Array;
+  ppuRead(addr: Word) {
     if (addr < 0x2000) {
-      data = this.charactorROM.read(addr, size);
+      return this.charactorROM.read(addr);
     }
-    // log.debug('ppu read');
     // log.debug(`ppu:read addr = ${addr}`, `size = ${size}`, data);
-    this.emitter.emit('ppu:read-response', data);
+    // this.emitter.emit('ppu:read-response', data);
   }
   //
   // Memory map
@@ -88,63 +45,28 @@ export class NES {
   | 0x8000-0xBFFF  |  program ROM LOW           |                |
   | 0xC000-0xFFFF  |  program ROM HIGH          |                |
   */
-  // cpuRead([addr, size]: [Word, number]) {
-  //   let data: Uint8Array;
-  //   if (addr < 0x0800) {
-  //     data = this.ram.read(addr, size);
-  //   } else if (addr < 0x2000) {
-  //     // mirror
-  //     data = this.ram.read(addr - 0x0800, size);
-  //   } else if (addr >= 0x8000) {
-  //     // ROM
-  //     data = this.programROM.read(addr - 0x8000, size);
-  //   }
-  //   // log.debug(`cpu:read addr = ${addr}`, `size = ${size}`, Array.from(data).map(d => d.toString(16)));
-  //   this.emitter.emit('cpu:read-response', data);
-  // }
-
-  // cpuWrite([addr, data]: [Word, Uint8Array]) {
-  //   // log.debug(`cpu:write addr = ${addr}`, data);
-  //   if (addr < 0x0800) {
-  //     // RAM
-  //     //this.ram.write(addr, data);
-  //   } else if (addr < 0x2000) {
-  //     // mirror
-  //     //this.ram.write(addr - 0x0800, data);
-  //   } else if (addr < 0x2008) {
-  //     // PPU
-  //     //this.ppu.write(addr - 0x2000, data);
-  //   }
-  // }
 
   setup() {
     return fetch('./static/roms/hello.nes')
       .then((res) => res.arrayBuffer())
-      .then((nes) => {
+      .then((nes: ArrayBuffer) => {
         const { charactorROM, programROM } = parse(nes);
-        this.ppu = new PPU(this.emitter);
+        this.ppu = new PPU(this.bus);
         this.ram = new RAM(2048);
         this.charactorROM = new ROM(charactorROM);
         this.programROM = new ROM(programROM);
-        // console.log(this.programROM)
-        // this.subscribe({
-        // 'cpu:read': this.cpuRead.bind(this),
-        // 'cpu:write': this.cpuWrite.bind(this),
-        // 'ppu:read': this.ppuRead.bind(this),
-        // });
-        this.bus = new Bus(this.ram, this.programROM);
-        this.cpu = new CPU(this.emitter, this.bus);
+        this.bus = new Bus(this.ram, this.programROM, this.charactorROM);
+        this.cpu = new CPU(this.bus);
         this.cpu.reset();
       })
   }
 
   frame() {
-    //let isFrameEnd;
-    console.time('loop')
+    console.time('loop') // eslint-disable-line no-console
     while (!this.ppu.exec(this.cpu.exec() * 3)) {
       // TODO
     }
-    console.timeEnd('loop');
+    console.timeEnd('loop'); // eslint-disable-line no-console
     requestAnimationFrame(this.frame);
   }
 
