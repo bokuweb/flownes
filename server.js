@@ -1,14 +1,7 @@
-const webpack = require('webpack');
-const WebpackDevServer = require('webpack-dev-server');
-const config = require('./webpack.config');
+var connect = require('connect'),
+    serveStatic = require('serve-static');
 
-new WebpackDevServer(webpack(config), {
-  publicPath: config.output.publicPath,
-  hot: true,
-  historyApiFallback: true,
-}).listen(3333, 'localhost', (err) => {
-  if (err) {
-    console.log(err);
-  }
-  console.log('Listening at localhost:3333');
-});
+var app = connect();
+
+app.use(serveStatic(__dirname));
+app.listen(5000);

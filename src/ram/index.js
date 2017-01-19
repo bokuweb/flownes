@@ -2,14 +2,12 @@
 
 import type { Byte, Word } from '../types/common';
 
-const range = (n: number): number[] => Array.from(Array(n).keys());
-
 export default class RAM {
 
-  ram: Uint8Array;
+  ram: Array<Byte>;
 
-  constructor(size: Byte) {
-    this.ram = new Uint8Array(size);
+  constructor(size: number) {
+    this.ram = new Array(size);
     this.ram.fill(0);
   }
 
@@ -17,11 +15,11 @@ export default class RAM {
     this.ram.fill(0);
   }
 
-  read(addr: Word, size: number = 1): Uint8Array {
-    return new Uint8Array(range(size).map(i => this.ram[addr + i]));
+  read(addr: Word): Byte {
+    return this.ram[addr];
   }
 
-  write(addr: Word, data: Uint8Array): void {
-    this.ram.set(Array.from(data), addr);
+  write(addr: Word, data: number) {
+    this.ram[addr] = data;
   }
 }

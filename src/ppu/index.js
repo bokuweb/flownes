@@ -1,8 +1,10 @@
 /* @flow */
 
 import type { Byte, Word } from '../types/common';
+
 import RAM from '../ram';
-import log from '../helper/log';
+import Bus from '../bus';
+// import log from '../helper/log';
 
 // interface Registriors {
 //   spriteMemoryAddr: Byte;
@@ -44,7 +46,7 @@ export default class Ppu {
   |  6   | PPU master/slave, always 1                  |
   |  5   | Sprite size 0: 8x8, 1: 8x16                 |
   |  4   | Bg pattern table 0:0x0000, 1:0x1000         |
-  |  3   | sprite pattern table 0:0x0000, 1:$1000      |
+  |  3   | sprite pattern table 0:0x0000, 1:0x1000     |
   |  2   | PPU memory increment 0: +=1, 1:+=32         |
   |  1-0 | Name table 0x00: 0x2000                     |
   |      |            0x01: 0x2400                     |
@@ -74,8 +76,9 @@ export default class Ppu {
   isLowerVramAddr: boolean;
   vramAddr: Word;
   vram: RAM;
+  bus: Bus;
 
-  constructor() {
+  constructor(bus: Bus) {
     this.registors = new Uint8Array(0x08);
     this.cycleCount = 0;
     this.lineCount = 0;
@@ -83,31 +86,41 @@ export default class Ppu {
     this.isLowerVramAddr = false;
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
+    this.bus = bus;
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec() {
-    this.cycleCount++;
-		const isScreenEnable = !!(this.registors[0x01] & 0x08);
-		const isSpriteEnable = !!(this.registors[0x01] & 0x10);
+  exec(cycle: number) {
+    this.cycleCount += cycle;
+
+    // const isScreenEnable = !!(this.registors[0x01] & 0x08);
+    // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
     if (this.cycleCount >= 341) {
-      this.cycleCount = 0;
+      this.cycleCount -= 341;
       this.lineCount++;
-      if(this.lineCount < 8) {
-
-      } else if (this.lineCount < 240) {
-
-      } else if (this.lineCount === 240) {
-
+      //if(this.lineCount < 8) {
+      //} else if (this.lineCount < 240) {
+      //} else if (this.lineCount === 240) {
+      //}
+      if (this.lineCount === 240) {
+        // const rom = this.readCharactorROM(0x0000, 0x2000);
+        this.lineCount = 0;
+        return true;
       }
     }
   }
 
-  read(addr: Word): Uint8Array {
-    log.debug(`Read PPU, addr = ${addr}.`);
+  readCharactorROM(addr: Word, size: "Byte" | "Word"): Array<Byte> {
+    let data: Array<Byte> = [];
+    this.bus.ppuRead(addr, size);
+    return data;
+  }
+
+  read(addr: Word): Byte {
+    //log.debug(`Read PPU, addr = ${addr}.`);
     if (addr === 0x0007) {
       const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
       this.vramAddr += offset;
@@ -116,10 +129,10 @@ export default class Ppu {
     throw new Error('PPU read error occured. It is a prohibited PPU address.');
   }
 
-  write(addr: Word, data: Uint8Array): void {
-    log.debug(`Write PPU, addr = ${addr}, data = ${data[0]}.`);
+  write(addr: Word, data: Byte): void {
+    // log.debug(`Write PPU, addr = ${addr}, data = ${data[0]}.`);
     if (addr === 0x0006) {
-      return this.writeVramAddr(addr, data[0]);
+      return this.writeVramAddr(addr, data);
     }
     if (addr === 0x0007) {
       return this.writeVramData(data);
@@ -138,13 +151,13 @@ export default class Ppu {
     }
   }
 
-  writeVramData(data: Uint8Array) {
+  writeVramData(data: Byte) {
     this.writeVram(this.vramAddr, data)
     const offset = this.registors[0x00] & 0x04 ? 32 : 1;
     this.vramAddr += offset;
   }
 
-  writeVram(addr: Word, data: Uint8Array) {
+  writeVram(addr: Word, data: Byte) {
     this.vram.write(addr - 0x2000, data);
   }
 }
