@@ -163,7 +163,7 @@ export default class Cpu {
       }
       case 'postIndexedIndirect': {
         const addrOrData = this.fetch(this.registors.PC);
-        const baseAddr = (this.read(addrOrData, "Word"));
+        const baseAddr = this.read(addrOrData, "Word");
         const addr = baseAddr + this.registors.Y;
         return {
           addrOrData: addr,
