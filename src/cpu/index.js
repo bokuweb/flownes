@@ -2,7 +2,7 @@
 
 import type { Byte, Word } from '../types/common';
 import log from '../helper/log';
-import Bus from '../bus';
+import CpuBus from '../bus/cpu-bus';
 import * as op from './opcode';
 
 import type { AddressingMode, OpecodeProps } from './opcode';
@@ -54,10 +54,10 @@ export default class Cpu {
 
   registors: Registors;
   hasBranched: boolean;
-  bus: Bus;
+  bus: CpuBus;
   opecodeList: Array<OpecodeProps>;
 
-  constructor(bus: Bus) {
+  constructor(bus: CpuBus) {
     this.registors = {
       ...defaultRegistors,
       P: { ...defaultRegistors.P }
