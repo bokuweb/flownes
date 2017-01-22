@@ -20,7 +20,7 @@ describe('integration hello spec', () => {
     nes.start();
     setTimeout(() => {
       screenshot('screenshot/actual/hello.png').then(done);
-    }, 100);
+    }, 1000);
   });
 });
 
