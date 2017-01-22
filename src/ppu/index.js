@@ -14,6 +14,13 @@ import log from '../helper/log';
 //   memoryData: Byte;
 // }
 
+export type Sprite = Array<Array<number>>;
+
+export type SpritesWithStatus = {
+  isReady: boolean;
+  sprites: Array<Sprite>;
+}
+
 export default class Ppu {
 
   //
@@ -78,7 +85,8 @@ export default class Ppu {
   vram: RAM;
   bus: PpuBus;
   display: Array<Array<number>>;
-  ctx: ?CanvasRenderingContext2D;
+  // ctx: ?CanvasRenderingContext2D;
+  sprites: Array<Sprite>;
 
   constructor(bus: PpuBus) {
     this.registors = new Uint8Array(0x08);
@@ -88,50 +96,52 @@ export default class Ppu {
     this.isLowerVramAddr = false;
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
+    this.sprites = new Array(960);
 
     this.bus = bus;
-    this.display = new Array(240).fill(0).map((): Array<number> => new Array(256).fill(0));
+    // this.display = new Array(240).fill(0).map((): Array<number> => new Array(256).fill(0));
 
     // FIXME: split to renderer file
-    const canvas = ((document.getElementById('#nes'): any): HTMLCanvasElement);
-    this.ctx = canvas.getContext('2d');
+    // const canvas = ((document.getElementById('#nes'): any): HTMLCanvasElement);
+    // this.ctx = canvas.getContext('2d');
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec(cycle: number): boolean {
+  exec(cycle: number): SpritesWithStatus {
     this.cycle += cycle;
     // const isScreenEnable = !!(this.registors[0x01] & 0x08);
     // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
+    if (this.line === 0) this.sprites.length = 0;
     if (this.cycle >= 341) {
       this.cycle -= 341;
       this.line++;
-      //if(this.lineCount < 8) {
-      //} else if (this.lineCount < 240) {
-      //} else if (this.lineCount === 240) {
-      //}
       if (!(this.line % 8)) {
         const tileY = ~~(this.line / 8);
-
         // sprites of a line.
         for (let i = 0; i < 32; i++) {
           const tileNumber = tileY * 32 + i;
           const spriteId = this.vram.read(tileNumber);
           const sprite = this.buildSprite(spriteId);
-          this.renderSprite(sprite, tileNumber);
+          this.sprites.push(sprite);
         }
       }
       if (this.line === 240) {
         this.line = 0;
-        return true;
+        return {
+          isReady: true,
+          sprites: this.sprites,
+        };
       }
     }
-    return false;
+    return {
+      isReady: false, sprites: [],
+    };
   }
 
-  buildSprite(spriteId: number): Array<Array<number>> {
+  buildSprite(spriteId: number): Sprite {
     const sprite = new Array(8).fill(0).map((): Array<number> => new Array(8).fill(0));
     for (let i = 0; i < 16; i++) {
       for (let j = 0; j < 8; j++) {
@@ -142,21 +152,6 @@ export default class Ppu {
       }
     }
     return sprite;
-  }
-
-  renderSprite(sprite: Array<Array<number>>, tileNumber: number) {
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 8; j++) {
-        // FIXME: fix render timing
-        //        this code is temporly code to debug...
-        if (this.ctx) {
-          this.ctx.fillStyle = `rgb(${85 * sprite[i][j]}, ${85 * sprite[i][j]}, ${85 * sprite[i][j]})`;
-          const x = (j + (tileNumber % 32) * 8);
-          const y = (i + ~~(tileNumber / 32) * 8);
-          this.ctx.fillRect(x, y, 1, 1);
-        }
-      }
-    }
   }
 
   readCharactorROM(addr: Word): Byte {

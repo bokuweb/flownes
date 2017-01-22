@@ -7,6 +7,7 @@ import Rom from '../rom';
 import Ram from '../ram';
 import CpuBus from '../bus/cpu-bus';
 import PpuBus from '../bus/ppu-bus';
+import CanvasRenderer from '../renderer/canvas';
 // import log from '../helper/log';
 
 import type { Word } from '../types/common';
@@ -19,11 +20,13 @@ export class NES {
   programROM: Rom;
   ram: Ram;
   ppuBus: PpuBus;
+  canvasRenderer: CanvasRenderer;
 
   frame: () => void;
 
   constructor() {
     this.frame = this.frame.bind(this);
+    this.canvasRenderer = new CanvasRenderer('nes');
   }
 
   ppuRead(addr: Word) {
@@ -67,8 +70,13 @@ export class NES {
 
   frame() {
     console.time('loop') // eslint-disable-line no-console
-    while (!this.ppu.exec(this.cpu.exec() * 3)) {
-      // TODO
+    while (true) { // eslint-disable-line no-constant-condition
+      const cycle = this.cpu.exec() * 3;
+      const { isReady, sprites } = this.ppu.exec(cycle);
+      if (isReady) {
+        this.canvasRenderer.renderSprites(sprites);
+        break;
+      }
     }
     console.timeEnd('loop'); // eslint-disable-line no-console
     requestAnimationFrame(this.frame);
