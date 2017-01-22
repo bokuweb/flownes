@@ -1,20 +1,19 @@
 /* @flow */
 
-import ROM from '../rom';
-import RAM from '../ram';
-import PPU from '../ppu';
+import Rom from '../rom';
+import Ram from '../ram';
+import Ppu from '../ppu';
 
 import type { Word, Byte } from '../types/common';
 
-export default class Bus {
+export default class CpuBus {
 
-  ram: RAM;
-  bus: Bus;
-  ppu: PPU;
-  charactorROM: ROM;
-  programROM: ROM;
+  ram: Ram;
+  ppu: Ppu;
+  charactorROM: Rom;
+  programROM: Rom;
 
-  constructor(ram: RAM, programROM: ROM, charactorROM: ROM, ppu: PPU) {
+  constructor(ram: Ram, programROM: Rom, charactorROM: Rom, ppu: Ppu) {
     this.ram = ram;
     this.programROM = programROM;
     this.charactorROM = charactorROM;
