@@ -1,22 +1,25 @@
 /* @flow */
 
 import { parse } from '../parser';
-import CPU from '../cpu';
-import PPU from '../ppu';
-import ROM from '../rom';
-import RAM from '../ram';
-import Bus from '../bus';
-// import log from '../helper/log';vsc 
+import Cpu from '../cpu';
+import Ppu from '../ppu';
+import Rom from '../rom';
+import Ram from '../ram';
+import CpuBus from '../bus/cpu-bus';
+import PpuBus from '../bus/ppu-bus';
+// import log from '../helper/log';
 
 import type { Word } from '../types/common';
 
 export class NES {
-  cpu: CPU;
-  ppu: PPU;
-  bus: Bus;
-  charactorROM: ROM;
-  programROM: ROM;
-  ram: RAM;
+  cpu: Cpu;
+  ppu: Ppu;
+  cpuBus: CpuBus;
+  charactorROM: Rom;
+  programROM: Rom;
+  ram: Ram;
+  ppuBus: PpuBus;
+
   frame: () => void;
 
   constructor() {
@@ -51,12 +54,13 @@ export class NES {
       .then((res) => res.arrayBuffer())
       .then((nes: ArrayBuffer) => {
         const { charactorROM, programROM } = parse(nes);
-        this.ram = new RAM(2048);
-        this.charactorROM = new ROM(charactorROM);
-        this.programROM = new ROM(programROM);
-        this.ppu = new PPU(this.charactorROM);
-        this.bus = new Bus(this.ram, this.programROM, this.charactorROM, this.ppu);
-        this.cpu = new CPU(this.bus);
+        this.ram = new Ram(2048);
+        this.charactorROM = new Rom(charactorROM);
+        this.programROM = new Rom(programROM);
+        this.ppuBus = new PpuBus(this.charactorROM);
+        this.ppu = new Ppu(this.ppuBus);
+        this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu);
+        this.cpu = new Cpu(this.cpuBus);
         this.cpu.reset();
       })
   }

@@ -3,7 +3,7 @@
 import type { Byte, Word } from '../types/common';
 
 import RAM from '../ram';
-import Bus from '../bus';
+import PpuBus from '../bus/ppu-bus';
 import log from '../helper/log';
 
 // interface Registriors {
@@ -76,10 +76,11 @@ export default class Ppu {
   isLowerVramAddr: boolean;
   vramAddr: Word;
   vram: RAM;
-  bus: Bus;
+  bus: PpuBus;
   display: Array<Array<number>>;
+  ctx: ?CanvasRenderingContext2D;
 
-  constructor(rom) {
+  constructor(bus: PpuBus) {
     this.registors = new Uint8Array(0x08);
     this.cycle = 0;
     this.line = 0;
@@ -88,13 +89,11 @@ export default class Ppu {
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
 
-    console.log('vram', this.vram.read(0))
-    // this.bus = bus;
-    this.charactorROM = rom;
+    this.bus = bus;
     this.display = new Array(240).fill(0).map((): Array<number> => new Array(256).fill(0));
 
     // FIXME: split to renderer file
-    const canvas = document.getElementById('nes');
+    const canvas = ((document.getElementById('#nes'): any): HTMLCanvasElement);
     this.ctx = canvas.getContext('2d');
   }
 
@@ -121,20 +120,15 @@ export default class Ppu {
           const tileNumber = tileY * 32 + i;
           const spriteId = this.vram.read(tileNumber);
           const sprite = this.buildSprite(spriteId);
-          if (spriteId !== 0) debugger;
           this.renderSprite(sprite, tileNumber);
         }
-        // const rom = this.readCharactorROM(0x0000);
       }
-
-
-
       if (this.line === 240) {
-        // const rom = this.readCharactorROM(0x0000, 0x2000);
         this.line = 0;
         return true;
       }
     }
+    return false;
   }
 
   buildSprite(spriteId: number): Array<Array<number>> {
@@ -153,19 +147,20 @@ export default class Ppu {
   renderSprite(sprite: Array<Array<number>>, tileNumber: number) {
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
-        if (sprite[i][j] !== 0 ) debugger;
         // FIXME: fix render timing
         //        this code is temporly code to debug...
-        this.ctx.fillStyle = `rgb(${85 * sprite[i][j]}, ${85 * sprite[i][j]}, ${85 * sprite[i][j]})`;
-        const x = (j + (tileNumber % 32) * 8);
-        const y = (i + ~~(tileNumber / 32) * 8);
-        this.ctx.fillRect(x, y, 1, 1);
+        if (this.ctx) {
+          this.ctx.fillStyle = `rgb(${85 * sprite[i][j]}, ${85 * sprite[i][j]}, ${85 * sprite[i][j]})`;
+          const x = (j + (tileNumber % 32) * 8);
+          const y = (i + ~~(tileNumber / 32) * 8);
+          this.ctx.fillRect(x, y, 1, 1);
+        }
       }
     }
   }
 
   readCharactorROM(addr: Word): Byte {
-    return this.charactorROM.read(addr);
+    return this.bus.readByPpu(addr);
   }
 
   read(addr: Word): Byte {

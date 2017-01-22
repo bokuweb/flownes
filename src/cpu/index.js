@@ -2,7 +2,7 @@
 
 import type { Byte, Word } from '../types/common';
 import log from '../helper/log';
-import Bus from '../bus';
+import CpuBus from '../bus/cpu-bus';
 import * as op from './opcode';
 
 import type { AddressingMode, OpecodeProps } from './opcode';
@@ -54,10 +54,10 @@ export default class Cpu {
 
   registors: Registors;
   hasBranched: boolean;
-  bus: Bus;
+  bus: CpuBus;
   opecodeList: Array<OpecodeProps>;
 
-  constructor(bus: Bus) {
+  constructor(bus: CpuBus) {
     this.registors = {
       ...defaultRegistors,
       P: { ...defaultRegistors.P }
@@ -586,11 +586,11 @@ export default class Cpu {
   }
 
   exec(): number {
-    const { PC, SP, A, X, Y, P } = this.registors;
+    // const { PC, SP, A, X, Y, P } = this.registors;
     //log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
     // log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
     const opecode = this.fetch(this.registors.PC);
-    const { fullName, baseName, mode, cycle } = this.opecodeList[opecode];
+    const { /* fullName, */ baseName, mode, cycle } = this.opecodeList[opecode];
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
     // log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
     this.execInstruction(baseName, addrOrData, mode);
