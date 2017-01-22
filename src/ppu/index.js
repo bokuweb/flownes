@@ -4,7 +4,7 @@ import type { Byte, Word } from '../types/common';
 
 import RAM from '../ram';
 import Bus from '../bus';
-// import log from '../helper/log';
+import log from '../helper/log';
 
 // interface Registriors {
 //   spriteMemoryAddr: Byte;
@@ -70,53 +70,102 @@ export default class Ppu {
   |  0   | Display type      0: color, 1: mono         |
   */
   registors: Uint8Array;
-  cycleCount: number;
-  lineCount: number;
+  cycle: number;
+  line: number;
   isValidVramAddr: boolean;
   isLowerVramAddr: boolean;
   vramAddr: Word;
   vram: RAM;
   bus: Bus;
+  display: Array<Array<number>>;
 
-  constructor(bus: Bus) {
+  constructor(rom) {
     this.registors = new Uint8Array(0x08);
-    this.cycleCount = 0;
-    this.lineCount = 0;
+    this.cycle = 0;
+    this.line = 0;
     this.isValidVramAddr = false;
     this.isLowerVramAddr = false;
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
-    this.bus = bus;
+
+    console.log('vram', this.vram.read(0))
+    // this.bus = bus;
+    this.charactorROM = rom;
+    this.display = new Array(240).fill(0).map((): Array<number> => new Array(256).fill(0));
+
+    // FIXME: split to renderer file
+    const canvas = document.getElementById('nes');
+    this.ctx = canvas.getContext('2d');
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec(cycle: number) {
-    this.cycleCount += cycle;
-
+  exec(cycle: number): boolean {
+    this.cycle += cycle;
     // const isScreenEnable = !!(this.registors[0x01] & 0x08);
     // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
-    if (this.cycleCount >= 341) {
-      this.cycleCount -= 341;
-      this.lineCount++;
+    if (this.cycle >= 341) {
+      this.cycle -= 341;
+      this.line++;
       //if(this.lineCount < 8) {
       //} else if (this.lineCount < 240) {
       //} else if (this.lineCount === 240) {
       //}
-      if (this.lineCount === 240) {
+      if (!(this.line % 8)) {
+        const tileY = ~~(this.line / 8);
+
+        // sprites of a line.
+        for (let i = 0; i < 32; i++) {
+          const tileNumber = tileY * 32 + i;
+          const spriteId = this.vram.read(tileNumber);
+          const sprite = this.buildSprite(spriteId);
+          if (spriteId !== 0) debugger;
+          this.renderSprite(sprite, tileNumber);
+        }
+        // const rom = this.readCharactorROM(0x0000);
+      }
+
+
+
+      if (this.line === 240) {
         // const rom = this.readCharactorROM(0x0000, 0x2000);
-        this.lineCount = 0;
+        this.line = 0;
         return true;
       }
     }
   }
 
-  readCharactorROM(addr: Word, size: "Byte" | "Word"): Array<Byte> {
-    let data: Array<Byte> = [];
-    this.bus.ppuRead(addr, size);
-    return data;
+  buildSprite(spriteId: number): Array<Array<number>> {
+    const sprite = new Array(8).fill(0).map((): Array<number> => new Array(8).fill(0));
+    for (let i = 0; i < 16; i++) {
+      for (let j = 0; j < 8; j++) {
+        const rom = this.readCharactorROM(spriteId * 16 + i);
+        if (rom & (0x80 >> j)) {
+          sprite[i % 8][j] += 0x01 << (i / 8);
+        }
+      }
+    }
+    return sprite;
+  }
+
+  renderSprite(sprite: Array<Array<number>>, tileNumber: number) {
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (sprite[i][j] !== 0 ) debugger;
+        // FIXME: fix render timing
+        //        this code is temporly code to debug...
+        this.ctx.fillStyle = `rgb(${85 * sprite[i][j]}, ${85 * sprite[i][j]}, ${85 * sprite[i][j]})`;
+        const x = (j + (tileNumber % 32) * 8);
+        const y = (i + ~~(tileNumber / 32) * 8);
+        this.ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+
+  readCharactorROM(addr: Word): Byte {
+    return this.charactorROM.read(addr);
   }
 
   read(addr: Word): Byte {
@@ -130,7 +179,7 @@ export default class Ppu {
   }
 
   write(addr: Word, data: Byte): void {
-    // log.debug(`Write PPU, addr = ${addr}, data = ${data[0]}.`);
+    log.debug(`Write PPU, addr = ${addr}, data = ${data}.`);
     if (addr === 0x0006) {
       return this.writeVramAddr(addr, data);
     }
@@ -152,12 +201,13 @@ export default class Ppu {
   }
 
   writeVramData(data: Byte) {
-    this.writeVram(this.vramAddr, data)
+    this.writeVram(this.vramAddr - 0x2000, data)
     const offset = this.registors[0x00] & 0x04 ? 32 : 1;
     this.vramAddr += offset;
   }
 
   writeVram(addr: Word, data: Byte) {
-    this.vram.write(addr - 0x2000, data);
+    this.vram.write(addr, data);
   }
 }
+
