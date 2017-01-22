@@ -78,6 +78,7 @@ export default class Ppu {
   vram: RAM;
   bus: PpuBus;
   display: Array<Array<number>>;
+  ctx: ?CanvasRenderingContext2D;
 
   constructor(bus: PpuBus) {
     this.registors = new Uint8Array(0x08);
@@ -92,7 +93,7 @@ export default class Ppu {
     this.display = new Array(240).fill(0).map((): Array<number> => new Array(256).fill(0));
 
     // FIXME: split to renderer file
-    const canvas = document.getElementById('nes');
+    const canvas = ((document.getElementById('#nes'): any): HTMLCanvasElement);
     this.ctx = canvas.getContext('2d');
   }
 
@@ -148,10 +149,12 @@ export default class Ppu {
       for (let j = 0; j < 8; j++) {
         // FIXME: fix render timing
         //        this code is temporly code to debug...
-        this.ctx.fillStyle = `rgb(${85 * sprite[i][j]}, ${85 * sprite[i][j]}, ${85 * sprite[i][j]})`;
-        const x = (j + (tileNumber % 32) * 8);
-        const y = (i + ~~(tileNumber / 32) * 8);
-        this.ctx.fillRect(x, y, 1, 1);
+        if (this.ctx) {
+          this.ctx.fillStyle = `rgb(${85 * sprite[i][j]}, ${85 * sprite[i][j]}, ${85 * sprite[i][j]})`;
+          const x = (j + (tileNumber % 32) * 8);
+          const y = (i + ~~(tileNumber / 32) * 8);
+          this.ctx.fillRect(x, y, 1, 1);
+        }
       }
     }
   }
