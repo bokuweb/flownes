@@ -2,5 +2,10 @@
 
 import { NES } from './nes';
 
-const nes = new NES();
-nes.setup().then(() => nes.start());
+fetch('./static/roms/hello.nes')
+    .then((res) => res.arrayBuffer())
+    .then((nesFile: ArrayBuffer) => {
+        const nes = new NES();
+        nes.setup(nesFile);
+        nes.start();
+    });

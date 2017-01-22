@@ -8,7 +8,9 @@
     "lint": "eslint src",
     "flow": "flow",
     "watch": "watchify --extension=js -o dist/bundle.js src/index.js",
-    "test": "npm run lint && npm run flow && karma start",
+    "test": "npm run lint && npm run flow && karma start && npm run reg",
+    "reg": "reg-cli ./screenshot/actual ./screenshot/expected ./screenshot/diff -R ./docs/report.html",
+    "reg:update": "reg-cli ./screenshot/actual ./screenshot/expected ./screenshot/diff -R ./docs/report.html",
     "test:watch": "karma start --auto-watch --no-single-run"
   },
   "repository": {
@@ -45,6 +47,7 @@
     "karma-webpack": "^1.8.1",
     "mocha": "^3.2.0",
     "power-assert": "^1.4.2",
+    "reg-cli": "^0.1.2",
     "sinon": "^1.17.6",
     "watchify": "^3.8.0",
     "webpack": "2.1.0-beta.27",
