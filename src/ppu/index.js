@@ -85,7 +85,6 @@ export default class Ppu {
   vram: RAM;
   bus: PpuBus;
   display: Array<Array<number>>;
-  // ctx: ?CanvasRenderingContext2D;
   sprites: Array<Sprite>;
 
   constructor(bus: PpuBus) {
@@ -97,13 +96,7 @@ export default class Ppu {
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
     this.sprites = new Array(960);
-
     this.bus = bus;
-    // this.display = new Array(240).fill(0).map((): Array<number> => new Array(256).fill(0));
-
-    // FIXME: split to renderer file
-    // const canvas = ((document.getElementById('#nes'): any): HTMLCanvasElement);
-    // this.ctx = canvas.getContext('2d');
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
@@ -159,7 +152,6 @@ export default class Ppu {
   }
 
   read(addr: Word): Byte {
-    //log.debug(`Read PPU, addr = ${addr}.`);
     if (addr === 0x0007) {
       const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
       this.vramAddr += offset;

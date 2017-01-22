@@ -52,20 +52,16 @@ export class NES {
   | 0xC000-0xFFFF  |  program ROM HIGH          |                |
   */
 
-  setup() {
-    return fetch('./static/roms/hello.nes')
-      .then((res) => res.arrayBuffer())
-      .then((nes: ArrayBuffer) => {
-        const { charactorROM, programROM } = parse(nes);
-        this.ram = new Ram(2048);
-        this.charactorROM = new Rom(charactorROM);
-        this.programROM = new Rom(programROM);
-        this.ppuBus = new PpuBus(this.charactorROM);
-        this.ppu = new Ppu(this.ppuBus);
-        this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu);
-        this.cpu = new Cpu(this.cpuBus);
-        this.cpu.reset();
-      })
+  setup(nes: ArrayBuffer) {
+    const { charactorROM, programROM } = parse(nes);
+    this.ram = new Ram(2048);
+    this.charactorROM = new Rom(charactorROM);
+    this.programROM = new Rom(programROM);
+    this.ppuBus = new PpuBus(this.charactorROM);
+    this.ppu = new Ppu(this.ppuBus);
+    this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu);
+    this.cpu = new Cpu(this.cpuBus);
+    this.cpu.reset();
   }
 
   frame() {
