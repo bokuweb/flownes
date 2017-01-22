@@ -154,20 +154,6 @@ export default class Ppu {
     return sprite;
   }
 
-  // renderSprite(sprite: Sprite, tileNumber: number) {
-  //   if (!this.ctx) return;
-  //   for (let i = 0; i < 8; i++) {
-  //     for (let j = 0; j < 8; j++) {
-  //       // FIXME: fix render timing
-  //       //        this code is temporly code to debug...
-  //       this.ctx.fillStyle = `rgb(${85 * sprite[i][j]}, ${85 * sprite[i][j]}, ${85 * sprite[i][j]})`;
-  //       const x = (j + (tileNumber % 32) * 8);
-  //       const y = (i + ~~(tileNumber / 32) * 8);
-  //       this.ctx.fillRect(x, y, 1, 1);
-  //     }
-  //   }
-  // }
-
   readCharactorROM(addr: Word): Byte {
     return this.bus.readByPpu(addr);
   }
