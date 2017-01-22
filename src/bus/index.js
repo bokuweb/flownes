@@ -2,6 +2,7 @@
 
 import ROM from '../rom';
 import RAM from '../ram';
+import PPU from '../ppu';
 
 import type { Word, Byte } from '../types/common';
 
@@ -9,16 +10,18 @@ export default class Bus {
 
   ram: RAM;
   bus: Bus;
+  ppu: PPU;
   charactorROM: ROM;
   programROM: ROM;
 
-  constructor(ram: RAM, programROM: ROM, charactorROM: ROM) {
+  constructor(ram: RAM, programROM: ROM, charactorROM: ROM, ppu: PPU) {
     this.ram = ram;
     this.programROM = programROM;
     this.charactorROM = charactorROM;
+    this.ppu = ppu;
   }
 
-  cpuRead(addr: Word): Byte {
+  readByCpu(addr: Word): Byte {
     if (addr < 0x0800) {
       return this.ram.read(addr);
     } else if (addr < 0x2000) {
@@ -33,7 +36,7 @@ export default class Bus {
     }
   }
 
-  cpuWrite(addr: Word, data: Byte) {
+  writeByCpu(addr: Word, data: Byte) {
     // log.debug(`cpu:write addr = ${addr}`, data);
     if (addr < 0x0800) {
       // RAM
@@ -43,11 +46,11 @@ export default class Bus {
       this.ram.write(addr - 0x0800, data);
     } else if (addr < 0x2008) {
       // PPU
-      // this.ppu.write(addr - 0x2000, data);
+      this.ppu.write(addr - 0x2000, data);
     }
   }
 
-  ppuRead(addr: Word): Byte {
+  readByPpu(addr: Word): Byte {
     if (addr < 0x2000) {
       return this.charactorROM.read(addr);
     } else {

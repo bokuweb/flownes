@@ -33,14 +33,19 @@ export default class Bus {
     this.programROM = programROM;
   }
 
-  cpuRead(addr: Word): Byte {
+// for mock
+  set ROM(rom: ROM) {
+    this.programROM = rom;
+  }
+
+  readByCpu(addr: Word): Byte {
     if (addr >= 0x8000) {
       return this.programROM.read(addr - 0x8000);
     }
     return this.ram.read(addr);
   }
 
-  cpuWrite(addr: Word, data: Byte) {
+  writeByCpu(addr: Word, data: Byte) {
     this.ram.write(addr, data);
   }
 }
@@ -54,14 +59,15 @@ describe('cpu spec', () => {
 
     beforeEach(() => {
       mockedMemory = new RAM(0x10000);
+      bus = new Bus(mockedMemory);
+      cpu = new CPU(bus);
+      cpu.registors.PC = 0x8000;
     });
 
     describe('LDA', () => {
       it('LDA_IMM', () => {
         mockedROM = new ROM(new Uint8Array([op.LDA_IMM, 0xAA]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
@@ -75,9 +81,7 @@ describe('cpu spec', () => {
 
       it('LDA_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.LDA_ZERO, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xA5, 0xAA);
         const cycle = cpu.exec();
         const expected = {
@@ -92,9 +96,7 @@ describe('cpu spec', () => {
 
       it('LDA_ZEROX', () => {
         mockedROM = new ROM(new Uint8Array([op.LDA_ZEROX, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         mockedMemory.write(0xAA, 0xAA);
         const cycle = cpu.exec();
@@ -111,9 +113,7 @@ describe('cpu spec', () => {
 
       it('LDA_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.LDA_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0x10A5, 0xAA);
         const cycle = cpu.exec();
         const expected = {
@@ -128,9 +128,7 @@ describe('cpu spec', () => {
 
       it('LDA_ABSX', () => {
         mockedROM = new ROM(new Uint8Array([op.LDA_ABSX, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         mockedMemory.write(0x10AA, 0xAA);
         const cycle = cpu.exec();
@@ -147,9 +145,7 @@ describe('cpu spec', () => {
 
       it('LDA_ABSY', () => {
         mockedROM = new ROM(new Uint8Array([op.LDA_ABSY, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.Y = 0x05;
         mockedMemory.write(0x10AA, 0xAA);
         const cycle = cpu.exec();
@@ -166,9 +162,7 @@ describe('cpu spec', () => {
 
       it('LDA_INDX', () => {
         mockedROM = new ROM(new Uint8Array([op.LDA_INDX, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         mockedMemory.write(0xAA, 0xA0);
         mockedMemory.write(0xA0, 0xDE);
@@ -186,9 +180,7 @@ describe('cpu spec', () => {
 
       it('LDA_INDY', () => {
         mockedROM = new ROM(new Uint8Array([op.LDA_INDY, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.Y = 0x05;
         mockedMemory.write(0xA5, 0xA0);
         mockedMemory.write(0xA6, 0x10);
@@ -209,9 +201,7 @@ describe('cpu spec', () => {
     describe('LDX', () => {
       it('LDX_IMM', () => {
         mockedROM = new ROM(new Uint8Array([op.LDX_IMM, 0xAA]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
@@ -225,9 +215,7 @@ describe('cpu spec', () => {
 
       it('LDX_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.LDX_ZERO, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xA5, 0xAA);
         const cycle = cpu.exec();
         const expected = {
@@ -242,9 +230,7 @@ describe('cpu spec', () => {
 
       it('LDX_ZEROY', () => {
         mockedROM = new ROM(new Uint8Array([op.LDX_ZEROY, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.Y = 0x05;
         mockedMemory.write(0xAA, 0xAA);
         const cycle = cpu.exec();
@@ -261,9 +247,7 @@ describe('cpu spec', () => {
 
       it('LDX_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.LDX_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0x10A5, 0xAA);
         const cycle = cpu.exec();
         const expected = {
@@ -278,9 +262,7 @@ describe('cpu spec', () => {
 
       it('LDX_ABSY', () => {
         mockedROM = new ROM(new Uint8Array([op.LDX_ABSY, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.Y = 0x05;
         mockedMemory.write(0x10AA, 0xAA);
         const cycle = cpu.exec();
@@ -299,9 +281,7 @@ describe('cpu spec', () => {
     describe('LDY', () => {
       it('LDY_IMM', () => {
         mockedROM = new ROM(new Uint8Array([op.LDY_IMM, 0xAA]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
@@ -315,9 +295,7 @@ describe('cpu spec', () => {
 
       it('LDY_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.LDY_ZERO, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xA5, 0xAA);
         const cycle = cpu.exec();
         const expected = {
@@ -332,9 +310,7 @@ describe('cpu spec', () => {
 
       it('LDY_ZEROX', () => {
         mockedROM = new ROM(new Uint8Array([op.LDY_ZEROX, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         mockedMemory.write(0xAA, 0xAA);
         const cycle = cpu.exec();
@@ -351,9 +327,7 @@ describe('cpu spec', () => {
 
       it('LDY_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.LDY_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0x10A5, 0xAA);
         const cycle = cpu.exec();
         const expected = {
@@ -368,9 +342,7 @@ describe('cpu spec', () => {
 
       it('LDY_ABSX', () => {
         mockedROM = new ROM(new Uint8Array([op.LDY_ABSX, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         mockedMemory.write(0x10AA, 0xAA);
         const cycle = cpu.exec();
@@ -389,9 +361,7 @@ describe('cpu spec', () => {
     describe('STA', () => {
       it('STA_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_ZERO, 0xDE]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.A = 0xA5;
         const cycle = cpu.exec();
         const data = mockedMemory.read(0xDE);
@@ -401,9 +371,7 @@ describe('cpu spec', () => {
 
       it('STA_ZEROX', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_ZEROX, 0xA0]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         cpu.registors.A = 0xA5;
         const cycle = cpu.exec();
@@ -414,9 +382,7 @@ describe('cpu spec', () => {
 
       it('STA_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.A = 0xA5;
         const cycle = cpu.exec();
         const data = mockedMemory.read(0x10A5);
@@ -426,9 +392,7 @@ describe('cpu spec', () => {
 
       it('STA_ABSX without page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_ABSX, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         cpu.registors.A = 0xA5;
         const cycle = cpu.exec();
@@ -439,9 +403,7 @@ describe('cpu spec', () => {
 
       it('STA_ABSX with page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_ABSX, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x65;
         cpu.registors.A = 0xA5;
         const cycle = cpu.exec();
@@ -452,9 +414,7 @@ describe('cpu spec', () => {
 
       it('STA_ABSY without page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_ABSY, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.Y = 0x05;
         cpu.registors.A = 0xA5;
         const cycle = cpu.exec();
@@ -465,9 +425,7 @@ describe('cpu spec', () => {
 
       it('STA_ABSY with page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_ABSY, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.Y = 0x65;
         cpu.registors.A = 0xA5;
         const cycle = cpu.exec();
@@ -478,9 +436,7 @@ describe('cpu spec', () => {
 
       it('STA_INDX', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_INDX, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.A = 0xA5;
         cpu.registors.X = 0x05;
         mockedMemory.write(0xAA, 0xDE);
@@ -493,9 +449,7 @@ describe('cpu spec', () => {
 
       it('STA_INDY without page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_INDY, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.A = 0xA5;
         cpu.registors.Y = 0x05;
         mockedMemory.write(0xA5, 0xDE);
@@ -508,9 +462,7 @@ describe('cpu spec', () => {
 
       it('STA_INDY with page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.STA_INDY, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.A = 0xA5;
         cpu.registors.Y = 0x25;
         mockedMemory.write(0xA5, 0xDE);
@@ -525,9 +477,7 @@ describe('cpu spec', () => {
     describe('STX', () => {
       it('STX_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.STX_ZERO, 0xDE]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0xA5;
         const cycle = cpu.exec();
         const data = mockedMemory.read(0xDE);
@@ -537,9 +487,7 @@ describe('cpu spec', () => {
 
       it('STX_ZEROY', () => {
         mockedROM = new ROM(new Uint8Array([op.STX_ZEROY, 0xA0]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0xA5;
         cpu.registors.Y = 0x05;
         const cycle = cpu.exec();
@@ -550,9 +498,7 @@ describe('cpu spec', () => {
 
       it('STX_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.STX_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0xA5;
         const cycle = cpu.exec();
         const data = mockedMemory.read(0x10A5);
@@ -564,9 +510,7 @@ describe('cpu spec', () => {
     describe('STY', () => {
       it('STY_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.STY_ZERO, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.Y = 0xA5;
         const cycle = cpu.exec();
         const data = mockedMemory.read(0xA5);
@@ -576,9 +520,7 @@ describe('cpu spec', () => {
 
       it('STY_ZEROX', () => {
         mockedROM = new ROM(new Uint8Array([op.STY_ZEROX, 0xA0]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         cpu.registors.Y = 0xA5;
         const cycle = cpu.exec();
@@ -589,9 +531,7 @@ describe('cpu spec', () => {
 
       it('STY_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.STY_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.Y = 0xA5;
         const cycle = cpu.exec();
         const data = mockedMemory.read(0x10A5);
@@ -602,9 +542,7 @@ describe('cpu spec', () => {
 
     it('SEI', () => {
       mockedROM = new ROM(new Uint8Array([op.SEI]));
-      bus = new Bus(mockedMemory, mockedROM);
-      cpu = new CPU(bus);
-      cpu.registors.PC = 0x8000;
+      bus.ROM = mockedROM;
       const cycle = cpu.exec();
       const expected = {
         ...defaultRegistors,
@@ -617,9 +555,7 @@ describe('cpu spec', () => {
 
     it('CLI', () => {
       mockedROM = new ROM(new Uint8Array([op.CLI]));
-      bus = new Bus(mockedMemory, mockedROM);
-      cpu = new CPU(bus);
-      cpu.registors.PC = 0x8000;
+      bus.ROM = mockedROM;
       const cycle = cpu.exec();
       const expected = {
         ...defaultRegistors,
@@ -633,9 +569,7 @@ describe('cpu spec', () => {
     describe('LSR', () => {
       it('LSR', () => {
         mockedROM = new ROM(new Uint8Array([op.LSR]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.A = 0xa5;
         const cycle = cpu.exec();
         const expected = {
@@ -650,9 +584,7 @@ describe('cpu spec', () => {
 
       it('LSR_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.LSR_ZERO, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xA5, 0xEF);
         const cycle = cpu.exec();
         const expected = {
@@ -667,9 +599,7 @@ describe('cpu spec', () => {
 
       it('LSR_ZEROX', () => {
         mockedROM = new ROM(new Uint8Array([op.LSR_ZEROX, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xAA, 0xEF);
         cpu.registors.X = 0x05;
         const cycle = cpu.exec();
@@ -686,9 +616,7 @@ describe('cpu spec', () => {
 
       it('LSR_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.LSR_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0x10A5, 0xEF);
         const cycle = cpu.exec();
         const expected = {
@@ -703,9 +631,7 @@ describe('cpu spec', () => {
 
       it('LSR_ABSX without page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.LSR_ABSX, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         mockedMemory.write(0x10AA, 0xEF);
         const cycle = cpu.exec();
@@ -722,9 +648,7 @@ describe('cpu spec', () => {
 
       it('LSR_ABSX with page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.LSR_ABSX, 0x01, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0xFF;
         mockedMemory.write(0x1100, 0xEF);
         const cycle = cpu.exec();
@@ -743,9 +667,7 @@ describe('cpu spec', () => {
     describe('ASL', () => {
       it('ASL', () => {
         mockedROM = new ROM(new Uint8Array([op.ASL]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.A = 0xa5;
         const cycle = cpu.exec();
         const expected = {
@@ -760,9 +682,7 @@ describe('cpu spec', () => {
 
       it('ASL_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.ASL_ZERO, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xA5, 0xEF);
         const cycle = cpu.exec();
         const expected = {
@@ -777,9 +697,7 @@ describe('cpu spec', () => {
 
       it('ASL_ZEROX', () => {
         mockedROM = new ROM(new Uint8Array([op.ASL_ZEROX, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xAA, 0xEF);
         cpu.registors.X = 0x05;
         const cycle = cpu.exec();
@@ -796,9 +714,7 @@ describe('cpu spec', () => {
 
       it('ASL_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.ASL_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0x10A5, 0xEF);
         const cycle = cpu.exec();
         const expected = {
@@ -813,9 +729,7 @@ describe('cpu spec', () => {
 
       it('ASL_ABSX without page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.ASL_ABSX, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0x05;
         mockedMemory.write(0x10AA, 0xEF);
         const cycle = cpu.exec();
@@ -832,9 +746,7 @@ describe('cpu spec', () => {
 
       it('ASL_ABSX with page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.ASL_ABSX, 0x01, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.X = 0xFF;
         mockedMemory.write(0x1100, 0xEF);
         const cycle = cpu.exec();
@@ -853,9 +765,7 @@ describe('cpu spec', () => {
     describe('ROR', () => {
       it('ROR', () => {
         mockedROM = new ROM(new Uint8Array([op.ROR]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.A = 0xa5;
         cpu.registors.P.carry = true;
         const cycle = cpu.exec();
@@ -871,9 +781,7 @@ describe('cpu spec', () => {
 
       it('ROR_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.ROR_ZERO, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xA5, 0xEF);
         cpu.registors.P.carry = true;
         const cycle = cpu.exec();
@@ -889,9 +797,7 @@ describe('cpu spec', () => {
 
       it('ROR_ZEROX', () => {
         mockedROM = new ROM(new Uint8Array([op.ROR_ZEROX, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xAA, 0xEF);
         cpu.registors.P.carry = true;
         cpu.registors.X = 0x05;
@@ -909,9 +815,7 @@ describe('cpu spec', () => {
 
       it('ROR_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.ROR_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0x10A5, 0xEF);
         cpu.registors.P.carry = true;
         const cycle = cpu.exec();
@@ -927,9 +831,7 @@ describe('cpu spec', () => {
 
       it('ROR_ABSX without page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.ROR_ABSX, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.P.carry = true;
         cpu.registors.X = 0x05;
         mockedMemory.write(0x10AA, 0xEF);
@@ -947,9 +849,7 @@ describe('cpu spec', () => {
 
       it('ROR_ABSX with page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.ROR_ABSX, 0x01, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.P.carry = true;
         cpu.registors.X = 0xFF;
         mockedMemory.write(0x1100, 0xEF);
@@ -969,9 +869,7 @@ describe('cpu spec', () => {
     describe('ROL', () => {
       it('ROL', () => {
         mockedROM = new ROM(new Uint8Array([op.ROL]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.P.carry = true;
         cpu.registors.A = 0xa5;
         const cycle = cpu.exec();
@@ -987,9 +885,7 @@ describe('cpu spec', () => {
 
       it('ROL_ZERO', () => {
         mockedROM = new ROM(new Uint8Array([op.ROL_ZERO, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xA5, 0xEF);
         cpu.registors.P.carry = true;
         const cycle = cpu.exec();
@@ -1005,9 +901,7 @@ describe('cpu spec', () => {
 
       it('ROL_ZEROX', () => {
         mockedROM = new ROM(new Uint8Array([op.ROL_ZEROX, 0xA5]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0xAA, 0xEF);
         cpu.registors.P.carry = true;
         cpu.registors.X = 0x05;
@@ -1025,9 +919,7 @@ describe('cpu spec', () => {
 
       it('ROL_ABS', () => {
         mockedROM = new ROM(new Uint8Array([op.ROL_ABS, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         mockedMemory.write(0x10A5, 0xEF);
         cpu.registors.P.carry = true;
         const cycle = cpu.exec();
@@ -1043,9 +935,7 @@ describe('cpu spec', () => {
 
       it('ROL_ABSX without page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.ROL_ABSX, 0xA5, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.P.carry = true;
         cpu.registors.X = 0x05;
         mockedMemory.write(0x10AA, 0xEF);
@@ -1063,9 +953,7 @@ describe('cpu spec', () => {
 
       it('ROL_ABSX with page cross', () => {
         mockedROM = new ROM(new Uint8Array([op.ROL_ABSX, 0x01, 0x10]));
-        bus = new Bus(mockedMemory, mockedROM);
-        cpu = new CPU(bus);
-        cpu.registors.PC = 0x8000;
+        bus.ROM = mockedROM;
         cpu.registors.P.carry = true;
         cpu.registors.X = 0xFF;
         mockedMemory.write(0x1100, 0xEF);

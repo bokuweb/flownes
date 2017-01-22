@@ -51,11 +51,11 @@ export class NES {
       .then((res) => res.arrayBuffer())
       .then((nes: ArrayBuffer) => {
         const { charactorROM, programROM } = parse(nes);
-        this.ppu = new PPU(this.bus);
         this.ram = new RAM(2048);
         this.charactorROM = new ROM(charactorROM);
         this.programROM = new ROM(programROM);
-        this.bus = new Bus(this.ram, this.programROM, this.charactorROM);
+        this.ppu = new PPU(this.charactorROM);
+        this.bus = new Bus(this.ram, this.programROM, this.charactorROM, this.ppu);
         this.cpu = new CPU(this.bus);
         this.cpu.reset();
       })
