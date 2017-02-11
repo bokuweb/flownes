@@ -1,5 +1,6 @@
 /* @flow */
 
+import type { Byte } from '../types/common';
 import type { Sprite, SpriteWithAttribute, Background, Pallete } from '../ppu';
 import { colors } from './colors';
 // import { imageData2Css } from './image-data2css';
@@ -33,17 +34,17 @@ export default class CanvasRenderer {
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderSprites(sprites: Array<SpriteWithAttribute>) {
+  renderSprites(sprites: Array<SpriteWithAttribute>, pallete: Pallete) {
     if (!this.ctx) return;
     for (const sprite of sprites) {
       if (sprite) {
-        this.renderSprite(sprite.sprite, sprite.x, sprite.y);
+        this.renderSprite(sprite.sprite, sprite.x, sprite.y, sprite.attr, pallete);
       }
     }
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderTile(sprite: Sprite, x: number, y: number, pallete: Pallete, palleteId: number) {
+  renderTile(sprite: Sprite, x: number, y: number, pallete: Pallete, palleteId: Byte) {
     if (!this.ctx) return;
     const { data } = this.image;
     for (let i = 0; i < 8; i++) {
@@ -57,19 +58,22 @@ export default class CanvasRenderer {
         data[index + 3] = 0xFF;
       }
     }
-  }  
+  }
 
-  renderSprite(sprite: Sprite, x: number, y: number) {
+  renderSprite(sprite: Sprite, x: number, y: number, attr: Byte, pallete: Pallete) {
     if (!this.ctx) return;
     const { data } = this.image;
+    const palleteId = attr & 0x03;
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
-        const color = sprite[i][j] * 85;
+        if (!sprite[i][j]) continue;
+        const colorId = pallete[palleteId * 4 + sprite[i][j] + 0x10];
+        const color = colors[colorId];
         const index = ((x + j) + (y + i) * 256) * 4;
-        data[index] = color;
-        data[index + 1] = color;
-        data[index + 2] = color;
-        data[index + 3] = 0xFF;
+        data[index] = color[0];
+        data[index + 1] = color[1];
+        data[index + 2] = color[2];
+        data[index + 3] = sprite[i][j] ? 0xFF : 0;
       }
     }
   }
