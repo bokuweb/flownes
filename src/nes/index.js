@@ -46,14 +46,14 @@ export class NES {
 
   setup(nes: ArrayBuffer) {
     const { charactorROM, programROM } = parse(nes);
+    this.keypad = new Keypad();
     this.ram = new Ram(2048);
     this.charactorROM = new Rom(charactorROM);
     this.programROM = new Rom(programROM);
     this.ppuBus = new PpuBus(this.charactorROM);
     this.ppu = new Ppu(this.ppuBus);
-    this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu);
+    this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu, this.keypad);
     this.cpu = new Cpu(this.cpuBus);
-    this.keypad = new Keypad();
     this.cpu.reset();
   }
 
