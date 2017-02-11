@@ -7,6 +7,7 @@ import Rom from '../rom';
 import Ram from '../ram';
 import CpuBus from '../bus/cpu-bus';
 import PpuBus from '../bus/ppu-bus';
+import Keypad from '../keypad';
 import CanvasRenderer from '../renderer/canvas';
 // import log from '../helper/log';
 
@@ -52,6 +53,7 @@ export class NES {
     this.ppu = new Ppu(this.ppuBus);
     this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu);
     this.cpu = new Cpu(this.cpuBus);
+    this.keypad = new Keypad();
     this.cpu.reset();
   }
 
