@@ -588,14 +588,13 @@ export default class Cpu {
 
   exec(): number {
     const { PC, SP, A, X, Y, P } = this.registors;
-    if (SP < 0) debugger;
-    log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
-    log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
+    // log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
+    // log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
     const opecode = this.fetch(this.registors.PC);
     const { baseName, mode, cycle } = this.opecodeList[opecode];
     const { fullName} = this.opecodeList[opecode];
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
-    log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
+    // log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
     this.execInstruction(baseName, addrOrData, mode);
     return cycle + additionalCycle + (this.hasBranched ? 1 : 0);
   }

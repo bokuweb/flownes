@@ -25,6 +25,7 @@ Start:
 
 	ldx #$00
 
+    # set background pallet
 	lda #$3F
 	sta $2006
 	lda #$00

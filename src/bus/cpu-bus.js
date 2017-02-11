@@ -26,6 +26,9 @@ export default class CpuBus {
     } else if (addr < 0x2000) {
       // mirror
       return this.ram.read(addr - 0x0800);
+    } else if (addr < 0x4000) {
+      // mirror
+      return this.ppu.read((addr - 0x2000) % 8);
     } else if (addr >= 0x8000) {
       // ROM
       return this.programROM.read(addr - 0x8000);

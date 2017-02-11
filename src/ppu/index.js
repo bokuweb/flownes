@@ -12,17 +12,40 @@ import log from '../helper/log';
 //   scrollOffset: Byte;
 //   memoryAddr: Byte;
 //   memoryData: Byte;
+//   status: Byte;
 // }
+
+const SPRITES_NUMBER = 0x100;
 
 export type Sprite = Array<Array<number>>;
 
-export type SpritesWithStatus = {
+export type Pallete = Array<Byte>;
+
+export type SpriteType = 'background' | 'sprite'
+
+export interface SpriteWithAttribute {
+  sprite: Sprite;
+  x: Byte;
+  y: Byte;
+  attr: Byte; // TODO
+}
+
+export interface Background {
+  sprite: Sprite;
+  palleteId: Byte;
+}
+
+export interface RenderingData {
   isReady: boolean;
-  sprites: Array<Sprite>;
+  pallete: Pallete;
+  background: Array<Background>;
+  sprites: Array<SpriteWithAttribute>
 }
 
 export default class Ppu {
 
+  // PPU power up state
+  // see. https://wiki.nesdev.com/w/index.php/PPU_power_up_state
   //
   // Memory map
   /*
@@ -47,7 +70,7 @@ export default class Ppu {
   /*
     Control Registor1 0x2000
 
-  | bit  | descripti   on                              |
+  | bit  | description                                 |
   +------+---------------------------------------------+
   |  7   | Assert NMI when VBlank 0: disable, 1:enable |
   |  6   | PPU master/slave, always 1                  |
@@ -64,7 +87,7 @@ export default class Ppu {
   /*
     Control Registor2 0x2001
 
-  | bit  | descripti   on                              |
+  | bit  | description                                 |
   +------+---------------------------------------------+
   |  7-5 | Background color  0x00: Black               |
   |      |                   0x01: Geen                |
@@ -81,11 +104,14 @@ export default class Ppu {
   line: number;
   isValidVramAddr: boolean;
   isLowerVramAddr: boolean;
+  spriteRamAddr: Byte;
   vramAddr: Word;
   vram: RAM;
+  spriteRam: RAM;
   bus: PpuBus;
   display: Array<Array<number>>;
-  sprites: Array<Sprite>;
+  background: Array<Background>;
+  sprites: Array<SpriteWithAttribute>;
 
   constructor(bus: PpuBus) {
     this.registors = new Uint8Array(0x08);
@@ -95,50 +121,93 @@ export default class Ppu {
     this.isLowerVramAddr = false;
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
-    this.sprites = new Array(960);
+    this.spriteRam = new RAM(0x100);
+    this.background = [];
+    this.sprites = new Array(SPRITES_NUMBER);
     this.bus = bus;
+  }
+
+  get pallete(): Pallete {
+    const pallete = [];
+    for (let i = 0; i < 0x20; i++) {
+      pallete.push(this.vram.read(0x1F00 + i));
+    }
+    return pallete;
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec(cycle: number): SpritesWithStatus {
+  exec(cycle: number): RenderingData {
     this.cycle += cycle;
     // const isScreenEnable = !!(this.registors[0x01] & 0x08);
     // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
-    if (this.line === 0) this.sprites.length = 0;
+    if (this.line === 0) this.background.length = 0;
     if (this.cycle >= 341) {
       this.cycle -= 341;
       this.line++;
-      if (!(this.line % 8)) {
-        const tileY = ~~(this.line / 8);
-        // sprites of a line.
-        for (let i = 0; i < 32; i++) {
-          const tileNumber = tileY * 32 + i;
-          const spriteId = this.vram.read(tileNumber);
-          const sprite = this.buildSprite(spriteId);
-          this.sprites.push(sprite);
+      if (this.line < 240) {
+        if (!(this.line % 8)) {
+          const tileY = ~~(this.line / 8);
+          // background of a line.
+          for (let x = 0; x < 32; x++) {
+            const tileNumber = tileY * 32 + x;
+            const spriteId = this.vram.read(tileNumber);
+            // TODO: Fix offset
+            const blockId = ((x / 2) + (tileY / 2));
+            const attrAddr = ~~(blockId / 4);
+            const attr = this.vram.read(attrAddr + 0x03C0);
+            const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
+            const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
+            const sprite = this.buildSprite(spriteId, offset);
+            this.background.push({
+              sprite, palleteId,
+            });
+          }
         }
       }
       if (this.line === 240) {
+        // build sprite
+        for (let i = 0; i < SPRITES_NUMBER; i += 4) {
+          const y = this.spriteRam.read(i);
+          const spriteId = this.spriteRam.read(i + 1);
+          const attr = this.spriteRam.read(i + 2);
+          const x = this.spriteRam.read(i + 3);
+          const offset = (this.registors[0] & 0x08) ? 0x1000 : 0x0000;
+          const sprite = this.buildSprite(spriteId, offset);
+          this.sprites[i / 4] = {
+            sprite, x, y, attr,
+          }
+        }
+        this.registors[0x02] |= 0x80;
+      }
+
+      if (this.line === 261) {
+        this.registors[0x02] &= 0x7F;
         this.line = 0;
         return {
           isReady: true,
+          background: this.background,
           sprites: this.sprites,
+          pallete: this.pallete,
         };
       }
     }
     return {
-      isReady: false, sprites: [],
+      isReady: false,
+      sprites: [],
+      background: [],
+      pallete: [],
     };
   }
 
-  buildSprite(spriteId: number): Sprite {
+  buildSprite(spriteId: number, offset: Word): Sprite {
     const sprite = new Array(8).fill(0).map((): Array<number> => new Array(8).fill(0));
     for (let i = 0; i < 16; i++) {
       for (let j = 0; j < 8; j++) {
-        const rom = this.readCharactorROM(spriteId * 16 + i);
+        const addr = spriteId * 16 + i + offset;
+        const rom = this.readCharactorROM(addr);
         if (rom & (0x80 >> j)) {
           sprite[i % 8][j] += 0x01 << (i / 8);
         }
@@ -152,6 +221,21 @@ export default class Ppu {
   }
 
   read(addr: Word): Byte {
+    /*
+    | bit  | description                                 |
+    +------+---------------------------------------------+
+    | 7    | 1: VBlank clear by reading this registor    |
+    | 6    | 1: sprite hit                               |
+    | 5    | 0: less than 8, 1: 9 or more                |
+    | 4-0  | invalid                                     |                                 
+    |      | bit4 VRAM write flag [0: success, 1: fail]  |
+    */
+    if (addr === 0x0002) {
+      // TODO: Reset clear 0x2005 order
+      const data = this.registors[0x02];
+      this.registors[0x02] = this.registors[0x02] & 0x7F;
+      return data;
+    }
     if (addr === 0x0007) {
       const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
       this.vramAddr += offset;
@@ -161,16 +245,32 @@ export default class Ppu {
   }
 
   write(addr: Word, data: Byte): void {
-    log.debug(`Write PPU, addr = ${addr}, data = ${data}.`);
+    log.debug(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
+    if (addr === 0x0003) {
+      return this.writeSpriteRamAddr(data);
+    }
+    if (addr === 0x0004) {
+      return this.writeSpriteRamData(data);
+    }
     if (addr === 0x0006) {
-      return this.writeVramAddr(addr, data);
+      return this.writeVramAddr(data);
     }
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
+    this.registors[addr] = data;
   }
 
-  writeVramAddr(addr: Word, data: Byte) {
+  writeSpriteRamAddr(data: Byte) {
+    this.spriteRamAddr = data;
+  }
+
+  writeSpriteRamData(data: Byte) {
+    this.spriteRam.write(this.spriteRamAddr, data)
+    this.spriteRamAddr += 1;
+  }
+
+  writeVramAddr(data: Byte) {
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;

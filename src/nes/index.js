@@ -68,9 +68,10 @@ export class NES {
     console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
       const cycle = this.cpu.exec() * 3;
-      const { isReady, sprites } = this.ppu.exec(cycle);
+      const { isReady, background, sprites, pallete } = this.ppu.exec(cycle);
       if (isReady) {
-        this.canvasRenderer.renderSprites(sprites);
+        this.canvasRenderer.renderBackground(background, pallete);
+        this.canvasRenderer.renderSprites(sprites, pallete);
         break;
       }
     }

@@ -1,11 +1,21 @@
 <html>
-  <head>
-    <title>Sample App</title>
-    <style>
-    </style>
-  </head>
-  <body>
-    <canvas id="nes" width="400" height="300"></canvas>
-    <script src="/dist/bundle.js"></script>
-  </body>
+
+<head>
+  <title>Sample App</title>
+  <style>
+    #nes-div {
+      width: 1px;
+      height: 1px;
+      z-index: 1;
+      transform: translateZ(1px);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="nes-div"></div>
+  <canvas id="nes" width="256" height="240"></canvas>
+  <script src="/dist/bundle.js"></script>
+</body>
+
 </html>
