@@ -66,14 +66,15 @@ export default class CanvasRenderer {
     const palleteId = attr & 0x03;
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
-        if (!sprite[i][j]) continue;
-        const colorId = pallete[palleteId * 4 + sprite[i][j] + 0x10];
-        const color = colors[colorId];
-        const index = ((x + j) + (y + i) * 256) * 4;
-        data[index] = color[0];
-        data[index + 1] = color[1];
-        data[index + 2] = color[2];
-        data[index + 3] = sprite[i][j] ? 0xFF : 0;
+        if (sprite[i][j]) {
+          const colorId = pallete[palleteId * 4 + sprite[i][j] + 0x10];
+          const color = colors[colorId];
+          const index = ((x + j) + (y + i) * 256) * 4;
+          data[index] = color[0];
+          data[index + 1] = color[1];
+          data[index + 2] = color[2];
+          data[index + 3] = 0xFF;
+        }
       }
     }
   }

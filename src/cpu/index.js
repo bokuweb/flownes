@@ -115,8 +115,8 @@ export default class Cpu {
       }
       case 'zeroPage': {
         return {
-         addrOrData: this.fetch(this.registors.PC),
-         additionalCycle: 0,
+          addrOrData: this.fetch(this.registors.PC),
+          additionalCycle: 0,
         }
       }
       case 'zeroPageX': {
@@ -129,8 +129,8 @@ export default class Cpu {
       case 'zeroPageY': {
         const addr = this.fetch(this.registors.PC);
         return {
-         addrOrData: (addr + this.registors.Y & 0xFF),
-         additionalCycle: 0,
+          addrOrData: (addr + this.registors.Y & 0xFF),
+          additionalCycle: 0,
         }
       }
       case 'absolute': {
@@ -587,14 +587,16 @@ export default class Cpu {
   }
 
   exec(): number {
-    const { PC, SP, A, X, Y, P } = this.registors;
-    // log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
-    // log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
+    // const { PC, SP, A, X, Y, P } = this.registors;
     const opecode = this.fetch(this.registors.PC);
     const { baseName, mode, cycle } = this.opecodeList[opecode];
-    const { fullName} = this.opecodeList[opecode];
+    // const { fullName} = this.opecodeList[opecode];
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
-    // log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
+    // if (window.debug) {
+    //   log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
+    //   log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
+    //   log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
+    // }
     this.execInstruction(baseName, addrOrData, mode);
     return cycle + additionalCycle + (this.hasBranched ? 1 : 0);
   }

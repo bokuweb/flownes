@@ -112,6 +112,7 @@ export default class Ppu {
   display: Array<Array<number>>;
   background: Array<Background>;
   sprites: Array<SpriteWithAttribute>;
+  pallete: Pallete;
 
   constructor(bus: PpuBus) {
     this.registors = new Uint8Array(0x08);
@@ -123,16 +124,17 @@ export default class Ppu {
     this.vram = new RAM(0x2000);
     this.spriteRam = new RAM(0x100);
     this.background = [];
-    this.sprites = new Array(SPRITES_NUMBER);
+    this.sprites = [];
     this.bus = bus;
+    this.pallete = [];
   }
 
-  get pallete(): Pallete {
-    const pallete = [];
+  getPallete(): Pallete {
+    this.pallete = [];
     for (let i = 0; i < 0x20; i++) {
-      pallete.push(this.vram.read(0x1F00 + i));
+      this.pallete.push(this.vram.read(0x1F00 + i));
     }
-    return pallete;
+    return this.pallete;
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
@@ -143,7 +145,7 @@ export default class Ppu {
     this.cycle += cycle;
     // const isScreenEnable = !!(this.registors[0x01] & 0x08);
     // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
-    if (this.line === 0) this.background.length = 0;
+    if (this.line === 0) this.background = [];
     if (this.cycle >= 341) {
       this.cycle -= 341;
       this.line++;
@@ -190,7 +192,7 @@ export default class Ppu {
           isReady: true,
           background: this.background,
           sprites: this.sprites,
-          pallete: this.pallete,
+          pallete: this.getPallete(),
         };
       }
     }
