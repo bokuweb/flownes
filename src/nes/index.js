@@ -7,6 +7,7 @@ import Rom from '../rom';
 import Ram from '../ram';
 import CpuBus from '../bus/cpu-bus';
 import PpuBus from '../bus/ppu-bus';
+import Keypad from '../keypad';
 import CanvasRenderer from '../renderer/canvas';
 // import log from '../helper/log';
 
@@ -45,12 +46,13 @@ export class NES {
 
   setup(nes: ArrayBuffer) {
     const { charactorROM, programROM } = parse(nes);
+    this.keypad = new Keypad();
     this.ram = new Ram(2048);
     this.charactorROM = new Rom(charactorROM);
     this.programROM = new Rom(programROM);
     this.ppuBus = new PpuBus(this.charactorROM);
     this.ppu = new Ppu(this.ppuBus);
-    this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu);
+    this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu, this.keypad);
     this.cpu = new Cpu(this.cpuBus);
     this.cpu.reset();
   }
