@@ -10,8 +10,6 @@ import PpuBus from '../bus/ppu-bus';
 import CanvasRenderer from '../renderer/canvas';
 // import log from '../helper/log';
 
-import type { Word } from '../types/common';
-
 export class NES {
   cpu: Cpu;
   ppu: Ppu;
@@ -29,13 +27,6 @@ export class NES {
     this.canvasRenderer = new CanvasRenderer('nes');
   }
 
-  ppuRead(addr: Word) {
-    if (addr < 0x2000) {
-      return this.charactorROM.read(addr);
-    }
-    // log.debug(`ppu:read addr = ${addr}`, `size = ${size}`, data);
-    // this.emitter.emit('ppu:read-response', data);
-  }
   //
   // Memory map
   /*
@@ -68,9 +59,10 @@ export class NES {
     console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
       const cycle = this.cpu.exec() * 3;
-      const { isReady, sprites } = this.ppu.exec(cycle);
+      const { isReady, background, sprites, pallete } = this.ppu.exec(cycle);
       if (isReady) {
-        this.canvasRenderer.renderSprites(sprites);
+        this.canvasRenderer.renderBackground(background, pallete);
+        this.canvasRenderer.renderSprites(sprites, pallete);
         break;
       }
     }
