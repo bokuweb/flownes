@@ -29,14 +29,6 @@ export class NES {
     this.canvasRenderer = new CanvasRenderer('nes');
   }
 
-  ppuRead(addr: Word): Byte {
-    if (addr < 0x2000) {
-      return this.charactorROM.read(addr);
-    }
-    // log.debug(`ppu:read addr = ${addr}`, `size = ${size}`, data);
-    // this.emitter.emit('ppu:read-response', data);
-    return 0;
-  }
   //
   // Memory map
   /*
