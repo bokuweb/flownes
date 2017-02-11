@@ -10,8 +10,6 @@ import PpuBus from '../bus/ppu-bus';
 import CanvasRenderer from '../renderer/canvas';
 // import log from '../helper/log';
 
-import type { Word, Byte } from '../types/common';
-
 export class NES {
   cpu: Cpu;
   ppu: Ppu;
