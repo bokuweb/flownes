@@ -186,7 +186,9 @@ export default class Ppu {
           }
         }
         this.registors[0x02] |= 0x80;
-        this.interrupts.assertNmi();
+        if (this.registors[0] & 0x80) {
+          this.interrupts.assertNmi();
+        }
       }
 
       if (this.line === 261) {

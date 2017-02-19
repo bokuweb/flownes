@@ -56,11 +56,14 @@ describe('cpu spec', () => {
     let bus;
     let mockedROM;
     let mockedMemory;
+    let mockedIntterrupts = {
+      isNmiAssert: () => false,
+    };
 
     beforeEach(() => {
       mockedMemory = new RAM(0x10000);
       bus = new Bus(mockedMemory);
-      cpu = new CPU(bus);
+      cpu = new CPU(bus, mockedIntterrupts);
       cpu.registors.PC = 0x8000;
     });
 
