@@ -589,20 +589,18 @@ export default class Cpu {
     }
   }
 
+  processNmi() {
+    this.interrupts.deassertNmi();
+    this.registors.P.break = false;
+    this.push((this.registors.PC >> 8) & 0xFF);
+    this.push(this.registors.PC & 0xFF);
+    this.pushStatus();
+    this.registors.P.interrupt = true;
+    this.registors.PC = this.read(0xFFFA, "Word");
+  }
+
   exec(): number {
-    if (this.interrupts.isNmiAssert) {
-      console.log('nmi!!')
-      this.interrupts.deassertNmi();
-      this.registors.P.break = false;
-      this.push((this.registors.PC >> 8) & 0xFF);
-      this.push(this.registors.PC & 0xFF);
-      this.pushStatus();
-      this.registors.P.interrupt = true;
-      console.log(this.read(0xFFFA))
-      this.registors.PC = this.read(0xFFFA, "Word");
-      console.log(this.registors.PC)
-      //}
-    }
+    if (this.interrupts.isNmiAssert) this.processNmi();
     const opecode = this.fetch(this.registors.PC);
     const { baseName, mode, cycle } = this.opecodeList[opecode];
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
