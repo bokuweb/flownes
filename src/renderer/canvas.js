@@ -47,7 +47,6 @@ export default class CanvasRenderer {
 
   renderTile(sprite: Sprite, x: number, y: number, pallete: Pallete, palleteId: Byte) {
     if (!this.ctx) return;
-    if (x === 0 && y === 0) debugger;
     const { data } = this.image;
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
