@@ -3,6 +3,7 @@
 import type { Byte, Word } from '../types/common';
 import log from '../helper/log';
 import CpuBus from '../bus/cpu-bus';
+import Interrupts from '../interrupts';
 import * as op from './opcode';
 
 import type { AddressingMode, OpecodeProps } from './opcode';
@@ -56,8 +57,9 @@ export default class Cpu {
   hasBranched: boolean;
   bus: CpuBus;
   opecodeList: Array<OpecodeProps>;
+  interrupts: Interrupts;
 
-  constructor(bus: CpuBus) {
+  constructor(bus: CpuBus, interrupts: Interrupts) {
     this.registors = {
       ...defaultRegistors,
       P: { ...defaultRegistors.P }
@@ -65,13 +67,14 @@ export default class Cpu {
     this.hasBranched = false;
     this.bus = bus;
     this.opecodeList = []
+    this.interrupts = interrupts;
 
     Object.keys(op.dict).forEach((key: string) => {
       const { fullName, baseName, mode, cycle } = op.dict[key];
       this.opecodeList[parseInt(key, 16)] = {
         fullName, baseName, mode, cycle,
       }
-    })
+    });
   }
 
   reset() {
@@ -586,13 +589,24 @@ export default class Cpu {
     }
   }
 
+  processNmi() {
+    this.interrupts.deassertNmi();
+    this.registors.P.break = false;
+    this.push((this.registors.PC >> 8) & 0xFF);
+    this.push(this.registors.PC & 0xFF);
+    this.pushStatus();
+    this.registors.P.interrupt = true;
+    this.registors.PC = this.read(0xFFFA, "Word");
+  }
+
   exec(): number {
-    // const { PC, SP, A, X, Y, P } = this.registors;
+    if (this.interrupts.isNmiAssert) this.processNmi();
     const opecode = this.fetch(this.registors.PC);
     const { baseName, mode, cycle } = this.opecodeList[opecode];
-    // const { fullName} = this.opecodeList[opecode];
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
     // if (window.debug) {
+    //   const { PC, SP, A, X, Y, P } = this.registors;
+    //   const { fullName} = this.opecodeList[opecode];
     //   log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
     //   log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
     //   log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);

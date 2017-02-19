@@ -4,7 +4,8 @@ import type { Byte, Word } from '../types/common';
 
 import RAM from '../ram';
 import PpuBus from '../bus/ppu-bus';
-import log from '../helper/log';
+import Interrupts from '../interrupts';
+// import log from '../helper/log';
 
 // interface Registriors {
 //   spriteMemoryAddr: Byte;
@@ -113,8 +114,9 @@ export default class Ppu {
   background: Array<Background>;
   sprites: Array<SpriteWithAttribute>;
   pallete: Pallete;
+  interrupts: Interrupts;
 
-  constructor(bus: PpuBus) {
+  constructor(bus: PpuBus, interrupts: Interrupts) {
     this.registors = new Uint8Array(0x08);
     this.cycle = 0;
     this.line = 0;
@@ -127,6 +129,7 @@ export default class Ppu {
     this.sprites = [];
     this.bus = bus;
     this.pallete = [];
+    this.interrupts = interrupts;
   }
 
   getPallete(): Pallete {
@@ -183,11 +186,15 @@ export default class Ppu {
           }
         }
         this.registors[0x02] |= 0x80;
+        if (this.registors[0] & 0x80) {
+          this.interrupts.assertNmi();
+        }
       }
 
       if (this.line === 261) {
         this.registors[0x02] &= 0x7F;
         this.line = 0;
+        this.interrupts.deassertNmi();
         return {
           isReady: true,
           background: this.background,
@@ -247,7 +254,7 @@ export default class Ppu {
   }
 
   write(addr: Word, data: Byte): void {
-    log.debug(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
+    // log.debug(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
     if (addr === 0x0003) {
       return this.writeSpriteRamAddr(data);
     }
@@ -268,7 +275,7 @@ export default class Ppu {
   }
 
   writeSpriteRamData(data: Byte) {
-    this.spriteRam.write(this.spriteRamAddr, data)
+    this.spriteRam.write(this.spriteRamAddr, data);
     this.spriteRamAddr += 1;
   }
 
@@ -285,13 +292,17 @@ export default class Ppu {
   }
 
   writeVramData(data: Byte) {
-    this.writeVram(this.vramAddr - 0x2000, data)
+    this.writeVram(this.vramAddr - 0x2000, data);
     const offset = this.registors[0x00] & 0x04 ? 32 : 1;
     this.vramAddr += offset;
   }
 
   writeVram(addr: Word, data: Byte) {
     this.vram.write(addr, data);
+  }
+
+  transferSprite(addr: Byte, data: Byte) {
+    this.spriteRam.write(addr, data);
   }
 }
 
