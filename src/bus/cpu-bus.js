@@ -38,6 +38,12 @@ export default class CpuBus {
     } else if (addr === 0x4016) {
       // TODO Add 2P
       return this.keypad.read();
+    } else if (addr >= 0xC000) {
+      // Mirror, if prom block number equals 1
+      if (this.programROM.size < 0x8000) {
+        return this.programROM.read(addr - 0xC000);
+      }
+      return this.programROM.read(addr - 0x8000);
     } else if (addr >= 0x8000) {
       // ROM
       return this.programROM.read(addr - 0x8000);

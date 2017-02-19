@@ -3,6 +3,7 @@
 import type { Byte, Word } from '../types/common';
 import log from '../helper/log';
 import CpuBus from '../bus/cpu-bus';
+import Interrupts from '../interrupts';
 import * as op from './opcode';
 
 import type { AddressingMode, OpecodeProps } from './opcode';
@@ -56,8 +57,9 @@ export default class Cpu {
   hasBranched: boolean;
   bus: CpuBus;
   opecodeList: Array<OpecodeProps>;
+  interrupts: Interrupts;
 
-  constructor(bus: CpuBus) {
+  constructor(bus: CpuBus, interrupts: Interrupts) {
     this.registors = {
       ...defaultRegistors,
       P: { ...defaultRegistors.P }
@@ -65,6 +67,7 @@ export default class Cpu {
     this.hasBranched = false;
     this.bus = bus;
     this.opecodeList = []
+    this.interrupts = interrupts;
 
     Object.keys(op.dict).forEach((key: string) => {
       const { fullName, baseName, mode, cycle } = op.dict[key];
@@ -587,6 +590,19 @@ export default class Cpu {
   }
 
   exec(): number {
+    if (this.interrupts.isNmiAssert) {
+      console.log('nmi!!')
+      this.interrupts.deassertNmi();
+      this.registors.P.break = false;
+      this.push((this.registors.PC >> 8) & 0xFF);
+      this.push(this.registors.PC & 0xFF);
+      this.pushStatus();
+      this.registors.P.interrupt = true;
+      console.log(this.read(0xFFFA))
+      this.registors.PC = this.read(0xFFFA, "Word");
+      console.log(this.registors.PC)
+      //}
+    }
     const opecode = this.fetch(this.registors.PC);
     const { baseName, mode, cycle } = this.opecodeList[opecode];
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);

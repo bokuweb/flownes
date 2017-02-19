@@ -10,6 +10,7 @@ import CpuBus from '../bus/cpu-bus';
 import PpuBus from '../bus/ppu-bus';
 import Keypad from '../keypad';
 import CanvasRenderer from '../renderer/canvas';
+import Interrupts from '../interrupts';
 // import log from '../helper/log';
 
 export class NES {
@@ -23,6 +24,7 @@ export class NES {
   canvasRenderer: CanvasRenderer;
   keypad: Keypad;
   dma: Dma;
+  interrupts: Interrupts;
 
   frame: () => void;
 
@@ -54,7 +56,8 @@ export class NES {
     this.charactorROM = new Rom(charactorROM);
     this.programROM = new Rom(programROM);
     this.ppuBus = new PpuBus(this.charactorROM);
-    this.ppu = new Ppu(this.ppuBus);
+    this.interrupts = new Interrupts();
+    this.ppu = new Ppu(this.ppuBus, this.interrupts);
     this.dma = new Dma(this.ram, this.ppu);
     this.cpuBus = new CpuBus(
       this.ram,
@@ -64,14 +67,14 @@ export class NES {
       this.keypad,
       this.dma,
     );
-    this.cpu = new Cpu(this.cpuBus);
+    this.cpu = new Cpu(this.cpuBus, this.interrupts);
     this.cpu.reset();
   }
 
   frame() {
     console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
-      let cycle = 0;
+      let cycle: number;
       if (this.dma.isDmaProcessing) {
         this.dma.execDma();
         cycle = 514 * 3;
