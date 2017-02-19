@@ -15,6 +15,7 @@ export default class CanvasRenderer {
     this.ctx = canvas.getContext('2d');
     if (this.ctx) {
       this.image = this.ctx.createImageData(256, 240);
+      // this.ctx.scale(2, 2);
     }
     // this.div = ((document.getElementById('nes-div'): any): HTMLElement);
   }
@@ -63,13 +64,15 @@ export default class CanvasRenderer {
   renderSprite(sprite: Sprite, x: number, y: number, attr: Byte, pallete: Pallete) {
     if (!this.ctx) return;
     const { data } = this.image;
+    const isVerticalReverse = !!(attr & 0x80);
+    const isHorizontalReverse = !!(attr & 0x40);
     const palleteId = attr & 0x03;
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
         if (sprite[i][j]) {
           const colorId = pallete[palleteId * 4 + sprite[i][j] + 0x10];
           const color = colors[colorId];
-          const index = ((x + j) + (y + i) * 256) * 4;
+          const index = ((x + (isHorizontalReverse ? 7 - j : j)) + (y + (isVerticalReverse ? 7 - i : i)) * 256) * 4;
           data[index] = color[0];
           data[index + 1] = color[1];
           data[index + 2] = color[2];

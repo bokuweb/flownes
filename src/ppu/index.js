@@ -4,7 +4,7 @@ import type { Byte, Word } from '../types/common';
 
 import RAM from '../ram';
 import PpuBus from '../bus/ppu-bus';
-import log from '../helper/log';
+// import log from '../helper/log';
 
 // interface Registriors {
 //   spriteMemoryAddr: Byte;
@@ -247,7 +247,7 @@ export default class Ppu {
   }
 
   write(addr: Word, data: Byte): void {
-    log.debug(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
+    // log.debug(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
     if (addr === 0x0003) {
       return this.writeSpriteRamAddr(data);
     }
@@ -268,7 +268,7 @@ export default class Ppu {
   }
 
   writeSpriteRamData(data: Byte) {
-    this.spriteRam.write(this.spriteRamAddr, data)
+    this.spriteRam.write(this.spriteRamAddr, data);
     this.spriteRamAddr += 1;
   }
 
@@ -285,13 +285,17 @@ export default class Ppu {
   }
 
   writeVramData(data: Byte) {
-    this.writeVram(this.vramAddr - 0x2000, data)
+    this.writeVram(this.vramAddr - 0x2000, data);
     const offset = this.registors[0x00] & 0x04 ? 32 : 1;
     this.vramAddr += offset;
   }
 
   writeVram(addr: Word, data: Byte) {
     this.vram.write(addr, data);
+  }
+
+  transferSprite(addr: Byte, data: Byte) {
+    this.spriteRam.write(addr, data);
   }
 }
 

@@ -5,6 +5,7 @@ import Cpu from '../cpu';
 import Ppu from '../ppu';
 import Rom from '../rom';
 import Ram from '../ram';
+import Dma from '../dma';
 import CpuBus from '../bus/cpu-bus';
 import PpuBus from '../bus/ppu-bus';
 import Keypad from '../keypad';
@@ -20,6 +21,8 @@ export class NES {
   ram: Ram;
   ppuBus: PpuBus;
   canvasRenderer: CanvasRenderer;
+  keypad: Keypad;
+  dma: Dma;
 
   frame: () => void;
 
@@ -52,7 +55,15 @@ export class NES {
     this.programROM = new Rom(programROM);
     this.ppuBus = new PpuBus(this.charactorROM);
     this.ppu = new Ppu(this.ppuBus);
-    this.cpuBus = new CpuBus(this.ram, this.programROM, this.charactorROM, this.ppu, this.keypad);
+    this.dma = new Dma(this.ram, this.ppu);
+    this.cpuBus = new CpuBus(
+      this.ram,
+      this.programROM,
+      this.charactorROM,
+      this.ppu,
+      this.keypad,
+      this.dma,
+    );
     this.cpu = new Cpu(this.cpuBus);
     this.cpu.reset();
   }
@@ -60,7 +71,13 @@ export class NES {
   frame() {
     console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
-      const cycle = this.cpu.exec() * 3;
+      let cycle = 0;
+      if (this.dma.isDmaProcessing) {
+        this.dma.execDma();
+        cycle = 514 * 3;
+      } else {
+        cycle = this.cpu.exec() * 3;
+      }
       const { isReady, background, sprites, pallete } = this.ppu.exec(cycle);
       if (isReady) {
         this.canvasRenderer.renderBackground(background, pallete);

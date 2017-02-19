@@ -4,6 +4,7 @@ import Rom from '../rom';
 import Ram from '../ram';
 import Ppu from '../ppu';
 import Keypad from '../keypad';
+import Dma from '../dma';
 
 import type { Word, Byte } from '../types/common';
 
@@ -14,13 +15,15 @@ export default class CpuBus {
   charactorROM: Rom;
   programROM: Rom;
   keypad: Keypad;
+  dma: Dma;
 
-  constructor(ram: Ram, programROM: Rom, charactorROM: Rom, ppu: Ppu, keypad: Keypad) {
+  constructor(ram: Ram, programROM: Rom, charactorROM: Rom, ppu: Ppu, keypad: Keypad, dma: Dma) {
     this.ram = ram;
     this.programROM = programROM;
     this.charactorROM = charactorROM;
     this.ppu = ppu;
     this.keypad = keypad;
+    this.dma = dma;
   }
 
   readByCpu(addr: Word): Byte {
@@ -55,6 +58,8 @@ export default class CpuBus {
     } else if (addr < 0x2008) {
       // PPU
       this.ppu.write(addr - 0x2000, data);
+    } else if (addr === 0x4014) {
+      this.dma.write(data);
     } else if (addr === 0x4016) {
       // TODO Add 2P
       this.keypad.write(data);
