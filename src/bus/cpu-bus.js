@@ -37,7 +37,7 @@ export default class CpuBus {
       return this.ppu.read((addr - 0x2000) % 8);
     } else if (addr === 0x4016) {
       // TODO Add 2P
-      return this.keypad.read();
+      return +this.keypad.read();
     } else if (addr >= 0xC000) {
       // Mirror, if prom block number equals 1
       if (this.programROM.size < 0x8000) {
