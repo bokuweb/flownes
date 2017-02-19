@@ -5,8 +5,8 @@ import type { Byte } from '../types/common';
 
 export default class Keypad {
 
-  onKeyDown: (index: number) => void;
-  onKeyUp: (index: number) => void;
+  onKeyDown: (index: ?number) => void;
+  onKeyUp: (index: ?number) => void;
   keyEvents: KeyEvents;
   isSet: boolean;
   index: number;
@@ -24,11 +24,13 @@ export default class Keypad {
     this.keyRegistors = [];
   }
 
-  onKeyDown(index: number) {
+  onKeyDown(index: ?number) {
+    if (typeof index !== 'number') return;
     this.keyBuffer[index] = true;
   }
 
-  onKeyUp(index: number) {
+  onKeyUp(index: ?number) {
+    if (typeof index !== 'number') return;
     this.keyBuffer[index] = false;
   }
 
