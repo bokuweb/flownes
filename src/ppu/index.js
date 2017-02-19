@@ -160,7 +160,7 @@ export default class Ppu {
             const tileNumber = tileY * 32 + x;
             const spriteId = this.vram.read(tileNumber);
             // TODO: Fix offset
-            const blockId = ((x / 2) + (tileY / 2));
+            const blockId = (~~(x / 2) + ~~(tileY / 2));
             const attrAddr = ~~(blockId / 4);
             const attr = this.vram.read(attrAddr + 0x03C0);
             const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
@@ -195,6 +195,12 @@ export default class Ppu {
         this.registors[0x02] &= 0x7F;
         this.line = 0;
         this.interrupts.deassertNmi();
+        // debug
+        // const test = [];
+        // for(let i = 0; i < 960; i++) {
+        //   test.push(this.vram.read(i));
+        // }
+        // console.log(test);
         return {
           isReady: true,
           background: this.background,
