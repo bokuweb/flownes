@@ -57,7 +57,8 @@ describe('cpu spec', () => {
     let mockedROM;
     let mockedMemory;
     let mockedIntterrupts = {
-      isNmiAssert: () => false,
+      isNmiAssert: false,
+      deassertNmi: () => {},
     };
 
     beforeEach(() => {
