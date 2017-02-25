@@ -6,6 +6,7 @@ const PROGRAM_ROM_SIZE = 0x4000;
 const CHARACTOR_ROM_SIZE = 0x2000;
 
 export type NesROM = {
+  isHorizontalMirror: boolean;
   charactorROM: Uint8Array;
   programROM: Uint8Array;
 };
@@ -18,10 +19,12 @@ export const parse = (nesBuffer: ArrayBuffer): NesROM => {
   }
   const programROMPages = nes[4];
   const charactorROMPages = nes[5];
+  const isHorizontalMirror = !(nes[6] & 0x01);
   const charactorROMStart = NES_HEADER_SIZE + programROMPages * PROGRAM_ROM_SIZE;
   const charactorROMEnd = charactorROMStart + charactorROMPages * CHARACTOR_ROM_SIZE;
 
   const nesROM = {
+    isHorizontalMirror,
     programROM: nes.slice(NES_HEADER_SIZE, charactorROMStart - 1),
     charactorROM: nes.slice(charactorROMStart, charactorROMEnd - 1),
   };

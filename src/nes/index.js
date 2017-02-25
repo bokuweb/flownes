@@ -50,14 +50,17 @@ export class NES {
   */
 
   setup(nes: ArrayBuffer) {
-    const { charactorROM, programROM } = parse(nes);
+    const { charactorROM, programROM, isHorizontalMirror } = parse(nes);
+    const ppuConfig = {
+      isHorizontalMirror,
+    };
     this.keypad = new Keypad();
     this.ram = new Ram(2048);
     this.charactorROM = new Rom(charactorROM);
     this.programROM = new Rom(programROM);
     this.ppuBus = new PpuBus(this.charactorROM);
     this.interrupts = new Interrupts();
-    this.ppu = new Ppu(this.ppuBus, this.interrupts);
+    this.ppu = new Ppu(this.ppuBus, this.interrupts, ppuConfig);
     this.dma = new Dma(this.ram, this.ppu);
     this.cpuBus = new CpuBus(
       this.ram,
@@ -81,8 +84,9 @@ export class NES {
       } else {
         cycle = this.cpu.exec() * 3;
       }
-      const { isReady, background, sprites, pallete } = this.ppu.exec(cycle);
-      if (isReady) {
+      const renderingData = this.ppu.exec(cycle);
+      if (renderingData) {
+        const { background, sprites, pallete } = renderingData;
         this.canvasRenderer.renderBackground(background, pallete);
         this.canvasRenderer.renderSprites(sprites, pallete);
         break;

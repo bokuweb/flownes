@@ -18,9 +18,9 @@ import Interrupts from '../interrupts';
 
 const SPRITES_NUMBER = 0x100;
 
-export type Sprite = Array<Array<number>>;
+export type Sprite = $ReadOnlyArray<$ReadOnlyArray<number>>;
 
-export type Pallete = Array<Byte>;
+export type Pallete = $ReadOnlyArray<Byte>;
 
 export type SpriteType = 'background' | 'sprite'
 
@@ -34,13 +34,18 @@ export interface SpriteWithAttribute {
 export interface Background {
   sprite: Sprite;
   palleteId: Byte;
+  scrollX: Byte;
+  scrollY: Byte;
 }
 
 export interface RenderingData {
-  isReady: boolean;
   pallete: Pallete;
-  background: Array<Background>;
-  sprites: Array<SpriteWithAttribute>
+  background: $ReadOnlyArray<Background>;
+  sprites: $ReadOnlyArray<SpriteWithAttribute>;
+}
+
+export interface Config {
+  isHorizontalMirror: boolean;
 }
 
 export default class Ppu {
@@ -110,18 +115,22 @@ export default class Ppu {
   vram: RAM;
   spriteRam: RAM;
   bus: PpuBus;
-  display: Array<Array<number>>;
   background: Array<Background>;
   sprites: Array<SpriteWithAttribute>;
   pallete: Pallete;
   interrupts: Interrupts;
+  isHorizontalScroll: boolean;
+  scrollX: Byte;
+  scrollY: Byte;
+  config: Config;
 
-  constructor(bus: PpuBus, interrupts: Interrupts) {
+  constructor(bus: PpuBus, interrupts: Interrupts, config: Config) {
     this.registors = new Uint8Array(0x08);
     this.cycle = 0;
     this.line = 0;
     this.isValidVramAddr = false;
     this.isLowerVramAddr = false;
+    this.isHorizontalScroll = true;
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
     this.spriteRam = new RAM(0x100);
@@ -130,11 +139,12 @@ export default class Ppu {
     this.bus = bus;
     this.pallete = [];
     this.interrupts = interrupts;
+    this.config = config;
   }
 
   getPallete(): Pallete {
     this.pallete = [];
-    for (let i = 0; i < 0x20; i++) {
+    for (let i = 0; i < 0x20; i = (i + 1) | 0) {
       this.pallete.push(this.vram.read(0x1F00 + i));
     }
     return this.pallete;
@@ -144,7 +154,7 @@ export default class Ppu {
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec(cycle: number): RenderingData {
+  exec(cycle: number): RenderingData | null {
     this.cycle += cycle;
     // const isScreenEnable = !!(this.registors[0x01] & 0x08);
     // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
@@ -153,38 +163,11 @@ export default class Ppu {
       this.cycle -= 341;
       this.line++;
       if (this.line < 240) {
-        if (!(this.line % 8)) {
-          const tileY = ~~(this.line / 8);
-          // background of a line.
-          for (let x = 0; x < 32; x++) {
-            const tileNumber = tileY * 32 + x;
-            const spriteId = this.vram.read(tileNumber);
-            // TODO: Fix offset
-            const blockId = ((x / 2) + (tileY / 2));
-            const attrAddr = ~~(blockId / 4);
-            const attr = this.vram.read(attrAddr + 0x03C0);
-            const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
-            const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
-            const sprite = this.buildSprite(spriteId, offset);
-            this.background.push({
-              sprite, palleteId,
-            });
-          }
-        }
+        this.buildBackground();
       }
       if (this.line === 240) {
         // build sprite
-        for (let i = 0; i < SPRITES_NUMBER; i += 4) {
-          const y = this.spriteRam.read(i);
-          const spriteId = this.spriteRam.read(i + 1);
-          const attr = this.spriteRam.read(i + 2);
-          const x = this.spriteRam.read(i + 3);
-          const offset = (this.registors[0] & 0x08) ? 0x1000 : 0x0000;
-          const sprite = this.buildSprite(spriteId, offset);
-          this.sprites[i / 4] = {
-            sprite, x, y, attr,
-          }
-        }
+        this.buildSprites();
         this.registors[0x02] |= 0x80;
         if (this.registors[0] & 0x80) {
           this.interrupts.assertNmi();
@@ -195,26 +178,84 @@ export default class Ppu {
         this.registors[0x02] &= 0x7F;
         this.line = 0;
         this.interrupts.deassertNmi();
+        // debug
+        // const test = [];
+        // for(let i = 0; i < 960; i++) {
+        //   test.push(this.vram.read(i));
+        // }
+        // console.log(test);
         return {
-          isReady: true,
           background: this.background,
           sprites: this.sprites,
           pallete: this.getPallete(),
         };
       }
     }
-    return {
-      isReady: false,
-      sprites: [],
-      background: [],
-      pallete: [],
-    };
+    return null;
+  }
+
+  buildBackground() {
+    if (this.line % 8) return;
+    const tileY = ~~(this.line / 8);
+    // TODO: See. ines header mrror flag..
+    // background of a line.
+    // Build viewport + 1 tile for background scroll.
+    for (let x = 0; x < 32 + 1; x++) {
+      /* name table id and address
+      +------------+------------+
+      |            |            | 
+      |  0(0x2000) |  1(0x2400) | 
+      |            |            |
+      +------------+------------+ 
+      |            |            | 
+      |  2(0x2800) |  3(0x2C00) | 
+      |            |            |
+      +------------+------------+       
+      */
+      const scrollTileX = ~~(this.scrollX / 8);
+      const tileX = x + scrollTileX;
+      // TODO: Add vertical sccroll logic
+      const nameTableId = ~~(tileX / 32);
+      const tileNumber = tileY * 32 + (tileX % 32);
+      // TODO: Fix offset
+      const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
+      let spriteAddr = tileNumber + nameTableId * 0x400;
+      let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
+      if (this.config.isHorizontalMirror) {
+        if (spriteAddr >= 0x0400) spriteAddr -= 0x400;
+        if (attrAddr >= 0x0400) attrAddr -= 0x400;
+      }
+      const spriteId = this.vram.read(spriteAddr);
+      const attr = this.vram.read(attrAddr);
+      const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
+      const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
+      const sprite = this.buildSprite(spriteId, offset);
+      this.background.push({
+        sprite, palleteId,
+        scrollX: this.scrollX,
+        scrollY: 0 // TODO: 
+      });
+    }
+  }
+
+  buildSprites() {
+    for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
+      const y = this.spriteRam.read(i);
+      const spriteId = this.spriteRam.read(i + 1);
+      const attr = this.spriteRam.read(i + 2);
+      const x = this.spriteRam.read(i + 3);
+      const offset = (this.registors[0] & 0x08) ? 0x1000 : 0x0000;
+      const sprite = this.buildSprite(spriteId, offset);
+      this.sprites[i / 4] = {
+        sprite, x, y, attr,
+      }
+    }
   }
 
   buildSprite(spriteId: number, offset: Word): Sprite {
-    const sprite = new Array(8).fill(0).map((): Array<number> => new Array(8).fill(0));
-    for (let i = 0; i < 16; i++) {
-      for (let j = 0; j < 8; j++) {
+    const sprite = new Array(8).fill(0).map((): Array<number> => [0, 0, 0, 0, 0, 0, 0, 0]);
+    for (let i = 0; i < 16; i = (i + 1) | 0) {
+      for (let j = 0; j < 8; j = (j + 1) | 0) {
         const addr = spriteId * 16 + i + offset;
         const rom = this.readCharactorROM(addr);
         if (rom & (0x80 >> j)) {
@@ -240,7 +281,7 @@ export default class Ppu {
     |      | bit4 VRAM write flag [0: success, 1: fail]  |
     */
     if (addr === 0x0002) {
-      // TODO: Reset clear 0x2005 order
+      this.isHorizontalScroll = true;
       const data = this.registors[0x02];
       this.registors[0x02] = this.registors[0x02] & 0x7F;
       return data;
@@ -261,6 +302,9 @@ export default class Ppu {
     if (addr === 0x0004) {
       return this.writeSpriteRamData(data);
     }
+    if (addr === 0x0005) {
+      return this.writeScrollData(data);
+    }
     if (addr === 0x0006) {
       return this.writeVramAddr(data);
     }
@@ -277,6 +321,16 @@ export default class Ppu {
   writeSpriteRamData(data: Byte) {
     this.spriteRam.write(this.spriteRamAddr, data);
     this.spriteRamAddr += 1;
+  }
+
+  writeScrollData(data: Byte) {
+    if (this.isHorizontalScroll) {
+      this.isHorizontalScroll = false;
+      this.scrollX = data & 0xFF;
+    } else {
+      this.scrollY = data & 0xFF;
+      this.isHorizontalScroll = true;
+    }
   }
 
   writeVramAddr(data: Byte) {

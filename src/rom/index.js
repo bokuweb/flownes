@@ -4,7 +4,7 @@ import type { Byte, Word } from '../types/common';
 
 export default class Rom {
 
-  rom: Array<Byte>;
+  rom: $ReadOnlyArray<Byte>;
   
   constructor(data: Uint8Array) {
     this.rom = Array.from(data);
