@@ -213,12 +213,12 @@ export default class Ppu {
       const tileX = x + scrollTileX;
       // TODO: Add vertical sccroll logic
       const nameTableId = ~~(tileX / 32);
-      const tileNumber = tileY * 32 + x + scrollTileX;
+      const tileNumber = tileY * 32 + (tileX % 32);
       const spriteId = this.vram.read(tileNumber + nameTableId * 0x400);
       // TODO: Fix offset
-      const blockId = (~~(x / 2) + ~~(tileY / 2));
+      const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
       const attrAddr = ~~(blockId / 4);
-      const attr = this.vram.read(attrAddr + 0x03C0 + nameTableId * 0x400);
+      const attr = this.vram.read(attrAddr + 0x03C0 + (nameTableId * 0x400));
       const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
       const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
