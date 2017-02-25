@@ -34,14 +34,14 @@ export interface SpriteWithAttribute {
 export interface Background {
   sprite: Sprite;
   palleteId: Byte;
+  scrollX: Byte;
+  scrollY: Byte;
 }
 
 export interface RenderingData {
   pallete: Pallete;
   background: Array<Background>;
   sprites: Array<SpriteWithAttribute>;
-  scrollX: Byte;
-  scrollY: Byte;
 }
 
 export default class Ppu {
@@ -209,7 +209,7 @@ export default class Ppu {
       |            |            |
       +------------+------------+       
       */
-      const scrollTileX = Math.ceil(this.scrollX / 8);
+      const scrollTileX = ~~(this.scrollX / 8);
       const tileX = x + scrollTileX;
       // TODO: Add vertical sccroll logic
       const nameTableId = ~~(tileX / 32);
@@ -224,6 +224,8 @@ export default class Ppu {
       const sprite = this.buildSprite(spriteId, offset);
       this.background.push({
         sprite, palleteId,
+        scrollX: this.scrollX,
+        // TODO: scrollY: this.scrollY,
       });
     }
   }
@@ -243,7 +245,7 @@ export default class Ppu {
   }
 
   buildSprite(spriteId: number, offset: Word): Sprite {
-    const sprite = new Array(8).fill(0).map((): Array<number> => new Array(8).fill(0));
+    const sprite = new Array(8).fill(0).map((): Array<number> => [0, 0, 0, 0, 0, 0, 0, 0]);
     for (let i = 0; i < 16; i++) {
       for (let j = 0; j < 8; j++) {
         const addr = spriteId * 16 + i + offset;

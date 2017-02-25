@@ -20,19 +20,19 @@ export default class CanvasRenderer {
     // this.div = ((document.getElementById('nes-div'): any): HTMLElement);
   }
 
-  renderBackground(background: Array<Background>, pallete: Pallete, scrollX: Byte, /* TODO: scrollY: Byte */) {
+  renderBackground(background: Array<Background>, pallete: Pallete, /* scrollX: Byte, /* TODO: scrollY: Byte */) {
     // this.pallete = pallete;
     if (!this.ctx) return;
     // TODO: css renderer, move to css-renderer.js
     // console.time('css renderer');
     // this.div.style.boxShadow = imageData2Css(background);
     // console.timeEnd('css renderer')
-    const offsetX = scrollX % 8;
     // console.log(background.length)
     for (let i = 0; i < background.length; i++) {
+      const { sprite, palleteId, scrollX } = background[i];
       const x = (i % 33) * 8;
       const y = ~~(i / 33) * 8;
-      this.renderTile(background[i].sprite, x, y, pallete, background[i].palleteId, offsetX);
+      this.renderTile(sprite, x, y, pallete, palleteId, scrollX % 8);
     }
     this.ctx.putImageData(this.image, 0, 0);
   }
@@ -45,7 +45,6 @@ export default class CanvasRenderer {
       }
     }
     this.ctx.putImageData(this.image, 0, 0);
-    console.log(this.image.data.length / 4 / 256)
   }
 
   renderTile(sprite: Sprite, tileX: number, tileY: number, pallete: Pallete, palleteId: Byte, offsetX: Byte) {
