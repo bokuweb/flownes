@@ -20,17 +20,19 @@ export default class CanvasRenderer {
     // this.div = ((document.getElementById('nes-div'): any): HTMLElement);
   }
 
-  renderBackground(background: Array<Background>, pallete: Pallete) {
+  renderBackground(background: Array<Background>, pallete: Pallete, scrollX: Byte, /* TODO: scrollY: Byte */) {
     // this.pallete = pallete;
     if (!this.ctx) return;
     // TODO: css renderer, move to css-renderer.js
     // console.time('css renderer');
     // this.div.style.boxShadow = imageData2Css(background);
     // console.timeEnd('css renderer')
+    const offsetX = scrollX % 8;
+    // console.log(background.length)
     for (let i = 0; i < background.length; i++) {
-      const x = (i % 32) * 8;
-      const y = ~~(i / 32) * 8;
-      this.renderTile(background[i].sprite, x, y, pallete, background[i].palleteId);
+      const x = (i % 33) * 8;
+      const y = ~~(i / 33) * 8;
+      this.renderTile(background[i].sprite, x, y, pallete, background[i].palleteId, offsetX);
     }
     this.ctx.putImageData(this.image, 0, 0);
   }
@@ -43,20 +45,25 @@ export default class CanvasRenderer {
       }
     }
     this.ctx.putImageData(this.image, 0, 0);
+    console.log(this.image.data.length / 4 / 256)
   }
 
-  renderTile(sprite: Sprite, x: number, y: number, pallete: Pallete, palleteId: Byte) {
+  renderTile(sprite: Sprite, tileX: number, tileY: number, pallete: Pallete, palleteId: Byte, offsetX: Byte) {
     if (!this.ctx) return;
     const { data } = this.image;
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
         const colorId = pallete[palleteId * 4 + sprite[i][j]];
         const color = colors[colorId];
-        const index = ((x + j) + (y + i) * 256) * 4;
-        data[index] = color[0];
-        data[index + 1] = color[1];
-        data[index + 2] = color[2];
-        data[index + 3] = 0xFF;
+        const x = tileX + j - offsetX;
+        // const y = tileY + i;
+        if (x >= 0 && 0xFF >= x) {
+          const index = ((x) + (tileY + i) * 0x100) * 4;
+          data[index] = color[0];
+          data[index + 1] = color[1];
+          data[index + 2] = color[2];
+          data[index + 3] = 0xFF;
+        }
       }
     }
   }

@@ -37,10 +37,11 @@ export interface Background {
 }
 
 export interface RenderingData {
-  isReady: boolean;
   pallete: Pallete;
   background: Array<Background>;
-  sprites: Array<SpriteWithAttribute>
+  sprites: Array<SpriteWithAttribute>;
+  scrollX: Byte;
+  scrollY: Byte;
 }
 
 export default class Ppu {
@@ -148,7 +149,7 @@ export default class Ppu {
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec(cycle: number): RenderingData {
+  exec(cycle: number): RenderingData | null {
     this.cycle += cycle;
     // const isScreenEnable = !!(this.registors[0x01] & 0x08);
     // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
@@ -179,19 +180,15 @@ export default class Ppu {
         // }
         // console.log(test);
         return {
-          isReady: true,
           background: this.background,
           sprites: this.sprites,
           pallete: this.getPallete(),
+          scrollX: this.scrollX,
+          scrollY: this.scrollY,
         };
       }
     }
-    return {
-      isReady: false,
-      sprites: [],
-      background: [],
-      pallete: [],
-    };
+    return null;
   }
 
   buildBackground() {
@@ -199,13 +196,29 @@ export default class Ppu {
     const tileY = ~~(this.line / 8);
     // TODO: See. ines header mrror flag..
     // background of a line.
-    for (let x = 0; x < 32; x++) {
-      const tileNumber = tileY * 32 + x;
-      const spriteId = this.vram.read(tileNumber);
+    // Build viewport + 1 tile for background scroll.
+    for (let x = 0; x < 32 + 1; x++) {
+      /* name table id and address
+      +------------+------------+
+      |            |            | 
+      |  0(0x2000) |  1(0x2400) | 
+      |            |            |
+      +------------+------------+ 
+      |            |            | 
+      |  2(0x2800) |  3(0x2C00) | 
+      |            |            |
+      +------------+------------+       
+      */
+      const scrollTileX = Math.ceil(this.scrollX / 8);
+      const tileX = x + scrollTileX;
+      // TODO: Add vertical sccroll logic
+      const nameTableId = ~~(tileX / 32);
+      const tileNumber = tileY * 32 + x + scrollTileX;
+      const spriteId = this.vram.read(tileNumber + nameTableId * 0x400);
       // TODO: Fix offset
       const blockId = (~~(x / 2) + ~~(tileY / 2));
       const attrAddr = ~~(blockId / 4);
-      const attr = this.vram.read(attrAddr + 0x03C0);
+      const attr = this.vram.read(attrAddr + 0x03C0 + nameTableId * 0x400);
       const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
       const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
@@ -258,7 +271,7 @@ export default class Ppu {
     |      | bit4 VRAM write flag [0: success, 1: fail]  |
     */
     if (addr === 0x0002) {
-      // TODO: Reset clear 0x2005 order
+      this.isHorizontalScroll = true;
       const data = this.registors[0x02];
       this.registors[0x02] = this.registors[0x02] & 0x7F;
       return data;

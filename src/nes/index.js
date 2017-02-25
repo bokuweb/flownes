@@ -81,9 +81,10 @@ export class NES {
       } else {
         cycle = this.cpu.exec() * 3;
       }
-      const { isReady, background, sprites, pallete } = this.ppu.exec(cycle);
-      if (isReady) {
-        this.canvasRenderer.renderBackground(background, pallete);
+      const renderingData = this.ppu.exec(cycle);
+      if (renderingData) {
+        const { background, sprites, pallete, scrollX, scrollY } = renderingData;
+        this.canvasRenderer.renderBackground(background, pallete, scrollX, scrollY);
         this.canvasRenderer.renderSprites(sprites, pallete);
         break;
       }

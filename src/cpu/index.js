@@ -62,11 +62,11 @@ export default class Cpu {
   constructor(bus: CpuBus, interrupts: Interrupts) {
     this.registors = {
       ...defaultRegistors,
-      P: { ...defaultRegistors.P }
+      P: { ...defaultRegistors.P },
     };
     this.hasBranched = false;
     this.bus = bus;
-    this.opecodeList = []
+    this.opecodeList = [];
     this.interrupts = interrupts;
 
     Object.keys(op.dict).forEach((key: string) => {
