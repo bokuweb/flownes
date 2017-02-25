@@ -43,7 +43,6 @@ export interface RenderingData {
   background: $ReadOnlyArray<Background>;
   sprites: $ReadOnlyArray<SpriteWithAttribute>;
 }
-
 export interface Config {
   isHorizontalMirror: boolean;
 }
