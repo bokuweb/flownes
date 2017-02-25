@@ -1,7 +1,19 @@
 {
-  "presets": ["es2015", "stage-2"],
+  "presets": [
+    "es2015",
+    "stage-2"
+  ],
   "plugins": [
     "babel-plugin-transform-flow-strip-types",
-    ["babel-plugin-espower", { "embedAst": true }]
+    [
+      "babel-plugin-espower",
+      {
+        "embedAst": true
+      },
+      "transform-es2015-block-scoping",
+      {
+        "throwIfClosureRequired": true
+      }
+    ]
   ]
 }

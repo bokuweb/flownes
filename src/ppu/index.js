@@ -153,38 +153,11 @@ export default class Ppu {
       this.cycle -= 341;
       this.line++;
       if (this.line < 240) {
-        if (!(this.line % 8)) {
-          const tileY = ~~(this.line / 8);
-          // background of a line.
-          for (let x = 0; x < 32; x++) {
-            const tileNumber = tileY * 32 + x;
-            const spriteId = this.vram.read(tileNumber);
-            // TODO: Fix offset
-            const blockId = (~~(x / 2) + ~~(tileY / 2));
-            const attrAddr = ~~(blockId / 4);
-            const attr = this.vram.read(attrAddr + 0x03C0);
-            const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
-            const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
-            const sprite = this.buildSprite(spriteId, offset);
-            this.background.push({
-              sprite, palleteId,
-            });
-          }
-        }
+        this.buildBackground();
       }
       if (this.line === 240) {
         // build sprite
-        for (let i = 0; i < SPRITES_NUMBER; i += 4) {
-          const y = this.spriteRam.read(i);
-          const spriteId = this.spriteRam.read(i + 1);
-          const attr = this.spriteRam.read(i + 2);
-          const x = this.spriteRam.read(i + 3);
-          const offset = (this.registors[0] & 0x08) ? 0x1000 : 0x0000;
-          const sprite = this.buildSprite(spriteId, offset);
-          this.sprites[i / 4] = {
-            sprite, x, y, attr,
-          }
-        }
+        this.buildSprites();
         this.registors[0x02] |= 0x80;
         if (this.registors[0] & 0x80) {
           this.interrupts.assertNmi();
@@ -215,6 +188,41 @@ export default class Ppu {
       background: [],
       pallete: [],
     };
+  }
+
+  buildBackground() {
+    if (this.line % 8) return;
+    const tileY = ~~(this.line / 8);
+    // TODO: See. ines header mrror flag..
+    // background of a line.
+    for (let x = 0; x < 32; x++) {
+      const tileNumber = tileY * 32 + x;
+      const spriteId = this.vram.read(tileNumber);
+      // TODO: Fix offset
+      const blockId = (~~(x / 2) + ~~(tileY / 2));
+      const attrAddr = ~~(blockId / 4);
+      const attr = this.vram.read(attrAddr + 0x03C0);
+      const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
+      const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
+      const sprite = this.buildSprite(spriteId, offset);
+      this.background.push({
+        sprite, palleteId,
+      });
+    }
+  }
+
+  buildSprites() {
+    for (let i = 0; i < SPRITES_NUMBER; i += 4) {
+      const y = this.spriteRam.read(i);
+      const spriteId = this.spriteRam.read(i + 1);
+      const attr = this.spriteRam.read(i + 2);
+      const x = this.spriteRam.read(i + 3);
+      const offset = (this.registors[0] & 0x08) ? 0x1000 : 0x0000;
+      const sprite = this.buildSprite(spriteId, offset);
+      this.sprites[i / 4] = {
+        sprite, x, y, attr,
+      }
+    }
   }
 
   buildSprite(spriteId: number, offset: Word): Sprite {
@@ -254,6 +262,11 @@ export default class Ppu {
     if (addr === 0x0007) {
       const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
       this.vramAddr += offset;
+      // TODO: See ines header mirror flag, and implement mapper.
+      //       it is a temporary code.
+      // if (this.vramAddr >= 0x0400) {
+      //   this.vramAddr -= 0x400;
+      // }
       return this.vram.read(this.vramAddr);
     }
     throw new Error('PPU read error occured. It is a prohibited PPU address.');
