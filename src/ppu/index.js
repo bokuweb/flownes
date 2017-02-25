@@ -44,6 +44,10 @@ export interface RenderingData {
   sprites: Array<SpriteWithAttribute>;
 }
 
+export interface Config {
+  isHorizontalMirror: boolean;
+}
+
 export default class Ppu {
 
   // PPU power up state
@@ -119,8 +123,9 @@ export default class Ppu {
   isHorizontalScroll: boolean;
   scrollX: Byte;
   scrollY: Byte;
+  config: Config;
 
-  constructor(bus: PpuBus, interrupts: Interrupts) {
+  constructor(bus: PpuBus, interrupts: Interrupts, config: Config) {
     this.registors = new Uint8Array(0x08);
     this.cycle = 0;
     this.line = 0;
@@ -135,6 +140,7 @@ export default class Ppu {
     this.bus = bus;
     this.pallete = [];
     this.interrupts = interrupts;
+    this.config = config;
   }
 
   getPallete(): Pallete {
@@ -212,11 +218,16 @@ export default class Ppu {
       // TODO: Add vertical sccroll logic
       const nameTableId = ~~(tileX / 32);
       const tileNumber = tileY * 32 + (tileX % 32);
-      const spriteId = this.vram.read(tileNumber + nameTableId * 0x400);
       // TODO: Fix offset
       const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
-      const attrAddr = ~~(blockId / 4);
-      const attr = this.vram.read(attrAddr + 0x03C0 + (nameTableId * 0x400));
+      let spriteAddr = tileNumber + nameTableId * 0x400;
+      let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
+      if (this.config.isHorizontalMirror) {
+        if (spriteAddr >= 0x0400) spriteAddr -= 0x400;
+        if (attrAddr >= 0x0400) attrAddr -= 0x400;
+      }
+      const spriteId = this.vram.read(spriteAddr);
+      const attr = this.vram.read(attrAddr);
       const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
       const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
@@ -279,11 +290,6 @@ export default class Ppu {
     if (addr === 0x0007) {
       const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
       this.vramAddr += offset;
-      // TODO: See ines header mirror flag, and implement mapper.
-      //       it is a temporary code.
-      // if (this.vramAddr >= 0x0400) {
-      //   this.vramAddr -= 0x400;
-      // }
       return this.vram.read(this.vramAddr);
     }
     throw new Error('PPU read error occured. It is a prohibited PPU address.');

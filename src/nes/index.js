@@ -50,14 +50,17 @@ export class NES {
   */
 
   setup(nes: ArrayBuffer) {
-    const { charactorROM, programROM } = parse(nes);
+    const { charactorROM, programROM, isHorizontalMirror } = parse(nes);
+    const ppuConfig = {
+      isHorizontalMirror,
+    };
     this.keypad = new Keypad();
     this.ram = new Ram(2048);
     this.charactorROM = new Rom(charactorROM);
     this.programROM = new Rom(programROM);
     this.ppuBus = new PpuBus(this.charactorROM);
     this.interrupts = new Interrupts();
-    this.ppu = new Ppu(this.ppuBus, this.interrupts);
+    this.ppu = new Ppu(this.ppuBus, this.interrupts, ppuConfig);
     this.dma = new Dma(this.ram, this.ppu);
     this.cpuBus = new CpuBus(
       this.ram,
