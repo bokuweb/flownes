@@ -20,7 +20,7 @@ export default class CanvasRenderer {
     // this.div = ((document.getElementById('nes-div'): any): HTMLElement);
   }
 
-  renderBackground(background: Array<Background>, pallete: Pallete, /* scrollX: Byte, /* TODO: scrollY: Byte */) {
+  renderBackground(background: $ReadOnlyArray<Background>, pallete: Pallete, /* scrollX: Byte, /* TODO: scrollY: Byte */) {
     // this.pallete = pallete;
     if (!this.ctx) return;
     // TODO: css renderer, move to css-renderer.js
@@ -37,7 +37,7 @@ export default class CanvasRenderer {
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderSprites(sprites: Array<SpriteWithAttribute>, pallete: Pallete) {
+  renderSprites(sprites: $ReadOnlyArray<SpriteWithAttribute>, pallete: Pallete) {
     if (!this.ctx) return;
     for (const sprite of sprites) {
       if (sprite) {

@@ -18,9 +18,9 @@ import Interrupts from '../interrupts';
 
 const SPRITES_NUMBER = 0x100;
 
-export type Sprite = Array<Array<number>>;
+export type Sprite = $ReadOnlyArray<$ReadOnlyArray<number>>;
 
-export type Pallete = Array<Byte>;
+export type Pallete = $ReadOnlyArray<Byte>;
 
 export type SpriteType = 'background' | 'sprite'
 
@@ -40,8 +40,8 @@ export interface Background {
 
 export interface RenderingData {
   pallete: Pallete;
-  background: Array<Background>;
-  sprites: Array<SpriteWithAttribute>;
+  background: $ReadOnlyArray<Background>;
+  sprites: $ReadOnlyArray<SpriteWithAttribute>;
 }
 
 export interface Config {
@@ -115,7 +115,6 @@ export default class Ppu {
   vram: RAM;
   spriteRam: RAM;
   bus: PpuBus;
-  display: Array<Array<number>>;
   background: Array<Background>;
   sprites: Array<SpriteWithAttribute>;
   pallete: Pallete;
