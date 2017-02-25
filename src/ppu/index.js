@@ -115,6 +115,9 @@ export default class Ppu {
   sprites: Array<SpriteWithAttribute>;
   pallete: Pallete;
   interrupts: Interrupts;
+  isHorizontalScroll: boolean;
+  scrollX: Byte;
+  scrollY: Byte;
 
   constructor(bus: PpuBus, interrupts: Interrupts) {
     this.registors = new Uint8Array(0x08);
@@ -122,6 +125,7 @@ export default class Ppu {
     this.line = 0;
     this.isValidVramAddr = false;
     this.isLowerVramAddr = false;
+    this.isHorizontalScroll = true;
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
     this.spriteRam = new RAM(0x100);
@@ -280,6 +284,9 @@ export default class Ppu {
     if (addr === 0x0004) {
       return this.writeSpriteRamData(data);
     }
+    if (addr === 0x0005) {
+      return this.writeScrollData(data);
+    }
     if (addr === 0x0006) {
       return this.writeVramAddr(data);
     }
@@ -296,6 +303,16 @@ export default class Ppu {
   writeSpriteRamData(data: Byte) {
     this.spriteRam.write(this.spriteRamAddr, data);
     this.spriteRamAddr += 1;
+  }
+
+  writeScrollData(data: Byte) {
+    if (this.isHorizontalScroll) {
+      this.isHorizontalScroll = false;
+      this.scrollX = data & 0xFF;
+    } else {
+      this.scrollY = data & 0xFF;
+      this.isHorizontalScroll = true;
+    }
   }
 
   writeVramAddr(data: Byte) {
