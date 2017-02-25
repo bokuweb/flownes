@@ -26,7 +26,7 @@ export default class Dma {
 
   execDma() {
     if (!this.isProcessing) return;
-    for (let i = 0; i < 0x100; i++) {
+    for (let i = 0; i < 0x100; i = (i + 1) | 0) {
       this.ppu.transferSprite(i, this.ram.read(this.ramAddr + i));
     }
     this.isProcessing = false;

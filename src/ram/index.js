@@ -11,7 +11,7 @@ export default class RAM {
     this.ram.fill(0);
   }
 
-  reset(): void {
+  reset() {
     this.ram.fill(0);
   }
 

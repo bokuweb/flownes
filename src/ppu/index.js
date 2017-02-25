@@ -139,7 +139,7 @@ export default class Ppu {
 
   getPallete(): Pallete {
     this.pallete = [];
-    for (let i = 0; i < 0x20; i++) {
+    for (let i = 0; i < 0x20; i = (i + 1) | 0) {
       this.pallete.push(this.vram.read(0x1F00 + i));
     }
     return this.pallete;
@@ -183,8 +183,6 @@ export default class Ppu {
           background: this.background,
           sprites: this.sprites,
           pallete: this.getPallete(),
-          scrollX: this.scrollX,
-          scrollY: this.scrollY,
         };
       }
     }
@@ -225,13 +223,13 @@ export default class Ppu {
       this.background.push({
         sprite, palleteId,
         scrollX: this.scrollX,
-        // TODO: scrollY: this.scrollY,
+        scrollY: 0 // TODO: 
       });
     }
   }
 
   buildSprites() {
-    for (let i = 0; i < SPRITES_NUMBER; i += 4) {
+    for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       const y = this.spriteRam.read(i);
       const spriteId = this.spriteRam.read(i + 1);
       const attr = this.spriteRam.read(i + 2);
@@ -246,8 +244,8 @@ export default class Ppu {
 
   buildSprite(spriteId: number, offset: Word): Sprite {
     const sprite = new Array(8).fill(0).map((): Array<number> => [0, 0, 0, 0, 0, 0, 0, 0]);
-    for (let i = 0; i < 16; i++) {
-      for (let j = 0; j < 8; j++) {
+    for (let i = 0; i < 16; i = (i + 1) | 0) {
+      for (let j = 0; j < 8; j = (j + 1) | 0) {
         const addr = spriteId * 16 + i + offset;
         const rom = this.readCharactorROM(addr);
         if (rom & (0x80 >> j)) {

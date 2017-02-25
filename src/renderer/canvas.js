@@ -50,8 +50,8 @@ export default class CanvasRenderer {
   renderTile(sprite: Sprite, tileX: number, tileY: number, pallete: Pallete, palleteId: Byte, offsetX: Byte) {
     if (!this.ctx) return;
     const { data } = this.image;
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 8; j++) {
+    for (let i = 0; i < 8; i = (i + 1) | 0) {
+      for (let j = 0; j < 8; j = (j + 1) | 0) {
         const colorId = pallete[palleteId * 4 + sprite[i][j]];
         const color = colors[colorId];
         const x = tileX + j - offsetX;
@@ -73,8 +73,8 @@ export default class CanvasRenderer {
     const isVerticalReverse = !!(attr & 0x80);
     const isHorizontalReverse = !!(attr & 0x40);
     const palleteId = attr & 0x03;
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 8; j++) {
+    for (let i = 0; i < 8; i = (i + 1) | 0) {
+      for (let j = 0; j < 8; j = (j + 1) | 0) {
         if (sprite[i][j]) {
           const colorId = pallete[palleteId * 4 + sprite[i][j] + 0x10];
           const color = colors[colorId];
