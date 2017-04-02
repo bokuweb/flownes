@@ -90,9 +90,9 @@ export class NES {
       }
       const renderingData = this.ppu.exec(cycle);
       if (renderingData) {
-        const { background, sprites, pallete } = renderingData;
-        this.canvasRenderer.renderBackground(background, pallete);
-        this.canvasRenderer.renderSprites(sprites, pallete);
+        const { background, sprites, palette } = renderingData;
+        this.canvasRenderer.renderBackground(background, palette);
+        this.canvasRenderer.renderSprites(sprites, palette);
         break;
       }
     }

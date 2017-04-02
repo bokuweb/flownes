@@ -7,7 +7,7 @@ import PpuBus from '../bus/ppu-bus';
 import Interrupts from '../interrupts';
 // import log from '../helper/log';
 
-// interface Registriors {
+// interface Registers {
 //   spriteMemoryAddr: Byte;
 //   spriteMemoryData: Byte;
 //   scrollOffset: Byte;
@@ -20,7 +20,7 @@ const SPRITES_NUMBER = 0x100;
 
 export type Sprite = $ReadOnlyArray<$ReadOnlyArray<number>>;
 
-export type Pallete = $ReadOnlyArray<Byte>;
+export type Palette = $ReadOnlyArray<Byte>;
 
 export type SpriteType = 'background' | 'sprite'
 
@@ -33,13 +33,13 @@ export interface SpriteWithAttribute {
 
 export interface Background {
   sprite: Sprite;
-  palleteId: Byte;
+  paletteId: Byte;
   scrollX: Byte;
   scrollY: Byte;
 }
 
 export interface RenderingData {
-  pallete: Pallete;
+  palette: Palette;
   background: $ReadOnlyArray<Background>;
   sprites: $ReadOnlyArray<SpriteWithAttribute>;
 }
@@ -67,13 +67,13 @@ export default class Ppu {
   | 0x2C00-0x2FBF  |  Name Table                |
   | 0x2FC0-0x2FFF  |  Attribute Table           |
   | 0x3000-0x3EFF  |  mirror of 0x2000-0x2EFF   |
-  | 0x3F00-0x3F0F  |  background pallete        |
-  | 0x3F10-0x3F1F  |  sprite pallete            |
+  | 0x3F00-0x3F0F  |  background Palette        |
+  | 0x3F10-0x3F1F  |  sprite Palette            |
   | 0x3F20-0x3FFF  |  mirror of 0x3F00-0x3F1F   |
   */
 
   /*
-    Control Registor1 0x2000
+    Control Register1 0x2000
 
   | bit  | description                                 |
   +------+---------------------------------------------+
@@ -90,12 +90,12 @@ export default class Ppu {
   */
 
   /*
-    Control Registor2 0x2001
+    Control Register2 0x2001
 
   | bit  | description                                 |
   +------+---------------------------------------------+
   |  7-5 | Background color  0x00: Black               |
-  |      |                   0x01: Geen                |
+  |      |                   0x01: Green               |
   |      |                   0x02: Blue                |
   |      |                   0x04: Red                 |
   |  4   | Enable sprite                               |
@@ -104,7 +104,7 @@ export default class Ppu {
   |  1   | Background mask   render left end           |
   |  0   | Display type      0: color, 1: mono         |
   */
-  registors: Uint8Array;
+  registers: Uint8Array;
   cycle: number;
   line: number;
   isValidVramAddr: boolean;
@@ -116,7 +116,7 @@ export default class Ppu {
   bus: PpuBus;
   background: Array<Background>;
   sprites: Array<SpriteWithAttribute>;
-  pallete: Pallete;
+  palette: Palette;
   interrupts: Interrupts;
   isHorizontalScroll: boolean;
   scrollX: Byte;
@@ -124,7 +124,7 @@ export default class Ppu {
   config: Config;
 
   constructor(bus: PpuBus, interrupts: Interrupts, config: Config) {
-    this.registors = new Uint8Array(0x08);
+    this.registers = new Uint8Array(0x08);
     this.cycle = 0;
     this.line = 0;
     this.isValidVramAddr = false;
@@ -136,17 +136,17 @@ export default class Ppu {
     this.background = [];
     this.sprites = [];
     this.bus = bus;
-    this.pallete = [];
+    this.palette = [];
     this.interrupts = interrupts;
     this.config = config;
   }
 
-  getPallete(): Pallete {
-    this.pallete = [];
+  getPalette(): Palette {
+    this.palette = [];
     for (let i = 0; i < 0x20; i = (i + 1) | 0) {
-      this.pallete.push(this.vram.read(0x1F00 + i));
+      this.palette.push(this.vram.read(0x1F00 + i));
     }
-    return this.pallete;
+    return this.palette;
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
@@ -155,8 +155,8 @@ export default class Ppu {
   // Get the pattern of the sprite searched with the remaining clock.
   exec(cycle: number): RenderingData | null {
     this.cycle += cycle;
-    // const isScreenEnable = !!(this.registors[0x01] & 0x08);
-    // const isSpriteEnable = !!(this.registors[0x01] & 0x10);
+    // const isScreenEnable = !!(this.registers[0x01] & 0x08);
+    // const isSpriteEnable = !!(this.registers[0x01] & 0x10);
     if (this.line === 0) this.background = [];
     if (this.cycle >= 341) {
       this.cycle -= 341;
@@ -167,14 +167,14 @@ export default class Ppu {
       if (this.line === 240) {
         // build sprite
         this.buildSprites();
-        this.registors[0x02] |= 0x80;
-        if (this.registors[0] & 0x80) {
+        this.registers[0x02] |= 0x80;
+        if (this.registers[0] & 0x80) {
           this.interrupts.assertNmi();
         }
       }
 
       if (this.line === 261) {
-        this.registors[0x02] &= 0x7F;
+        this.registers[0x02] &= 0x7F;
         this.line = 0;
         this.interrupts.deassertNmi();
         // debug
@@ -186,7 +186,7 @@ export default class Ppu {
         return {
           background: this.background,
           sprites: this.sprites,
-          pallete: this.getPallete(),
+          palette: this.getPalette(),
         };
       }
     }
@@ -196,7 +196,7 @@ export default class Ppu {
   buildBackground() {
     if (this.line % 8) return;
     const tileY = ~~(this.line / 8);
-    // TODO: See. ines header mrror flag..
+    // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
     for (let x = 0; x < 32 + 1; x++) {
@@ -213,7 +213,7 @@ export default class Ppu {
       */
       const scrollTileX = ~~(this.scrollX / 8);
       const tileX = x + scrollTileX;
-      // TODO: Add vertical sccroll logic
+      // TODO: Add vertical scroll logic
       const nameTableId = ~~(tileX / 32);
       const tileNumber = tileY * 32 + (tileX % 32);
       // TODO: Fix offset
@@ -226,11 +226,11 @@ export default class Ppu {
       }
       const spriteId = this.vram.read(spriteAddr);
       const attr = this.vram.read(attrAddr);
-      const palleteId = (attr >> (blockId % 4 * 2)) & 0x03;
-      const offset = (this.registors[0] & 0x10) ? 0x1000 : 0x0000;
+      const paletteId = (attr >> (blockId % 4 * 2)) & 0x03;
+      const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
       this.background.push({
-        sprite, palleteId,
+        sprite, paletteId,
         scrollX: this.scrollX,
         scrollY: 0 // TODO: 
       });
@@ -243,7 +243,7 @@ export default class Ppu {
       const spriteId = this.spriteRam.read(i + 1);
       const attr = this.spriteRam.read(i + 2);
       const x = this.spriteRam.read(i + 3);
-      const offset = (this.registors[0] & 0x08) ? 0x1000 : 0x0000;
+      const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
       this.sprites[i / 4] = {
         sprite, x, y, attr,
@@ -256,7 +256,7 @@ export default class Ppu {
     for (let i = 0; i < 16; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
         const addr = spriteId * 16 + i + offset;
-        const rom = this.readCharactorROM(addr);
+        const rom = this.readCharacterROM(addr);
         if (rom & (0x80 >> j)) {
           sprite[i % 8][j] += 0x01 << (i / 8);
         }
@@ -265,7 +265,7 @@ export default class Ppu {
     return sprite;
   }
 
-  readCharactorROM(addr: Word): Byte {
+  readCharacterROM(addr: Word): Byte {
     return this.bus.readByPpu(addr);
   }
 
@@ -273,7 +273,7 @@ export default class Ppu {
     /*
     | bit  | description                                 |
     +------+---------------------------------------------+
-    | 7    | 1: VBlank clear by reading this registor    |
+    | 7    | 1: VBlank clear by reading this register    |
     | 6    | 1: sprite hit                               |
     | 5    | 0: less than 8, 1: 9 or more                |
     | 4-0  | invalid                                     |                                 
@@ -281,16 +281,16 @@ export default class Ppu {
     */
     if (addr === 0x0002) {
       this.isHorizontalScroll = true;
-      const data = this.registors[0x02];
-      this.registors[0x02] = this.registors[0x02] & 0x7F;
+      const data = this.registers[0x02];
+      this.registers[0x02] = this.registers[0x02] & 0x7F;
       return data;
     }
     if (addr === 0x0007) {
-      const offset = this.registors[0x00] & 0x04 ? 0x20 : 0x01;
+      const offset = this.registers[0x00] & 0x04 ? 0x20 : 0x01;
       this.vramAddr += offset;
       return this.vram.read(this.vramAddr);
     }
-    throw new Error('PPU read error occured. It is a prohibited PPU address.');
+    throw new Error('PPU read error occurred. It is a prohibited PPU address.');
   }
 
   write(addr: Word, data: Byte): void {
@@ -310,7 +310,7 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
-    this.registors[addr] = data;
+    this.registers[addr] = data;
   }
 
   writeSpriteRamAddr(data: Byte) {
@@ -346,7 +346,7 @@ export default class Ppu {
 
   writeVramData(data: Byte) {
     this.writeVram(this.vramAddr - 0x2000, data);
-    const offset = this.registors[0x00] & 0x04 ? 32 : 1;
+    const offset = this.registers[0x00] & 0x04 ? 32 : 1;
     this.vramAddr += offset;
   }
 
