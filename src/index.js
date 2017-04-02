@@ -2,7 +2,7 @@
 
 import { NES } from './nes';
 
-fetch('./static/roms/giko011.nes')
+fetch('./static/roms/giko012.nes')
     .then((res) => res.arrayBuffer())
     .then((nesFile: ArrayBuffer) => {
         const nes = new NES();

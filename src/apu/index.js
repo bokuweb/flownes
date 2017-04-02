@@ -13,6 +13,7 @@ export default class Apu {
   }
 
   write(addr: Byte, data: Byte) {
+    console.log('apu write', addr, data);
     if (addr === 0x00) {
       // square wave control register
     } else if (addr === 0x15) {
