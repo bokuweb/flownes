@@ -21,7 +21,8 @@ export default class Apu {
   }
 
   read(addr: Byte): Byte {
-    return 0;
+    // TODO: 
+    return addr;
   }
 }
 
