@@ -1,7 +1,15 @@
-var connect = require('connect'),
-    serveStatic = require('serve-static');
+var webpack = require('webpack');
+var WebpackDevServer = require('webpack-dev-server');
+var config = require('./webpack.config');
 
-var app = connect();
+new WebpackDevServer(webpack(config), {
+  publicPath: config.output.publicPath,
+  hot: true,
+  historyApiFallback: true
+}).listen(8888, 'localhost', function (err, result) {
+  if (err) {
+    console.log(err);
+  }
 
-app.use(serveStatic(__dirname));
-app.listen(5000);
+  console.log('Listening at localhost:8888');
+});

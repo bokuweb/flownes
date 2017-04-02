@@ -4,7 +4,7 @@ const webpack = require('webpack');
 module.exports = {
   devtool: 'eval',
   entry: [
-    'webpack-dev-server/client?http://localhost:3333',
+    'webpack-dev-server/client?http://localhost:8888',
     'webpack/hot/only-dev-server',
     './src/index'
   ],
@@ -17,7 +17,7 @@ module.exports = {
     new webpack.HotModuleReplacementPlugin()
   ],
   module: {
-    loaders: [{
+    rules: [{
       test: /\.js$/,
       loaders: ['babel-loader'],
       include: [path.join(__dirname, 'src')]
