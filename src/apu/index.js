@@ -1,50 +1,63 @@
 /* @flow */
 
-const counterTable = [
-  0x0A, 0xFE, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06,
-  0xA0, 0x08, 0x3C, 0x0A, 0x0E, 0x0C, 0x1A, 0x0E,
-  0x0C, 0x10, 0x18, 0x12, 0x30, 0x14, 0x60, 0x16,
-  0xC0, 0x18, 0x48, 0x1A, 0x10, 0x1C, 0x20, 0x1E,
-];
+import type { Byte, Word } from '../types/common';
+import Square from './square';
+import { DIVIDE_COUNT_FOR_240HZ } from '../constants/apu';
 
-const noiseTimerPeriodTable = [
-  0x0A, 0xFE, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06,
-  0xA0, 0x08, 0x3C, 0x0A, 0x0E, 0x0C, 0x1A, 0x0E,
-  0x0C, 0x10, 0x18, 0x12, 0x30, 0x14, 0x60, 0x16,
-  0xC0, 0x18, 0x48, 0x1A, 0x10, 0x1C, 0x20, 0x1E,
-];
-
-const dmcTimerPeriodTable = [
-  0x1AC, 0x17C, 0x154, 0x140,
-  0x11E, 0x0FE, 0x0E2, 0x0D6,
-  0x0BE, 0x0A0, 0x08E, 0x080,
-  0x06A, 0x054, 0x048, 0x036,
-];
-
-import type { Byte } from '../types/common';
+type SquareWaveRegisters = {
+  halt: boolean;
+  freq: Word;
+  length: Byte;
+}
 
 export default class Apu {
 
   registers: Uint8Array;
+  squareWaveRegisters: SquareWaveRegisters[];
+  cycle: number;
+  step: number;
+  envelopesCounter: number;
+  square: Square;
+  // lengthCounter: number; use register
 
   constructor() {
     // APU Registers
     // (0x4000 〜 0x4017)
-    window.AudioContext = window.AudioContext || window.webkitAudioContext;
-    // this.canAudioContext = typeof window.AudioContext !== 'undefined';
     this.registers = new Uint8Array(0x18);
+    this.cycle = 0;
+    this.step = 0;
+    this.square = new Square();
+  }
+
+  exec(cycle: number) {
+    this.cycle += cycle;
+    if (this.cycle >= DIVIDE_COUNT_FOR_240HZ) {
+      // invoked by 240hz
+      this.cycle -= DIVIDE_COUNT_FOR_240HZ;
+      // TODO: add 5step sequence
+      if (this.step % 2 === 0) {
+
+      } else if (this.step % 2 === 1) {
+        this.updateLengthCounter();
+      }
+      this.step++;
+      if (this.step === 4) this.step = 0;
+    }
+  }
+
+  updateLengthCounter() {
+
   }
 
   write(addr: Byte, data: Byte) {
     console.log('apu write', addr, data);
-    if (addr === 0x00) {
+    if (addr <= 0x03) {
       // square wave control register
+      this.square.write(addr, data);
     } else if (addr === 0x15) {
       this.registers[addr] = data;
     }
   }
-
-  // freq = 32 * (register + 1) / CPUclcok
 
   read(addr: Byte): Byte {
     // TODO: 
