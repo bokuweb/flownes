@@ -65,10 +65,10 @@ export default class Oscillator {
 
   setPulseWidth(pulseWidth) {
     // calculate the harmonics for the passed (clamped) pulse width
-    pulseWidth = Math.max(0, Math.min(1, pulseWidth));
+    // pulseWidth = Math.max(0, Math.min(1, pulseWidth));
     const real = [0]
     const imag = [0]
-    for (let i = 1; i < 8192; i++) {
+    for (let i = 1; i < 8192; i += 1) {
       const realTerm = 4 / (i * Math.PI) * Math.sin(Math.PI * i * pulseWidth);
       real.push(realTerm);
       imag.push(0);

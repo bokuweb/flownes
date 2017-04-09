@@ -9,6 +9,7 @@ export default class Square {
     this.reset();
     // this.source = new Source();
     this.oscillator = new Oscillator();
+    this.sweepUnitCounter = 0;
   }
 
   reset() {
@@ -16,12 +17,23 @@ export default class Square {
     this.isLengthCounterEnable = false;
   }
 
-  updateLengthCounter() {
+  updateSweepAndLengthCounter() {
     if (this.isLengthCounterEnable && this.lengthCounter > 0) {
       this.lengthCounter--;
       if (this.lengthCounter === 0) {
         // this.source.stop();
         this.oscillator.stop();
+      }
+    }
+
+    this.sweepUnitCounter++;
+    if (!(this.sweepUnitCounter % this.sweepUnitDivider)) {
+      // INFO: 
+      // sweep mode 0 : newFreq = currentFreq + (currentFreq >> N)
+      // sweep mode 1 : newFreq = currentFreq - (currentFreq >> N)
+      if (this.isSweepEnabled) {
+        this.frequency = this.frequency + (this.frequency >> this.sweepShiftAmount);
+        this.oscillator.changeFrequency(this.frequency);
       }
     }
   }
@@ -73,9 +85,9 @@ export default class Square {
     else if (addr === 0x01) {
       // Sweep:
       this.isSweepEnabled = !!(data & 0x80);
-      // this.sweepCounterMax = ((data >> 4) & 7);
-      // this.sweepMode = (data >> 3) & 1;
-      // this.sweepShiftAmount = data & 7;
+      this.sweepUnitDivider = ((data >> 4) & 0x07) + 1;
+      this.sweepMode = !!(data & 0x10);
+      this.sweepShiftAmount = data & 0x07;
       // this.updateSweepPeriod = true;
     }
     else if (addr === 0x02) {
@@ -89,16 +101,17 @@ export default class Square {
       if (this.isLengthCounterEnable) {
         this.lengthCounter = counterTable(data & 0xF8);
       }
+      this.frequency = CPU_CLOCK / ((this.dividerForFrequency + 1) * 32);
+      this.sweepUnitCounter = 0;
       this.start();
     }
   }
 
   start() {
-    const freq = CPU_CLOCK / ((this.dividerForFrequency + 1) * 32);
     // this.source.setFrequency(freq);
     // this.source.start();
     this.oscillator.start();
-    this.oscillator.setFrequency(freq);
+    this.oscillator.setFrequency(this.frequency);
   }
 
   /*

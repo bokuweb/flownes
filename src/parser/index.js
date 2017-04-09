@@ -12,7 +12,7 @@ export type NesROM = {
 export const parse = (nesBuffer: ArrayBuffer): NesROM => {
   const nes = new Uint8Array(nesBuffer);
   if ([].slice.call(nes, 0, 3).map(v => String.fromCharCode(v)).join('') !== 'NES') {
-    throw new Error('this file is not an NES format.');
+    throw new Error('This file is not NES format.');
   }
   const programROMPages = nes[4];
   const characterROMPages = nes[5];

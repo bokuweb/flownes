@@ -32,21 +32,22 @@ export default class Apu {
   exec(cycle: number) {
     this.cycle += cycle;
     if (this.cycle >= DIVIDE_COUNT_FOR_240HZ) {
+      console.log('240hz')
       // invoked by 240hz
       this.cycle -= DIVIDE_COUNT_FOR_240HZ;
       // TODO: add 5step sequence
       if (this.step % 2 === 0) {
 
       } else if (this.step % 2 === 1) {
-        this.updateLengthCounter();
+        this.updateSweepAndLengthCounter();
       }
       this.step++;
       if (this.step === 4) this.step = 0;
     }
   }
 
-  updateLengthCounter() {
-    this.square.updateLengthCounter();
+  updateSweepAndLengthCounter() {
+    this.square.updateSweepAndLengthCounter();
   }
 
   write(addr: Byte, data: Byte) {

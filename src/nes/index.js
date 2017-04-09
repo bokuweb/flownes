@@ -84,11 +84,11 @@ export class NES {
       let cycle: number;
       if (this.dma.isDmaProcessing) {
         this.dma.execDma();
-        cycle = 514 * 3;
+        cycle = 514;
       } else {
-        cycle = this.cpu.exec() * 3;
+        cycle = this.cpu.exec();
       }
-      const renderingData = this.ppu.exec(cycle);
+      const renderingData = this.ppu.exec(cycle * 3);
       this.apu.exec(cycle);
       if (renderingData) {
         const { background, sprites, palette } = renderingData;
