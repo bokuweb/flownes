@@ -13,7 +13,7 @@ type SquareWaveRegisters = {
 export default class Apu {
 
   registers: Uint8Array;
-  squareWaveRegisters: SquareWaveRegisters[];
+  // squareWaveRegisters: SquareWaveRegisters[];
   cycle: number;
   step: number;
   envelopesCounter: number;
@@ -46,7 +46,7 @@ export default class Apu {
   }
 
   updateLengthCounter() {
-
+    this.square.updateLengthCounter();
   }
 
   write(addr: Byte, data: Byte) {

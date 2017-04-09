@@ -1,46 +1,52 @@
-import Source from './audio';
+// import Source from './audio';
+import Oscillator from './oscillator';
 import { CPU_CLOCK } from '../constants/cpu';
+import { counterTable } from '../constants/apu';
 
 export default class Square {
 
   constructor() {
     this.reset();
-    this.source = new Source();
+    // this.source = new Source();
+    this.oscillator = new Oscillator();
   }
 
   reset() {
     this.lengthCounter = 0;
-    this.isLangthCounterEnable = false;
+    this.isLengthCounterEnable = false;
   }
 
   updateLengthCounter() {
-    if (this.lengthCounterEnable && this.lengthCounter > 0) {
+    if (this.isLengthCounterEnable && this.lengthCounter > 0) {
       this.lengthCounter--;
       if (this.lengthCounter === 0) {
-        // this.updateSampleValue();
+        // this.source.stop();
+        this.oscillator.stop();
       }
     }
   }
 
-  clockEnvDecay() {
-    if (this.envReset) {
-      // Reset envelope:
-      this.envReset = false;
-      this.envDecayCounter = this.envDecayRate + 1;
-      this.envVolume = 0xF;
-    } else if ((--this.envDecayCounter) <= 0) {
-      // Normal handling:
-      this.envDecayCounter = this.envDecayRate + 1;
-      if (this.envVolume > 0) {
-        this.envVolume--;
-      } else {
-        this.envVolume = this.envDecayLoopEnable ? 0xF : 0;
+  /*
+    clockEnvDecay() {
+      if (this.envReset) {
+        // Reset envelope:
+        this.envReset = false;
+        this.envDecayCounter = this.envDecayRate + 1;
+        this.envVolume = 0xF;
+      } else if ((--this.envDecayCounter) <= 0) {
+        // Normal handling:
+        this.envDecayCounter = this.envDecayRate + 1;
+        if (this.envVolume > 0) {
+          this.envVolume--;
+        } else {
+          this.envVolume = this.envDecayLoopEnable ? 0xF : 0;
+        }
       }
+  
+      this.masterVolume = this.envDecayDisable ? this.envDecayRate : this.envVolume;
+      //this.updateSampleValue();
     }
-
-    this.masterVolume = this.envDecayDisable ? this.envDecayRate : this.envVolume;
-    //this.updateSampleValue();
-  }
+    */
 
   // updateSampleValue() {
   //   if (this.isEnabled && this.lengthCounter > 0 && this.dividerForFrequency > 7) {
@@ -56,24 +62,23 @@ export default class Square {
 
   write(addr, data) {
     if (addr === 0x00) {
-      this.envDecayDisable = ((data & 0x10) !== 0);
-      this.envDecayRate = data & 0xF;
-      this.envDecayLoopEnable = ((data & 0x20) !== 0);
-      this.dutyMode = (data >> 6) & 0x3;
-      this.lengthCounterEnable = ((data & 0x20) === 0);
-      this.masterVolume = this.envDecayDisable ? this.envDecayRate : this.envVolume;
+      // this.envDecayDisable = ((data & 0x10) !== 0);
+      // this.envDecayRate = data & 0xF;
+      // this.envDecayLoopEnable = ((data & 0x20) !== 0);
+      // this.dutyMode = (data >> 6) & 0x3;
+      this.isLengthCounterEnable = !(data & 0x20);
+      // this.masterVolume = this.envDecayDisable ? this.envDecayRate : this.envVolume;
       //this.updateSampledata();
     }
     else if (addr === 0x01) {
       // Sweep:
-      this.sweepActive = ((data & 0x80) !== 0);
-      this.sweepCounterMax = ((data >> 4) & 7);
-      this.sweepMode = (data >> 3) & 1;
-      this.sweepShiftAmount = data & 7;
-      this.updateSweepPeriod = true;
+      this.isSweepEnabled = !!(data & 0x80);
+      // this.sweepCounterMax = ((data >> 4) & 7);
+      // this.sweepMode = (data >> 3) & 1;
+      // this.sweepShiftAmount = data & 7;
+      // this.updateSweepPeriod = true;
     }
     else if (addr === 0x02) {
-      // Programmable timer:
       this.dividerForFrequency &= 0x700;
       this.dividerForFrequency |= data;
     }
@@ -81,34 +86,34 @@ export default class Square {
       // Programmable timer, length counter
       this.dividerForFrequency &= 0xFF;
       this.dividerForFrequency |= ((data & 0x7) << 8);
-      //if (this.isEnabled) {
-      // this.lengthCounter = this.papu.getLengthMax(value & 0xF8);
-      //}
-      //this.envReset = true;
+      if (this.isLengthCounterEnable) {
+        this.lengthCounter = counterTable(data & 0xF8);
+      }
       this.start();
     }
   }
 
   start() {
-    // freq = CPU_CLOCK / ((register + 1) * 32) 
-    console.log(this.dividerForFrequency)
-    const freq = CPU_CLOCK / (this.dividerForFrequency + 1) * 32;
-    console.log(freq)
-    this.source.setFrequency(freq);
-    this.source.start();
+    const freq = CPU_CLOCK / ((this.dividerForFrequency + 1) * 32);
+    // this.source.setFrequency(freq);
+    // this.source.start();
+    this.oscillator.start();
+    this.oscillator.setFrequency(freq);
   }
 
-  setEnabled(value) {
-    this.isEnabled = value;
-    if (!value) {
-      this.lengthCounter = 0;
+  /*
+    setEnabled(value) {
+      this.isEnabled = value;
+      if (!value) {
+        this.lengthCounter = 0;
+      }
+      //this.updateSampleValue();
     }
-    //this.updateSampleValue();
-  }
+    */
 
-  getLengthStatus() {
-    return ((this.lengthCounter === 0 || !this.isEnabled) ? 0 : 1);
-  }
+  // getLengthStatus() {
+  //   return ((this.lengthCounter === 0 || !this.isEnabled) ? 0 : 1);
+  // }
 }
 // Length counter
 // When clocked by the frame counter, the length counter is decremented except when:
