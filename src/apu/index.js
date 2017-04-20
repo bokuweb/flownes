@@ -17,7 +17,7 @@ export default class Apu {
   cycle: number;
   step: number;
   envelopesCounter: number;
-  square: Square;
+  square: Square[];
   // lengthCounter: number; use register
 
   constructor() {
@@ -26,13 +26,12 @@ export default class Apu {
     this.registers = new Uint8Array(0x18);
     this.cycle = 0;
     this.step = 0;
-    this.square = new Square();
+    this.square = [new Square(), new Square()];
   }
 
   exec(cycle: number) {
     this.cycle += cycle;
     if (this.cycle >= DIVIDE_COUNT_FOR_240HZ) {
-      console.log('240hz')
       // invoked by 240hz
       this.cycle -= DIVIDE_COUNT_FOR_240HZ;
       // TODO: add 5step sequence
@@ -46,15 +45,18 @@ export default class Apu {
     }
   }
 
-  updateSweepAndLengthCounter() {
-    this.square.updateSweepAndLengthCounter();
+  updateSweepAndLengthCounter() {   
+    this.square.forEach(s => s.updateSweepAndLengthCounter());
   }
 
   write(addr: Byte, data: Byte) {
     console.log('apu write', addr, data);
     if (addr <= 0x03) {
       // square wave control register
-      this.square.write(addr, data);
+      this.square[0].write(addr, data);
+    } else if (addr <= 0x07) {
+      // square wave control register
+      this.square[1].write(addr - 0x04, data);
     } else if (addr === 0x15) {
       this.registers[addr] = data;
     }

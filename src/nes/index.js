@@ -79,7 +79,7 @@ export class NES {
   }
 
   frame() {
-    console.time('loop') // eslint-disable-line no-console
+    // console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
       let cycle: number;
       if (this.dma.isDmaProcessing) {
@@ -97,7 +97,7 @@ export class NES {
         break;
       }
     }
-    console.timeEnd('loop'); // eslint-disable-line no-console
+    // console.timeEnd('loop'); // eslint-disable-line no-console
     requestAnimationFrame(this.frame);
   }
 

@@ -29,10 +29,18 @@ export default class Square {
     this.sweepUnitCounter++;
     if (!(this.sweepUnitCounter % this.sweepUnitDivider)) {
       // INFO: 
-      // sweep mode 0 : newFreq = currentFreq + (currentFreq >> N)
-      // sweep mode 1 : newFreq = currentFreq - (currentFreq >> N)
+      // sweep mode 0 : newFreq = currentFreq - (currentFreq >> N)
+      // sweep mode 1 : newFreq = currentFreq + (currentFreq >> N)
       if (this.isSweepEnabled) {
-        this.frequency = this.frequency + (this.frequency >> this.sweepShiftAmount);
+        const sign = this.sweepMode ? 1 : -1;
+        this.frequency = this.frequency + ((this.frequency >> this.sweepShiftAmount) * sign);
+        if (this.frequency > 4095) {
+          this.frequency = 4095;
+          this.oscillator.stop();
+        } else if (this.frequency < 16) {
+          this.frequency = 16;
+          this.oscillator.stop();
+        }
         this.oscillator.changeFrequency(this.frequency);
       }
     }
@@ -80,15 +88,17 @@ export default class Square {
       // this.dutyMode = (data >> 6) & 0x3;
       this.isLengthCounterEnable = !(data & 0x20);
       // this.masterVolume = this.envDecayDisable ? this.envDecayRate : this.envVolume;
-      //this.updateSampledata();
+      //this.updateSampledata();\
+      console.log(data.toString(16), "0x00")
     }
     else if (addr === 0x01) {
       // Sweep:
       this.isSweepEnabled = !!(data & 0x80);
       this.sweepUnitDivider = ((data >> 4) & 0x07) + 1;
-      this.sweepMode = !!(data & 0x10);
+      this.sweepMode = !!(data & 0x08);
       this.sweepShiftAmount = data & 0x07;
       // this.updateSweepPeriod = true;
+      console.log(data.toString(16), "0x01", this.isSweepEnabled, this.sweepUnitDivider, this.sweepMode)
     }
     else if (addr === 0x02) {
       this.dividerForFrequency &= 0x700;

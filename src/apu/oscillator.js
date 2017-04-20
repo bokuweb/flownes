@@ -25,17 +25,18 @@ export default class Oscillator {
   start() {
     if (this.playing) {
       this.stop();
-      this.oscillator = this.createOscillator();
-      this.setPulseWidth(0.5);
     }
     this.playing = true;
     this.oscillator.start(0);
   }
 
   stop() {
-    console.log('stop');
-    this.playing = false;
-    this.oscillator.stop(this.context.currentTime);
+    if (this.playing) {
+      this.playing = false;
+      this.oscillator.stop(this.context.currentTime);
+      this.oscillator = this.createOscillator();
+      this.setPulseWidth(0.5);
+    }
   }
 
   createOscillator(options = {}) {
@@ -45,6 +46,7 @@ export default class Oscillator {
     // if (options.type) oscillator.type = options.type
 
     if (options.harmonics) {
+      /* eslint-disable no-undef */
       const waveform = this.context.createPeriodicWave(
         new Float32Array(options.harmonics.real),
         new Float32Array(options.harmonics.imag)
@@ -74,19 +76,12 @@ export default class Oscillator {
       imag.push(0);
     }
     this.oscillator.setPeriodicWave(
+      /* eslint-disable no-undef */
       this.context.createPeriodicWave(new Float32Array(real), new Float32Array(imag)),
     )
   }
 
-  /**
-   * Set the pitch of a particular oscillator
-   * @param {String} oscillatorIndex The oscillator to set for (PWM1, PWM2, NOISE, TRIANGLE)
-   * @param {Number} frequency The frequency in Hz to set to
-   * @param {Number} volume The volume to set to (0 - 1)
-   */
-
   setFrequency(frequency) {
-    console.log(frequency)
     this.oscillator.frequency.value = frequency;
   }
 
