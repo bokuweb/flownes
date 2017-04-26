@@ -1,4 +1,11 @@
+/* @flow */
+
 export default class Oscillator {
+
+  context: AudioContext;
+  oscillator: OscillatorNode;
+  gain: GainNode;
+  playing: boolean;
 
   constructor() {
     try {
@@ -7,16 +14,12 @@ export default class Oscillator {
     } catch (e) {
       throw new Error('Web Audio isn\'t supported in this browser!');
     }
-    // this.oscillators = {};
-    // initialize oscillators
-    this.oscillator = this.createOscillator();
+    this.oscillator = this.createOscillator({ global_gain: 1 });
     this.setPulseWidth(0.5);
-
     // this.oscillators.PWM2 = createOscillator({ global_gain: 0.25 })
     // this.setPulseWidth('PWM2', 0.5)
     // this.oscillators.TRIANGLE = this.createOscillator({ type: 'triangle' })
     // this.oscillators.NOISE = createNoiseOscillator()
-
     // Object.keys(this.oscillators).forEach(key => this.oscillators[key].oscillator.start(0));
     // this.oscillator.start(0);
     this.playing = false;
@@ -54,20 +57,29 @@ export default class Oscillator {
       oscillator.setPeriodicWave(waveform);
     }
 
-    // this.gain = this.context.createGain();
-    // this.gain.gain.value = 0
-    // const globalGain = this.context.createGain()
+    // var gain = context.createGain()
+    // gain.gain.value = 0
+// 
+    // // Some wave forms are simply louder, so we add a global gain option for basic mixing
+    // var globalGain = context.createGain()
     // globalGain.gain.value = options.global_gain || 1
+// 
+    // oscillator.connect(gain)
+    // gain.connect(globalGain)
+    // globalGain.connect(context.destination)
 
-    oscillator.connect(this.context.destination)
-    // this.gain.connect(globalGain)
-    // lobalGain.connect(this.context.destination)
+    this.gain = this.context.createGain();
+    this.gain.gain.value = 0.5
+    const globalGain = this.context.createGain()
+    globalGain.gain.value = options.global_gain || 1
+
+    oscillator.connect(this.gain);
+    this.gain.connect(globalGain);
+    globalGain.connect(this.context.destination);
     return oscillator;
   }
 
-  setPulseWidth(pulseWidth) {
-    // calculate the harmonics for the passed (clamped) pulse width
-    // pulseWidth = Math.max(0, Math.min(1, pulseWidth));
+  setPulseWidth(pulseWidth: number) {
     const real = [0]
     const imag = [0]
     for (let i = 1; i < 8192; i += 1) {
@@ -81,11 +93,11 @@ export default class Oscillator {
     )
   }
 
-  setFrequency(frequency) {
+  setFrequency(frequency: number) {
     this.oscillator.frequency.value = frequency;
   }
 
-  changeFrequency(frequency) {
+  changeFrequency(frequency: number) {
     // if (oscillatorIndex === 'NOISE') {
     //  this.oscillator.bandpass.frequency.value = frequency
     //  return
@@ -93,8 +105,8 @@ export default class Oscillator {
     this.oscillator.frequency.setValueAtTime(frequency, this.context.currentTime)
   }
 
-  setVolume(volume) {
+  setVolume(volume: number) {
     volume = Math.max(0, Math.min(1, volume));
-    this.oscillator.gain.gain.value = volume;
+    this.gain.gain.value = volume;
   }
 }

@@ -45,7 +45,7 @@ export default class Apu {
     }
   }
 
-  updateSweepAndLengthCounter() {   
+  updateSweepAndLengthCounter() {
     this.square.forEach(s => s.updateSweepAndLengthCounter());
   }
 

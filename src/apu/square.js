@@ -1,14 +1,30 @@
-// import Source from './audio';
+/* @flow */
+
 import Oscillator from './oscillator';
 import { CPU_CLOCK } from '../constants/cpu';
 import { counterTable } from '../constants/apu';
 
+import type { Byte } from '../types/common';
+
 export default class Square {
+
+  oscillator: Oscillator;
+  sweepUnitCounter: number;
+  lengthCounter: number;
+  isLengthCounterEnable: boolean;
+  sweepUnitDivider: number;
+  frequency: number;
+  sweepShiftAmount: number;
+  isSweepEnabled: boolean;
+  sweepMode: boolean;
+  dividerForFrequency: number;
+  envDecayLoopEnable: boolean;
+  envDecayRate: number;
 
   constructor() {
     this.reset();
-    // this.source = new Source();
     this.oscillator = new Oscillator();
+    this.oscillator.setVolume(1)
     this.sweepUnitCounter = 0;
   }
 
@@ -17,11 +33,13 @@ export default class Square {
     this.isLengthCounterEnable = false;
   }
 
+  // Length counter
+  // When clocked by the frame counter, the length counter is decremented except when:
+  // The length counter is 0, or The halt flag is set
   updateSweepAndLengthCounter() {
     if (this.isLengthCounterEnable && this.lengthCounter > 0) {
       this.lengthCounter--;
       if (this.lengthCounter === 0) {
-        // this.source.stop();
         this.oscillator.stop();
       }
     }
@@ -80,25 +98,31 @@ export default class Square {
   //   }
   // }
 
-  write(addr, data) {
+  getPulseWidth(duty: number) {
+    switch (duty) {
+      case 0x00: return 0.125;
+      case 0x01: return 0.25;
+      case 0x02: return 0.5;
+      case 0x03: return 0.75;
+    }
+  }
+
+  write(addr: Byte, data: Byte) {
     if (addr === 0x00) {
       // this.envDecayDisable = ((data & 0x10) !== 0);
-      // this.envDecayRate = data & 0xF;
-      // this.envDecayLoopEnable = ((data & 0x20) !== 0);
-      // this.dutyMode = (data >> 6) & 0x3;
+      this.envDecayRate = data & 0xF;
+      this.envDecayLoopEnable = ((data & 0x20) !== 0);
+      const duty = (data >> 6) & 0x3;
       this.isLengthCounterEnable = !(data & 0x20);
       // this.masterVolume = this.envDecayDisable ? this.envDecayRate : this.envVolume;
-      //this.updateSampledata();\
-      console.log(data.toString(16), "0x00")
+      this.oscillator.setPulseWidth(this.getPulseWidth(duty));
     }
     else if (addr === 0x01) {
-      // Sweep:
+      // Sweep
       this.isSweepEnabled = !!(data & 0x80);
       this.sweepUnitDivider = ((data >> 4) & 0x07) + 1;
       this.sweepMode = !!(data & 0x08);
       this.sweepShiftAmount = data & 0x07;
-      // this.updateSweepPeriod = true;
-      console.log(data.toString(16), "0x01", this.isSweepEnabled, this.sweepUnitDivider, this.sweepMode)
     }
     else if (addr === 0x02) {
       this.dividerForFrequency &= 0x700;
@@ -109,7 +133,7 @@ export default class Square {
       this.dividerForFrequency &= 0xFF;
       this.dividerForFrequency |= ((data & 0x7) << 8);
       if (this.isLengthCounterEnable) {
-        this.lengthCounter = counterTable(data & 0xF8);
+        this.lengthCounter = counterTable[data & 0xF8];
       }
       this.frequency = CPU_CLOCK / ((this.dividerForFrequency + 1) * 32);
       this.sweepUnitCounter = 0;
@@ -118,27 +142,7 @@ export default class Square {
   }
 
   start() {
-    // this.source.setFrequency(freq);
-    // this.source.start();
     this.oscillator.start();
     this.oscillator.setFrequency(this.frequency);
   }
-
-  /*
-    setEnabled(value) {
-      this.isEnabled = value;
-      if (!value) {
-        this.lengthCounter = 0;
-      }
-      //this.updateSampleValue();
-    }
-    */
-
-  // getLengthStatus() {
-  //   return ((this.lengthCounter === 0 || !this.isEnabled) ? 0 : 1);
-  // }
 }
-// Length counter
-// When clocked by the frame counter, the length counter is decremented except when:
-// The length counter is 0, or
-// The halt flag is set
