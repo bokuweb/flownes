@@ -30,6 +30,8 @@ export default class Square {
     this.oscillator.setVolume(1)
     this.sweepUnitCounter = 0;
     this.envelopeGeneratorCounter = 0;
+    this.envelopeRate = 0x0F;
+    this.envelopeEnable = false;
   }
 
   get volume(): number {
@@ -51,7 +53,7 @@ export default class Square {
         this.envelopeVolume = this.envelopeLoopEnable ? 0x0F : 0x00;
       }
     }
-    this.oscillator().setVolume(this.volume);
+    this.oscillator.setVolume(this.volume);
   }
 
   // Length counter
@@ -102,7 +104,7 @@ export default class Square {
       this.envelopeLoopEnable = ((data & 0x20) !== 0);
       const duty = (data >> 6) & 0x3;
       this.isLengthCounterEnable = !(data & 0x20);
-      this.oscillator().setVolume(this.volume);
+      this.oscillator.setVolume(this.volume);
       this.oscillator.setPulseWidth(this.getPulseWidth(duty));
 
     }
