@@ -16,12 +16,6 @@ export default class Oscillator {
     }
     this.oscillator = this.createOscillator({ global_gain: 1 });
     this.setPulseWidth(0.5);
-    // this.oscillators.PWM2 = createOscillator({ global_gain: 0.25 })
-    // this.setPulseWidth('PWM2', 0.5)
-    // this.oscillators.TRIANGLE = this.createOscillator({ type: 'triangle' })
-    // this.oscillators.NOISE = createNoiseOscillator()
-    // Object.keys(this.oscillators).forEach(key => this.oscillators[key].oscillator.start(0));
-    // this.oscillator.start(0);
     this.playing = false;
   }
 
@@ -42,12 +36,9 @@ export default class Oscillator {
     }
   }
 
-  createOscillator(options = {}) {
+  createOscillator(options: { frequency?: number; harmonics?: { real: number; imag: number;} } = {}) {
     const oscillator = this.context.createOscillator()
-
     if (options.frequency) oscillator.frequency.value = options.frequency;
-    // if (options.type) oscillator.type = options.type
-
     if (options.harmonics) {
       /* eslint-disable no-undef */
       const waveform = this.context.createPeriodicWave(
@@ -57,25 +48,10 @@ export default class Oscillator {
       oscillator.setPeriodicWave(waveform);
     }
 
-    // var gain = context.createGain()
-    // gain.gain.value = 0
-// 
-    // // Some wave forms are simply louder, so we add a global gain option for basic mixing
-    // var globalGain = context.createGain()
-    // globalGain.gain.value = options.global_gain || 1
-// 
-    // oscillator.connect(gain)
-    // gain.connect(globalGain)
-    // globalGain.connect(context.destination)
-
     this.gain = this.context.createGain();
     this.gain.gain.value = 0.5
-    const globalGain = this.context.createGain()
-    globalGain.gain.value = options.global_gain || 1
-
     oscillator.connect(this.gain);
-    this.gain.connect(globalGain);
-    globalGain.connect(this.context.destination);
+    this.gain.connect(this.context.destination);
     return oscillator;
   }
 
@@ -98,10 +74,6 @@ export default class Oscillator {
   }
 
   changeFrequency(frequency: number) {
-    // if (oscillatorIndex === 'NOISE') {
-    //  this.oscillator.bandpass.frequency.value = frequency
-    //  return
-    // }
     this.oscillator.frequency.setValueAtTime(frequency, this.context.currentTime)
   }
 

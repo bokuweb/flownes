@@ -35,6 +35,7 @@ export default class Apu {
       // invoked by 240hz
       this.cycle -= DIVIDE_COUNT_FOR_240HZ;
       // TODO: add 5step sequence
+      this.updateEnvelope();
       if (this.step % 2 === 0) {
 
       } else if (this.step % 2 === 1) {
@@ -48,6 +49,11 @@ export default class Apu {
   updateSweepAndLengthCounter() {
     this.square.forEach(s => s.updateSweepAndLengthCounter());
   }
+
+  updateEnvelope() {
+    this.square.forEach(s => s.updateEnvelope());
+  }
+  
 
   write(addr: Byte, data: Byte) {
     console.log('apu write', addr, data);

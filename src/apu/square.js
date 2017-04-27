@@ -2,7 +2,7 @@
 
 import Oscillator from './oscillator';
 import { CPU_CLOCK } from '../constants/cpu';
-import { counterTable } from '../constants/apu';
+import { counterTable, globalGain } from '../constants/apu';
 
 import type { Byte } from '../types/common';
 
@@ -18,19 +18,40 @@ export default class Square {
   isSweepEnabled: boolean;
   sweepMode: boolean;
   dividerForFrequency: number;
-  envDecayLoopEnable: boolean;
-  envDecayRate: number;
+  envelopeLoopEnable: boolean;
+  envelopeGeneratorCounter: number;
+  envelopeRate: number;
+  envelopeVolume: number;
+  envelopeEnable: boolean;
 
   constructor() {
     this.reset();
     this.oscillator = new Oscillator();
     this.oscillator.setVolume(1)
     this.sweepUnitCounter = 0;
+    this.envelopeGeneratorCounter = 0;
+  }
+
+  get volume(): number {
+    const vol = this.envelopeEnable ? this.envelopeVolume : this.envelopeRate;
+    return vol / (0x0F / globalGain);
   }
 
   reset() {
     this.lengthCounter = 0;
     this.isLengthCounterEnable = false;
+  }
+
+  updateEnvelope() {
+    if ((--this.envelopeGeneratorCounter) <= 0) {
+      this.envelopeGeneratorCounter = this.envelopeRate;
+      if (this.envelopeVolume > 0) {
+        this.envelopeVolume--;
+      } else {
+        this.envelopeVolume = this.envelopeLoopEnable ? 0x0F : 0x00;
+      }
+    }
+    this.oscillator().setVolume(this.volume);
   }
 
   // Length counter
@@ -64,58 +85,26 @@ export default class Square {
     }
   }
 
-  /*
-    clockEnvDecay() {
-      if (this.envReset) {
-        // Reset envelope:
-        this.envReset = false;
-        this.envDecayCounter = this.envDecayRate + 1;
-        this.envVolume = 0xF;
-      } else if ((--this.envDecayCounter) <= 0) {
-        // Normal handling:
-        this.envDecayCounter = this.envDecayRate + 1;
-        if (this.envVolume > 0) {
-          this.envVolume--;
-        } else {
-          this.envVolume = this.envDecayLoopEnable ? 0xF : 0;
-        }
-      }
-  
-      this.masterVolume = this.envDecayDisable ? this.envDecayRate : this.envVolume;
-      //this.updateSampleValue();
-    }
-    */
-
-  // updateSampleValue() {
-  //   if (this.isEnabled && this.lengthCounter > 0 && this.dividerForFrequency > 7) {
-  //     if (this.sweepMode === 0 && (this.dividerForFrequency + (this.dividerForFrequency >> this.sweepShiftAmount)) > 4095) {
-  //       this.sampleValue = 0;
-  //     } else {
-  //       this.sampleValue = this.masterVolume * this.dutyLookup[(this.dutyMode << 3) + this.squareCounter];
-  //     }
-  //   } else {
-  //     this.sampleValue = 0;
-  //   }
-  // }
-
-  getPulseWidth(duty: number) {
+  getPulseWidth(duty: number): number {
     switch (duty) {
       case 0x00: return 0.125;
       case 0x01: return 0.25;
       case 0x02: return 0.5;
       case 0x03: return 0.75;
+      default: return 0;
     }
   }
 
   write(addr: Byte, data: Byte) {
     if (addr === 0x00) {
-      // this.envDecayDisable = ((data & 0x10) !== 0);
-      this.envDecayRate = data & 0xF;
-      this.envDecayLoopEnable = ((data & 0x20) !== 0);
+      this.envelopeEnable = !((data & 0x10) !== 0);
+      this.envelopeRate = data & 0xF + 1;
+      this.envelopeLoopEnable = ((data & 0x20) !== 0);
       const duty = (data >> 6) & 0x3;
       this.isLengthCounterEnable = !(data & 0x20);
-      // this.masterVolume = this.envDecayDisable ? this.envDecayRate : this.envVolume;
+      this.oscillator().setVolume(this.volume);
       this.oscillator.setPulseWidth(this.getPulseWidth(duty));
+
     }
     else if (addr === 0x01) {
       // Sweep
@@ -137,6 +126,9 @@ export default class Square {
       }
       this.frequency = CPU_CLOCK / ((this.dividerForFrequency + 1) * 32);
       this.sweepUnitCounter = 0;
+      // envelope
+      this.envelopeGeneratorCounter = this.envelopeRate;
+      this.envelopeVolume = 0x0F;
       this.start();
     }
   }
