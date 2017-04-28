@@ -2,6 +2,7 @@
 
 import { parse } from '../parser';
 import Cpu from '../cpu';
+import Apu from '../apu';
 import Ppu from '../ppu';
 import Rom from '../rom';
 import Ram from '../ram';
@@ -16,8 +17,9 @@ import Interrupts from '../interrupts';
 export class NES {
   cpu: Cpu;
   ppu: Ppu;
+  apu: Apu;
   cpuBus: CpuBus;
-  charactorROM: Rom;
+  characterROM: Rom;
   programROM: Rom;
   ram: Ram;
   ppuBus: PpuBus;
@@ -50,49 +52,52 @@ export class NES {
   */
 
   setup(nes: ArrayBuffer) {
-    const { charactorROM, programROM, isHorizontalMirror } = parse(nes);
+    const { characterROM, programROM, isHorizontalMirror } = parse(nes);
     const ppuConfig = {
       isHorizontalMirror,
     };
     this.keypad = new Keypad();
     this.ram = new Ram(2048);
-    this.charactorROM = new Rom(charactorROM);
+    this.characterROM = new Rom(characterROM);
     this.programROM = new Rom(programROM);
-    this.ppuBus = new PpuBus(this.charactorROM);
+    this.ppuBus = new PpuBus(this.characterROM);
     this.interrupts = new Interrupts();
+    this.apu = new Apu();
     this.ppu = new Ppu(this.ppuBus, this.interrupts, ppuConfig);
     this.dma = new Dma(this.ram, this.ppu);
     this.cpuBus = new CpuBus(
       this.ram,
       this.programROM,
-      this.charactorROM,
+      this.characterROM,
       this.ppu,
       this.keypad,
       this.dma,
+      this.apu,
     );
     this.cpu = new Cpu(this.cpuBus, this.interrupts);
     this.cpu.reset();
   }
 
   frame() {
-    console.time('loop') // eslint-disable-line no-console
+    // console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
       let cycle: number;
       if (this.dma.isDmaProcessing) {
         this.dma.execDma();
-        cycle = 514 * 3;
+        cycle = 514;
       } else {
-        cycle = this.cpu.exec() * 3;
+        cycle = this.cpu.exec();
       }
-      const renderingData = this.ppu.exec(cycle);
+      const renderingData = this.ppu.exec(cycle * 3);
+      this.apu.exec(cycle);
       if (renderingData) {
-        const { background, sprites, pallete } = renderingData;
-        this.canvasRenderer.renderBackground(background, pallete);
-        this.canvasRenderer.renderSprites(sprites, pallete);
+        const { background, sprites, palette } = renderingData;
+        this.canvasRenderer.renderBackground(background, palette);
+        this.canvasRenderer.renderSprites(sprites, palette);
         break;
       }
     }
-    console.timeEnd('loop'); // eslint-disable-line no-console
+    // console.timeEnd('loop'); // eslint-disable-line no-console
     requestAnimationFrame(this.frame);
   }
 

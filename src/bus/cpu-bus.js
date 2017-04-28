@@ -5,6 +5,7 @@ import Ram from '../ram';
 import Ppu from '../ppu';
 import Keypad from '../keypad';
 import Dma from '../dma';
+import Apu from '../apu';
 
 import type { Word, Byte } from '../types/common';
 
@@ -12,16 +13,18 @@ export default class CpuBus {
 
   ram: Ram;
   ppu: Ppu;
-  charactorROM: Rom;
+  apu: Apu;
+  characterROM: Rom;
   programROM: Rom;
   keypad: Keypad;
   dma: Dma;
 
-  constructor(ram: Ram, programROM: Rom, charactorROM: Rom, ppu: Ppu, keypad: Keypad, dma: Dma) {
+  constructor(ram: Ram, programROM: Rom, characterROM: Rom, ppu: Ppu, keypad: Keypad, dma: Dma, apu: Apu) {
     this.ram = ram;
     this.programROM = programROM;
-    this.charactorROM = charactorROM;
+    this.characterROM = characterROM;
     this.ppu = ppu;
+    this.apu = apu;
     this.keypad = keypad;
     this.dma = dma;
   }
@@ -64,17 +67,22 @@ export default class CpuBus {
     } else if (addr < 0x2008) {
       // PPU
       this.ppu.write(addr - 0x2000, data);
-    } else if (addr === 0x4014) {
-      this.dma.write(data);
-    } else if (addr === 0x4016) {
-      // TODO Add 2P
-      this.keypad.write(data);
+    } else if (addr >= 0x4000 && addr < 0x4020) {
+      if (addr === 0x4014) {
+        this.dma.write(data);
+      } else if (addr === 0x4016) {
+        // TODO Add 2P
+        this.keypad.write(data);
+      } else {
+        // APU
+        this.apu.write(addr - 0x4000, data);
+      }
     }
   }
 
   readByPpu(addr: Word): Byte {
     if (addr < 0x2000) {
-      return this.charactorROM.read(addr);
+      return this.characterROM.read(addr);
     } else {
       // FIXME:
       return 0;

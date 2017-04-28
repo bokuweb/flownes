@@ -88,6 +88,7 @@
              border-bottom: 0;
              color: inherit;
          }
+
          .single-image {
              width: 33%;
          }
@@ -137,7 +138,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     </head>
     <body>
-        <section class="hero is-success is-large">
+        <section class="hero is-danger is-large">
             <div class="hero-head">
                 <header class="nav">
                     <div class="container">
@@ -146,7 +147,7 @@
                         </div>
                         <div class="nav-right nav-menu">
                             <span class="nav-item">
-                                <a href="https://github.com/bokuweb/reg-cli" class="button is-success is-inverted">
+                                <a href="https://github.com/bokuweb/reg-cli" class="button is-danger is-inverted">
                                     <span class="icon">
                                         <i class="fa fa-github"></i>
                                     </span>
@@ -161,8 +162,9 @@
         <div class="container report">
             <div class="content">
                 <h2>Summary</h2>
-                
+                <h4>Failed</h4>
                 <ul class="results fail">
+                    <li><a href="#&#x2F;hello.png" class="link"><i class="fa fa-close" aria-hidden="true"></i>&#x2F;hello.png</a></li>
                 </ul>
                 
                 <ul class="results warn">
@@ -170,30 +172,31 @@
                 
                 <ul class="results warn">
                 </ul>
-                <h4>Passed</h4>
+                
                 <ul class="results success">
-                    <li><a href="#&#x2F;hello.png" class="link"><i class="fa fa-check" aria-hidden="true"></i>&#x2F;hello.png</a></li>
                 </ul>
 
                 <h2>Detail</h2>
-                
+                <h4>Failed</h4>
                 <ul class="results fail">
-                </ul>
-
-                
-                <ul class="results warn">
-                </ul>
-
-                
-                <ul class="results warn">
-                </ul>
-
-                <h4>passed</h4>
-                <ul class="results success">
-                    <li id="&#x2F;hello.png"><i class="fa fa-check" aria-hidden="true"></i>&#x2F;hello.png</li>
+                    <li id="&#x2F;hello.png"><i class="fa fa-close" aria-hidden="true"></i>&#x2F;hello.png</li>
                     <div class="image-wrapper">
-                      <div class="single-image"><span class="tag">Passed</span><div class="image-inner"><img src="..&#x2F;screenshot&#x2F;actual&#x2F;hello.png" /></div></div>
+                      <div><span class="tag">Diff</span><div class="image-inner"><img src="..&#x2F;screenshot&#x2F;diff&#x2F;hello.png" /></div></div>
+                      <div><span class="tag">After</span><div class="image-inner"><img src="..&#x2F;screenshot&#x2F;actual&#x2F;hello.png" /></div></div>
+                      <div><span class="tag">Before</span><div class="image-inner"><img src="..&#x2F;screenshot&#x2F;expected&#x2F;hello.png" /></div></div>
                     </div>
+                </ul>
+
+                
+                <ul class="results warn">
+                </ul>
+
+                
+                <ul class="results warn">
+                </ul>
+
+                
+                <ul class="results success">
                 </ul>
             </div>
             <div class="overlay"><div class="image-viewer"><img src="" /></div></div>
