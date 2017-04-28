@@ -1,24 +1,18 @@
 /* @flow */
 
-import type { Byte, Word } from '../types/common';
+import type { Byte } from '../types/common';
 import Square from './square';
 import { DIVIDE_COUNT_FOR_240HZ } from '../constants/apu';
-
-type SquareWaveRegisters = {
-  halt: boolean;
-  freq: Word;
-  length: Byte;
-}
 
 export default class Apu {
 
   registers: Uint8Array;
-  // squareWaveRegisters: SquareWaveRegisters[];
   cycle: number;
   step: number;
   envelopesCounter: number;
   square: Square[];
-  // lengthCounter: number; use register
+  sequencerMode: number;
+  enableIrq: boolean;
 
   constructor() {
     // APU Registers
@@ -34,29 +28,50 @@ export default class Apu {
     if (this.cycle >= DIVIDE_COUNT_FOR_240HZ) {
       // invoked by 240hz
       this.cycle -= DIVIDE_COUNT_FOR_240HZ;
-      // TODO: add 5step sequence
-      this.updateEnvelope();
-      if (this.step % 2 === 0) {
-
-      } else if (this.step % 2 === 1) {
-        this.updateSweepAndLengthCounter();
+      if (this.sequencerMode) {
+        this.updateBySequenceMode1();
+      } else {
+        this.updateBySequenceMode0();
       }
-      this.step++;
-      if (this.step === 4) this.step = 0;
+    }
+  }
+
+  updateBySequenceMode0() {
+    this.updateEnvelope();
+    if (this.step % 2 === 1) {
+      this.updateSweepAndLengthCounter();
+    }
+    this.step++;
+    if (this.step === 4) {
+      if (this.enableIrq) {
+        // TODO: assert IRQ
+      }
+      this.step = 0;
+    }
+  }
+
+  updateBySequenceMode1() {
+    if (this.step % 2 === 0) {
+      this.updateSweepAndLengthCounter();
+    }
+    this.step++;
+    if (this.step === 5) {
+      this.step = 0;
+    } else {
+      this.updateEnvelope();
     }
   }
 
   updateSweepAndLengthCounter() {
-    this.square.forEach(s => s.updateSweepAndLengthCounter());
+    this.square.forEach((s: Square): void => s.updateSweepAndLengthCounter());
   }
 
   updateEnvelope() {
-    this.square.forEach(s => s.updateEnvelope());
+    this.square.forEach((s: Square): void => s.updateEnvelope());
   }
-  
 
   write(addr: Byte, data: Byte) {
-    console.log('apu write', addr, data);
+    // console.log('apu write', addr, data);
     if (addr <= 0x03) {
       // square wave control register
       this.square[0].write(addr, data);
@@ -65,6 +80,10 @@ export default class Apu {
       this.square[1].write(addr - 0x04, data);
     } else if (addr === 0x15) {
       this.registers[addr] = data;
+    } else if (addr === 0x17) {
+      this.sequencerMode = data & 0x80 ? 1 : 0;
+      this.registers[addr] = data;
+      this.enableIrq = !!(data & 0x40);
     }
   }
 
