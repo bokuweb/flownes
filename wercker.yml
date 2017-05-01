@@ -1,0 +1,53 @@
+box:
+  id: quay.io/wacul/node-nightmare
+  registry: https://quay.io
+  tag: latest
+no-response-timeout: 15
+
+build:
+  steps:
+    - script:
+      name: configure yarn cache
+      code: |
+        export YARN_CACHE=$WERCKER_CACHE_DIR/yarn
+    - script:
+      name: install deps
+      code: |
+        HOME=$YARN_CACHE yarn
+    - script:
+      name: set timezone
+      code: |
+        export TZ="Asia/Tokyo"
+    - script:
+      name: start xvfb daemon
+      code: |
+        export DISPLAY=':99.0'
+        xvfbd start
+    - script:
+      name: run karma
+      code: npm run test
+    - script:
+      name: stop xvfb daemon
+      code: xvfbd stop
+    - pip-install:
+        requirements_file: ""
+        pip_command: "pip3"
+        packages_list: "awscli"
+    - script:
+      name: set environment
+      code: |
+        export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    #- script:
+    #  name: s3 upload
+    #  code: |
+    #    aws s3 cp front/screenshot s3://ai-analyst-ocha-snapshot/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
+    #    aws s3 cp front/screenshot/index.html s3://ai-analyst-ocha-snapshot/$WERCKER_GIT_COMMIT --exclude "*" --include "*.html" --content-type text/html --acl public-read
+
+  # after-steps:
+  #   - wantedly/pretty-slack-notify:
+  #     webhook_url: $SLACK_URL
+  #     channel: $SLACK_CHANNEL
+  #     username: wercker
+  #     passed_message: Screenshot report url is https://s3.amazonaws.com/ai-analyst-ocha-snapshot/$WERCKER_GIT_COMMIT
