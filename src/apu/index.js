@@ -71,7 +71,7 @@ export default class Apu {
   }
 
   write(addr: Byte, data: Byte) {
-    // console.log('apu write', addr, data);
+    console.log('apu write', addr, data);
     if (addr <= 0x03) {
       // square wave control register
       this.square[0].write(addr, data);

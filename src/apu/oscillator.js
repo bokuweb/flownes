@@ -1,5 +1,13 @@
 /* @flow */
 
+export type Kind = 'squire' | 'noise' | 'triangule';
+
+export type OscillatorOption = {
+  kind?: Kind;
+  frequency?: number;
+  harmonics?: { real: number; imag: number; };
+}
+
 export default class Oscillator {
 
   context: AudioContext;
@@ -7,14 +15,14 @@ export default class Oscillator {
   gain: GainNode;
   playing: boolean;
 
-  constructor() {
+  constructor(type?: Kind) {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext
       this.context = new AudioContext();
     } catch (e) {
       throw new Error('Web Audio isn\'t supported in this browser!');
     }
-    this.oscillator = this.createOscillator({ global_gain: 1 });
+    this.oscillator = this.createOscillator({ kind: type  });
     this.setPulseWidth(0.5);
     this.playing = false;
   }
@@ -36,8 +44,15 @@ export default class Oscillator {
     }
   }
 
-  createOscillator(options: { frequency?: number; harmonics?: { real: number; imag: number;} } = {}) {
+  createOscillator(options: OscillatorOption = {}) {
     const oscillator = this.context.createOscillator()
+    if (!options.kind || options.kind === 'square') {
+      oscillator.type = 'square';
+    } else if (options.kind === 'triangle') {
+      oscillator.type = 'triangle';
+    } else {
+      // noise
+    }
     if (options.frequency) oscillator.frequency.value = options.frequency;
     if (options.harmonics) {
       /* eslint-disable no-undef */
@@ -52,6 +67,12 @@ export default class Oscillator {
     this.gain.gain.value = 0.5
     oscillator.connect(this.gain);
     this.gain.connect(this.context.destination);
+
+    // if (oscillatorIndex === 'noise') {
+    //   oscillators[oscillatorIndex].bandpass.frequency.value = frequency
+    //   return
+    // }
+
     return oscillator;
   }
 
