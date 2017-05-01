@@ -7,11 +7,15 @@ no-response-timeout: 15
 build:
   steps:
     - script:
-      name: configure yarn cache
+      name: install yarn
+      code: |
+        npm install -g yarn
+    - script:
+      name: set yarn cache
       code: |
         export YARN_CACHE=$WERCKER_CACHE_DIR/yarn
     - script:
-      name: install deps
+      name: install dependencies
       code: |
         HOME=$YARN_CACHE yarn
     - script:
