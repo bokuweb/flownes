@@ -55,14 +55,14 @@ build:
     - script:
       name: set environment
       code: |
-        export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
         export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
         export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-    #- script:
-    #  name: s3 upload
-    #  code: |
-    #    aws s3 cp front/screenshot s3://ai-analyst-ocha-snapshot/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
-    #    aws s3 cp front/screenshot/index.html s3://ai-analyst-ocha-snapshot/$WERCKER_GIT_COMMIT --exclude "*" --include "*.html" --content-type text/html --acl public-read
+
+    - script:
+      name: s3 upload
+      code: |
+        aws s3 cp screenshot/actual s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
+        # aws s3 cp front/screenshot/index.html s3://ai-analyst-ocha-snapshot/$WERCKER_GIT_COMMIT --exclude "*" --include "*.html" --content-type text/html --acl public-read
 
   # after-steps:
   #   - wantedly/pretty-slack-notify:
