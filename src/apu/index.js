@@ -2,6 +2,8 @@
 
 import type { Byte } from '../types/common';
 import Square from './square';
+import Noise from './noise';
+import Triangle from './triangle';
 import { DIVIDE_COUNT_FOR_240HZ } from '../constants/apu';
 
 export default class Apu {
@@ -11,6 +13,8 @@ export default class Apu {
   step: number;
   envelopesCounter: number;
   square: Square[];
+  triangle: Triangle;
+  noise: Noise;
   sequencerMode: number;
   enableIrq: boolean;
 
@@ -21,6 +25,8 @@ export default class Apu {
     this.cycle = 0;
     this.step = 0;
     this.square = [new Square(), new Square()];
+    this.triangle = new Triangle();
+    this.noise = new Noise();
   }
 
   exec(cycle: number) {
@@ -64,10 +70,13 @@ export default class Apu {
 
   updateSweepAndLengthCounter() {
     this.square.forEach((s: Square): void => s.updateSweepAndLengthCounter());
+    this.triangle.updateCounter();
+    this.noise.updateCounter();
   }
 
   updateEnvelope() {
     this.square.forEach((s: Square): void => s.updateEnvelope());
+    this.noise.updateEnvelope();
   }
 
   write(addr: Byte, data: Byte) {
@@ -79,8 +88,12 @@ export default class Apu {
     } else if (addr <= 0x07) {
       // square wave control register
       this.square[1].write(addr - 0x04, data);
-    } else if (addr === 0x15) {
-      this.registers[addr] = data;
+    } else if (addr <= 0x0B) {
+      // triangle
+      this.triangle.write(addr - 0x08, data);
+    } else if (addr <= 0x0F) {
+      // noise
+      this.noise.write(addr - 0x0C, data);
     } else if (addr === 0x17) {
       this.sequencerMode = data & 0x80 ? 1 : 0;
       this.registers[addr] = data;
