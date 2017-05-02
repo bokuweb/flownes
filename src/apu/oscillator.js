@@ -1,6 +1,6 @@
 /* @flow */
 
-export type Kind = 'squire' | 'noise' | 'triangule';
+export type Kind = 'square' | 'noise' | 'triangle';
 
 export type OscillatorOption = {
   kind?: Kind;
@@ -22,7 +22,7 @@ export default class Oscillator {
     } catch (e) {
       throw new Error('Web Audio isn\'t supported in this browser!');
     }
-    this.oscillator = this.createOscillator({ kind: type  });
+    this.oscillator = this.createOscillator({ kind: type });
     this.setPulseWidth(0.5);
     this.playing = false;
   }
@@ -44,7 +44,7 @@ export default class Oscillator {
     }
   }
 
-  createOscillator(options: OscillatorOption = {}) {
+  createOscillator(options: OscillatorOption = {}): OscillatorNode {
     const oscillator = this.context.createOscillator()
     if (!options.kind || options.kind === 'square') {
       oscillator.type = 'square';
@@ -64,7 +64,7 @@ export default class Oscillator {
     }
 
     this.gain = this.context.createGain();
-    this.gain.gain.value = 0.5
+    this.gain.gain.value = 0.01;
     oscillator.connect(this.gain);
     this.gain.connect(this.context.destination);
 

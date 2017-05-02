@@ -1,6 +1,6 @@
 /* @flow */
 
-export const globalGain = 0.6;
+export const globalGain = 0.01;
 
 export const counterTable = [
   0x0A, 0xFE, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06,

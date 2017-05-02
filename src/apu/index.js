@@ -2,6 +2,7 @@
 
 import type { Byte } from '../types/common';
 import Square from './square';
+import Triangle from './triangle';
 import { DIVIDE_COUNT_FOR_240HZ } from '../constants/apu';
 
 export default class Apu {
@@ -11,6 +12,7 @@ export default class Apu {
   step: number;
   envelopesCounter: number;
   square: Square[];
+  triangle: Triangle;
   sequencerMode: number;
   enableIrq: boolean;
 
@@ -21,6 +23,7 @@ export default class Apu {
     this.cycle = 0;
     this.step = 0;
     this.square = [new Square(), new Square()];
+    this.triangle = new Triangle();
   }
 
   exec(cycle: number) {
@@ -79,8 +82,11 @@ export default class Apu {
     } else if (addr <= 0x07) {
       // square wave control register
       this.square[1].write(addr - 0x04, data);
-    } else if (addr === 0x15) {
-      this.registers[addr] = data;
+    } else if (addr <= 0x07) {
+      // square wave control register
+      this.square[1].write(addr - 0x04, data);
+    } else if (addr <= 0x0B) {
+      this.triangle.write(addr - 0x08, data);
     } else if (addr === 0x17) {
       this.sequencerMode = data & 0x80 ? 1 : 0;
       this.registers[addr] = data;
