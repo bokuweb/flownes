@@ -76,6 +76,7 @@ export default class Apu {
 
   updateEnvelope() {
     this.square.forEach((s: Square): void => s.updateEnvelope());
+    this.noise.updateEnvelope();
   }
 
   write(addr: Byte, data: Byte) {

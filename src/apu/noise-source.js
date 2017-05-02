@@ -20,19 +20,19 @@ export default class NoiseSource {
   }
 
   start() {
-    if (this.playing) {
-      this.stop();
-    }
-    this.playing = true;
-    this.source.start(0);
+    // if (this.playing) {
+    //   this.stop();
+    // }
+    // this.playing = true;
+    // this.source.start(0);
   }
 
   stop() {
-    if (this.playing) {
-      this.playing = false;
-      this.source.stop(this.context.currentTime);
-      this.createSource();
-    }
+    // if (this.playing) {
+    //   this.playing = false;
+    //   this.source.stop(this.context.currentTime);
+    //   this.createSource();
+    // }
   }
 
   createSource() {
@@ -45,15 +45,15 @@ export default class NoiseSource {
     node.buffer = buffer;
     node.loop = true;
     this.gain = this.context.createGain();
-    this.gain.gain.value = 0.1;
+    this.gain.gain.value = 0.01;
     node.connect(this.gain);
     this.bandpass = this.context.createBiquadFilter();
-    this.bandpass.frequency.value = 440;
-    this.bandpass.type = 'bandpass';
-    this.bandpass.Q.value = 500;
     this.gain.connect(this.bandpass);
     this.bandpass.connect(this.context.destination);
+    //this.gain.connect(this.context.destination);
     this.source = node;
+    this.setVolume(0);
+    this.source.start(0);
   }
 
   setVolume(volume: number) {
@@ -62,7 +62,6 @@ export default class NoiseSource {
   }
 
   setFrequency(frequency: number) {
-    console.log('aaa')
     this.bandpass.frequency.value = frequency;
   }
 }
