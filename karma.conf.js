@@ -15,7 +15,7 @@ module.exports = function(config) {
     webpack: { //kind of a copy of your webpack config
       devtool: 'inline-source-map',
       module: {
-        loaders: [
+        rules: [
           {
             test: /\.js$/,
             loader: 'babel-loader',
