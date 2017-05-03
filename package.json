@@ -39,6 +39,7 @@
     "eslint-plugin-flowtype": "^2.30.0",
     "eslint-plugin-import": "^2.2.0",
     "flow-bin": "^0.40.0",
+    "glob": "^7.1.1",
     "json-loader": "^0.5.4",
     "karma": "^1.5.0",
     "karma-cli": "^1.0.1",
@@ -50,6 +51,7 @@
     "mocha": "^3.2.0",
     "power-assert": "^1.4.2",
     "reg-cli": "^0.1.2",
+    "shell-quote": "^1.6.1",
     "sinon": "^1.17.7",
     "webpack": "2.2.1",
     "webpack-dev-server": "^2.4.1"

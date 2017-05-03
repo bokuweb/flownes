@@ -59,10 +59,18 @@ build:
         export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
     - script:
+      name: create reg.json
+      code: node scripts/report.js
+
+    - script:
+      name: upload reg.json
+      code: |
+        aws s3 cp screenshot s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.json" --content-type application/json --acl public-read
+
+    - script:
       name: s3 upload
       code: |
         aws s3 cp screenshot/actual s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
-        # aws s3 cp front/screenshot/index.html s3://ai-analyst-ocha-snapshot/$WERCKER_GIT_COMMIT --exclude "*" --include "*.html" --content-type text/html --acl public-read
 
   # after-steps:
   #   - wantedly/pretty-slack-notify:

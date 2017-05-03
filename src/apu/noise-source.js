@@ -19,22 +19,6 @@ export default class NoiseSource {
     this.playing = false;
   }
 
-  start() {
-    // if (this.playing) {
-    //   this.stop();
-    // }
-    // this.playing = true;
-    // this.source.start(0);
-  }
-
-  stop() {
-    // if (this.playing) {
-    //   this.playing = false;
-    //   this.source.stop(this.context.currentTime);
-    //   this.createSource();
-    // }
-  }
-
   createSource() {
     const node = this.context.createBufferSource();
     const buffer = this.context.createBuffer(1, this.context.sampleRate, this.context.sampleRate);
@@ -45,12 +29,11 @@ export default class NoiseSource {
     node.buffer = buffer;
     node.loop = true;
     this.gain = this.context.createGain();
-    this.gain.gain.value = 0.01;
+    this.gain.gain.value = 0.04;
     node.connect(this.gain);
     this.bandpass = this.context.createBiquadFilter();
     this.gain.connect(this.bandpass);
     this.bandpass.connect(this.context.destination);
-    //this.gain.connect(this.context.destination);
     this.source = node;
     this.setVolume(0);
     this.source.start(0);
@@ -62,6 +45,6 @@ export default class NoiseSource {
   }
 
   setFrequency(frequency: number) {
-    this.bandpass.frequency.value = frequency;
+    this.bandpass.frequency.value = frequency > 22050 ? 22050 : frequency;
   }
 }

@@ -553,6 +553,10 @@ export default class Cpu {
         if (!this.registors.P.overflow) this.branch(addrOrData);
         break;
       }
+      case 'CLD': {
+        this.registors.P.decimal = false;
+        break;
+      }      
       case 'CLC': {
         this.registors.P.carry = false;
         break;
@@ -573,6 +577,10 @@ export default class Cpu {
         this.registors.P.interrupt = true;
         break;
       }
+      case 'SED': {
+        this.registors.P.decimal = true;
+        break;
+      }          
       case 'BRK': {
         this.push((this.registors.PC >> 8) & 0xFF);
         this.push(this.registors.PC & 0xFF);

@@ -80,11 +80,6 @@ export default class Noise {
       this.envelopeGeneratorCounter = this.envelopeRate;
       this.envelopeVolume = 0x0F;
       this.source.setVolume(this.volume);
-      // this.start();
     }
-  }
-
-  start() {
-    // this.source.start();
   }
 }

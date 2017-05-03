@@ -1,4 +1,4 @@
-# flownes
+# 🎮 flownes
 
 NES emulator written by ES2015+ + Flowtype.
 
