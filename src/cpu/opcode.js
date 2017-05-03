@@ -75,10 +75,10 @@ export const
   CLC = 0x18,
   CLI = 0x58,
   CLV = 0xB8,
-  // CLD is unmounted on NES
+  CLD = 0xD8,
   SEC = 0x38,
   SEI = 0x78,
-  // SED is unmounted on NES
+  SED = 0xF8,
 
   NOP = 0xEA,
   BRK = 0x00,
@@ -267,4 +267,6 @@ export const dict: { [code: string]: OpecodeProps } = {
   'B0': { fullName: 'BCS', baseName: 'BCS', mode: 'relative', cycle: cycles[0xB0] },
   'D0': { fullName: 'BNE', baseName: 'BNE', mode: 'relative', cycle: cycles[0xD0] },
   'F0': { fullName: 'BEQ', baseName: 'BEQ', mode: 'relative', cycle: cycles[0xF0] },
+  'F8': { fullName: 'SED', baseName: 'SED', mode: 'implied', cycle: cycles[0xF8] },
+  'D8': { fullName: 'CLD', baseName: 'CLD', mode: 'implied', cycle: cycles[0xD8] },
 };
