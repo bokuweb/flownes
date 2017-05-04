@@ -151,6 +151,20 @@ export default class Ppu {
     return this.palette;
   }
 
+  clearSpriteHit() {
+    this.registers[0x02] &= 0xBF;
+  }
+
+  setSpriteHit() {
+    this.registers[0x02] |= 0x40;
+  }
+
+  hasSpriteHit(): boolean {
+    return this.sprites.some((sprite: SpriteWithAttribute) => (
+      sprite.y === this.line && sprite.spriteId === 0)
+    );
+  }
+
   // The PPU draws one line at 341 clocks and prepares for the next line.
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
@@ -161,23 +175,19 @@ export default class Ppu {
     // const isSpriteEnable = !!(this.registers[0x01] & 0x10);
     if (this.line === 0) {
       this.background = [];
+      this.clearSpriteHit();
       this.buildSprites();
     }
     if (this.cycle >= 341) {
       this.cycle -= 341;
       this.line++;
       if (this.line < 240) {
-        this.sprites.forEach(s => {
-          if (s.y === this.line && s.spriteId === 0) {
-            this.registers[0x02] |= 0x40;
-          }
-        });
+        if (this.hasSpriteHit()) {
+          this.setSpriteHit();
+        }
         this.buildBackground();
       }
       if (this.line === 240) {
-        // build sprite
-        // TODO: Build by line
-        // this.buildSprites();
         this.registers[0x02] |= 0x80;
         if (this.registers[0] & 0x80) {
           this.interrupts.assertNmi();
@@ -331,7 +341,6 @@ export default class Ppu {
   }
 
   writeScrollData(data: Byte) {
-    console.log(data)
     if (this.isHorizontalScroll) {
       this.isHorizontalScroll = false;
       this.scrollX = data & 0xFF;
