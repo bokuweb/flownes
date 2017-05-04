@@ -256,9 +256,6 @@ export default class Ppu {
     for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       const y = this.spriteRam.read(i);
       const spriteId = this.spriteRam.read(i + 1);
-      // if (spriteId === 0) {
-      //   this.registers[0x02] |= 0x40;
-      // }
       const attr = this.spriteRam.read(i + 2);
       const x = this.spriteRam.read(i + 3);
       const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
@@ -327,7 +324,7 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
-    console.log(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
+    // console.log(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
     this.registers[addr] = data;
   }
 
