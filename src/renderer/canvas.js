@@ -52,10 +52,14 @@ export default class CanvasRenderer {
     const { data } = this.image;
     for (let i = 0; i < 8; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
-        const colorId = palette[paletteId * 4 + sprite[i][j]];
+        // NOTE:
+        // Palette $3F10 is selected when sprite[i][j] === 0?
+        // See. http://pgate1.at-ninja.jp/NES_on_FPGA/nes_ppu.htm#bg
+        const colorId = sprite[i][j]
+          ? palette[paletteId * 4 + sprite[i][j]]
+          : palette[0x10];
         const color = colors[colorId];
         const x = tileX + j - offsetX;
-        // const y = tileY + i;
         if (x >= 0 && 0xFF >= x) {
           const index = ((x) + (tileY + i) * 0x100) * 4;
           data[index] = color[0];

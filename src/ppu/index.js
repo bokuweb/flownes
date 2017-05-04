@@ -29,6 +29,7 @@ export interface SpriteWithAttribute {
   x: Byte;
   y: Byte;
   attr: Byte; // TODO
+  spriteId: number;
 }
 
 export interface Background {
@@ -139,6 +140,7 @@ export default class Ppu {
     this.palette = [];
     this.interrupts = interrupts;
     this.config = config;
+    this.scrollX = 0;
   }
 
   getPalette(): Palette {
@@ -157,16 +159,25 @@ export default class Ppu {
     this.cycle += cycle;
     // const isScreenEnable = !!(this.registers[0x01] & 0x08);
     // const isSpriteEnable = !!(this.registers[0x01] & 0x10);
-    if (this.line === 0) this.background = [];
+    if (this.line === 0) {
+      this.background = [];
+      this.buildSprites();
+    }
     if (this.cycle >= 341) {
       this.cycle -= 341;
       this.line++;
       if (this.line < 240) {
+        this.sprites.forEach(s => {
+          if (s.y === this.line && s.spriteId === 0) {
+            this.registers[0x02] |= 0x40;
+          }
+        });
         this.buildBackground();
       }
       if (this.line === 240) {
         // build sprite
-        this.buildSprites();
+        // TODO: Build by line
+        // this.buildSprites();
         this.registers[0x02] |= 0x80;
         if (this.registers[0] & 0x80) {
           this.interrupts.assertNmi();
@@ -177,12 +188,6 @@ export default class Ppu {
         this.registers[0x02] &= 0x7F;
         this.line = 0;
         this.interrupts.deassertNmi();
-        // debug
-        // const test = [];
-        // for(let i = 0; i < 960; i++) {
-        //   test.push(this.vram.read(i));
-        // }
-        // console.log(test);
         return {
           background: this.background,
           sprites: this.sprites,
@@ -241,12 +246,15 @@ export default class Ppu {
     for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       const y = this.spriteRam.read(i);
       const spriteId = this.spriteRam.read(i + 1);
+      // if (spriteId === 0) {
+      //   this.registers[0x02] |= 0x40;
+      // }
       const attr = this.spriteRam.read(i + 2);
       const x = this.spriteRam.read(i + 3);
       const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
       this.sprites[i / 4] = {
-        sprite, x, y, attr,
+        sprite, x, y, attr, spriteId,
       }
     }
   }
@@ -294,7 +302,6 @@ export default class Ppu {
   }
 
   write(addr: Word, data: Byte): void {
-    // log.debug(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
     if (addr === 0x0003) {
       return this.writeSpriteRamAddr(data);
     }
@@ -310,6 +317,7 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
+    console.log(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
     this.registers[addr] = data;
   }
 
@@ -323,6 +331,7 @@ export default class Ppu {
   }
 
   writeScrollData(data: Byte) {
+    console.log(data)
     if (this.isHorizontalScroll) {
       this.isHorizontalScroll = false;
       this.scrollX = data & 0xFF;
