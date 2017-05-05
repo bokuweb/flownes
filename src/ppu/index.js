@@ -178,6 +178,9 @@ export default class Ppu {
     return !!(this.registers[0x01] & 0x04);
   }
 
+  clearVblank() {
+    this.registers[0x02] &= 0x7F;
+  }
   // The PPU draws one line at 341 clocks and prepares for the next line.
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
@@ -206,9 +209,10 @@ export default class Ppu {
       }
 
       if (this.line === 261) {
-        this.registers[0x02] &= 0x7F;
+        this.clearVblank();
         this.line = 0;
         this.interrupts.deassertNmi();
+        // if (this.isBackgroundEnable()) debugger
         return {
           background: this.isBackgroundEnable() ? this.background : null,
           sprites: this.isSpriteEnable() ? this.sprites : null,
@@ -242,16 +246,16 @@ export default class Ppu {
       // TODO: Add vertical scroll logic
       const nameTableId = ~~(tileX / 32);
       const tileNumber = tileY * 32 + (tileX % 32);
-
       // TODO: Fix offset
       const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
       let spriteAddr = tileNumber + nameTableId * 0x400;
       let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
       if (this.config.isHorizontalMirror) {
-        if (spriteAddr >= 0x0400) spriteAddr -= 0x400;
-        if (attrAddr >= 0x0400) attrAddr -= 0x400;
+        if (spriteAddr >= 0x0400 && spriteAddr < 0x0800 || spriteAddr >= 0x0C00) spriteAddr -= 0x400;
+        if (attrAddr >= 0x0400 && attrAddr < 0x0800 || attrAddr >= 0x0C00) attrAddr -= 0x400;
       }
       const spriteId = this.vram.read(spriteAddr);
+            console.log(spriteAddr.toString(16), spriteId)
       const attr = this.vram.read(attrAddr);
       const paletteId = (attr >> (blockId % 4 * 2)) & 0x03;
       const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
@@ -357,11 +361,13 @@ export default class Ppu {
 
   writeVramAddr(data: Byte) {
     if (this.isLowerVramAddr) {
-      this.vramAddr += data;
+      const upper = this.vramAddr & 0xFF00;
+      this.vramAddr = upper + data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
-      this.vramAddr = data << 8;
+      const lower = this.vramAddr & 0xFF;
+      this.vramAddr = data << 8 + lower;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
     }
