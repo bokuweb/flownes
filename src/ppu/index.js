@@ -41,8 +41,8 @@ export interface Background {
 
 export interface RenderingData {
   palette: Palette;
-  background: $ReadOnlyArray<Background>;
-  sprites: $ReadOnlyArray<SpriteWithAttribute>;
+  background: ?$ReadOnlyArray<Background>;
+  sprites: ?$ReadOnlyArray<SpriteWithAttribute>;
 }
 export interface Config {
   isHorizontalMirror: boolean;
@@ -141,6 +141,11 @@ export default class Ppu {
     this.interrupts = interrupts;
     this.config = config;
     this.scrollX = 0;
+    this.scrollY = 0;
+  }
+
+  get vramOffset() {
+    return (this.registers[0x00] & 0x04) ? 32 : 1;
   }
 
   getPalette(): Palette {
@@ -160,9 +165,17 @@ export default class Ppu {
   }
 
   hasSpriteHit(): boolean {
-    return this.sprites.some((sprite: SpriteWithAttribute) => (
+    return this.sprites.some((sprite: SpriteWithAttribute): boolean => (
       sprite.y === this.line && sprite.spriteId === 0)
     );
+  }
+
+  isBackgroundEnable(): boolean {
+    return !!(this.registers[0x01] & 0x08);
+  }
+
+  isSpriteEnable(): boolean {
+    return !!(this.registers[0x01] & 0x04);
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
@@ -171,8 +184,6 @@ export default class Ppu {
   // Get the pattern of the sprite searched with the remaining clock.
   exec(cycle: number): RenderingData | null {
     this.cycle += cycle;
-    // const isScreenEnable = !!(this.registers[0x01] & 0x08);
-    // const isSpriteEnable = !!(this.registers[0x01] & 0x10);
     if (this.line === 0) {
       this.background = [];
       this.clearSpriteHit();
@@ -199,8 +210,8 @@ export default class Ppu {
         this.line = 0;
         this.interrupts.deassertNmi();
         return {
-          background: this.background,
-          sprites: this.sprites,
+          background: this.isBackgroundEnable() ? this.background : null,
+          sprites: this.isSpriteEnable() ? this.sprites : null,
           palette: this.getPalette(),
         };
       }
@@ -231,6 +242,7 @@ export default class Ppu {
       // TODO: Add vertical scroll logic
       const nameTableId = ~~(tileX / 32);
       const tileNumber = tileY * 32 + (tileX % 32);
+
       // TODO: Fix offset
       const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
       let spriteAddr = tileNumber + nameTableId * 0x400;
@@ -247,7 +259,7 @@ export default class Ppu {
       this.background.push({
         sprite, paletteId,
         scrollX: this.scrollX,
-        scrollY: 0 // TODO: 
+        scrollY: this.scrollY,
       });
     }
   }
@@ -260,9 +272,7 @@ export default class Ppu {
       const x = this.spriteRam.read(i + 3);
       const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
-      this.sprites[i / 4] = {
-        sprite, x, y, attr, spriteId,
-      }
+      this.sprites[i / 4] = { sprite, x, y, attr, spriteId };
     }
   }
 
@@ -301,8 +311,7 @@ export default class Ppu {
       return data;
     }
     if (addr === 0x0007) {
-      const offset = this.registers[0x00] & 0x04 ? 0x20 : 0x01;
-      this.vramAddr += offset;
+      this.vramAddr += this.vramOffset;
       return this.vram.read(this.vramAddr);
     }
     throw new Error('PPU read error occurred. It is a prohibited PPU address.');
@@ -324,7 +333,6 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
-    // console.log(`Write PPU, addr = ${addr}, data = ${data.toString(16)}.`);
     this.registers[addr] = data;
   }
 
@@ -361,8 +369,7 @@ export default class Ppu {
 
   writeVramData(data: Byte) {
     this.writeVram(this.vramAddr - 0x2000, data);
-    const offset = this.registers[0x00] & 0x04 ? 32 : 1;
-    this.vramAddr += offset;
+    this.vramAddr += this.vramOffset;
   }
 
   writeVram(addr: Word, data: Byte) {
