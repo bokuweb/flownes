@@ -21,7 +21,9 @@ export default class Oscillator {
       const AudioContext = window.AudioContext || window.webkitAudioContext
       this.context = new AudioContext();
     } catch (e) {
-      throw new Error('Web Audio isn\'t supported in this browser!');
+      /* eslint-disable no-console */
+      console.error('Web Audio isn\'t supported in this browser!');
+      // throw new Error('Web Audio isn\'t supported in this browser!');
     }
     this.type = type || 'square';
     this.oscillator = this.createOscillator({ kind: this.type });
