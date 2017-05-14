@@ -72,7 +72,7 @@ build:
       code: |
         git remote set-url origin https://github.com/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY.git
         hash=`git rev-parse master`      
-        aws s3 stnc s3://flownes/$hash screenshot/expected
+        aws s3 sync s3://flownes/$hash screenshot/expected
 
     - script:
       name: s3 upload
