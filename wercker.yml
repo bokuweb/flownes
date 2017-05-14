@@ -68,9 +68,17 @@ build:
         aws s3 cp screenshot s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.json" --content-type application/json --acl public-read
 
     - script:
+      name: sync expected
+      code: |
+        git remote set-url origin https://github.com/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY.git
+        hash=`git rev-parse master`      
+        aws s3 stnc s3://flownes/$hash screenshot/expected
+
+    - script:
       name: s3 upload
       code: |
         aws s3 cp screenshot/actual s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
+        aws s3 cp screenshot/expected s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
 
   # after-steps:
   #   - wantedly/pretty-slack-notify:

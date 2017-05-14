@@ -229,39 +229,45 @@ export default class Ppu {
     // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
-    for (let x = 0; x < 32 + 1; x++) {
-      /* name table id and address
-      +------------+------------+
-      |            |            | 
-      |  0(0x2000) |  1(0x2400) | 
-      |            |            |
-      +------------+------------+ 
-      |            |            | 
-      |  2(0x2800) |  3(0x2C00) | 
-      |            |            |
-      +------------+------------+       
+    for (let x = 0; x < 32 + 1; x = (x + 1) | 0) {
+      /*
+        Name table id and address
+        +------------+------------+
+        |            |            | 
+        |  0(0x2000) |  1(0x2400) | 
+        |            |            |
+        +------------+------------+ 
+        |            |            | 
+        |  2(0x2800) |  3(0x2C00) | 
+        |            |            |
+        +------------+------------+       
       */
       const scrollTileX = ~~(this.scrollX / 8);
       const tileX = x + scrollTileX;
       // TODO: Add vertical scroll logic
-      const nameTableId = ~~(tileX / 32);
+      const nameTableId = ~~(tileX / 32) + this.nameTableId;
       const tileNumber = tileY * 32 + (tileX % 32);
       // TODO: Fix offset
       const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
       let spriteAddr = tileNumber + nameTableId * 0x400;
       let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
       if (this.config.isHorizontalMirror) {
-        if (spriteAddr >= 0x0400 && spriteAddr < 0x0800 || spriteAddr >= 0x0C00) spriteAddr -= 0x400;
-        if (attrAddr >= 0x0400 && attrAddr < 0x0800 || attrAddr >= 0x0C00) attrAddr -= 0x400;
+        if (spriteAddr >= 0x0400 && spriteAddr < 0x0800 || spriteAddr >= 0x0C00) {
+          spriteAddr -= 0x400;
+        }
+        if (attrAddr >= 0x0400 && attrAddr < 0x0800 || attrAddr >= 0x0C00) {
+          attrAddr -= 0x400;
+        }
       }
       const spriteId = this.vram.read(spriteAddr);
-            console.log(spriteAddr.toString(16), spriteId)
+      // console.log(spriteAddr.toString(16), spriteId)
       const attr = this.vram.read(attrAddr);
       const paletteId = (attr >> (blockId % 4 * 2)) & 0x03;
       const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
       this.background.push({
-        sprite, paletteId,
+        sprite,
+        paletteId,
         scrollX: this.scrollX,
         scrollY: this.scrollY,
       });
