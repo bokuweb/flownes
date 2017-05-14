@@ -21,17 +21,16 @@ describe('integration hello spec', () => {
       screenshot('screenshot/actual/hello.png').then(done);
     }, 1000);
   });
-  
 
-  // it('should render sprite', (done) => {
-  //   const fs = window.require('fs');
-  //   const nesFile = fs.readFileSync('static/roms/giko005.nes');
-  //   const nes = new NES();
-  //   nes.setup(nesFile);
-  //   nes.start();
-  //   setTimeout(() => {
-  //     screenshot('screenshot/actual/giko005.png').then(done);
-  //   }, 1000);
-  // });  
+  it('should render sprite', (done) => {
+    const fs = window.require('fs');
+    const nesFile = fs.readFileSync('static/roms/giko005.nes');
+    const nes = new NES();
+    nes.setup(nesFile);
+    nes.start();
+    setTimeout(() => {
+      screenshot('screenshot/actual/giko005.png').then(done);
+    }, 1000);
+  });  
 });
 
