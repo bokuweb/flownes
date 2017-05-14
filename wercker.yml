@@ -6,12 +6,12 @@ no-response-timeout: 15
 
 build:
   steps:
-    - script:
-      name: show master hash
-      code: |
-        git remote set-url origin https://github.com/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY.git
-        hash=`git rev-parse master`
-        echo $hash
+    # - script:
+    #   name: show master hash
+    #   code: |
+    #     git remote set-url origin https://github.com/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY.git
+    #     hash=`git rev-parse master`
+    #     echo $hash
 
     - script:
       name: install yarn
@@ -58,14 +58,14 @@ build:
         export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
         export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
-    - script:
-      name: create reg.json
-      code: node scripts/report.js
+    # - script:
+    #   name: create reg.json
+    #   code: node scripts/report.js
 
-    - script:
-      name: upload reg.json
-      code: |
-        aws s3 cp screenshot s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.json" --content-type application/json --acl public-read
+    # - script:
+    #   name: upload reg.json
+    #   code: |
+    #     aws s3 cp screenshot s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.json" --content-type application/json --acl public-read
 
     - script:
       name: sync expected
@@ -75,10 +75,15 @@ build:
         aws s3 sync s3://flownes/$hash screenshot/expected
 
     - script:
+      name: run reg-cli
+      code: npm run reg -- -P https://s3.amazonaws.com/flownes/$WERCKER_GIT_COMMIT/
+  
+    - script:
       name: s3 upload
       code: |
-        aws s3 cp screenshot/actual s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
-        aws s3 cp screenshot/expected s3://flownes/$WERCKER_GIT_COMMIT --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
+        aws s3 cp screenshot/actual s3://flownes/$WERCKER_GIT_COMMIT/actual --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
+        aws s3 cp screenshot/expected s3://flownes/$WERCKER_GIT_COMMIT/expected --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
+        aws s3 cp screenshot/report.html s3://flownes/$WERCKER_GIT_COMMIT --exclude "*" --include "*.html" --content-type text/html --acl public-read          
 
   # after-steps:
   #   - wantedly/pretty-slack-notify:

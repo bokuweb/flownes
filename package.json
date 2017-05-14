@@ -9,8 +9,8 @@
     "flow": "flow",
     "watch": "watchify --extension=js -o dist/bundle.js src/index.js",
     "test": "npm run lint && npm run flow && karma start",
-    "reg": "reg-cli ./screenshot/actual ./screenshot/expected ./screenshot/diff -R ./docs/report.html",
-    "reg:update": "reg-cli ./screenshot/actual ./screenshot/expected ./screenshot/diff -R ./docs/report.html",
+    "reg": "reg-cli ./screenshot/actual ./screenshot/expected ./screenshot/diff -R ./screenshot/report.html",
+    "reg:update": "reg-cli ./screenshot/actual ./screenshot/expected ./screenshot/diff -R ./screenshot/report.html",
     "test:watch": "karma start --auto-watch --no-single-run"
   },
   "repository": {
