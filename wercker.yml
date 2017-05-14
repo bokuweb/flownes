@@ -83,6 +83,7 @@ build:
       code: |
         aws s3 cp screenshot/actual s3://flownes/$WERCKER_GIT_COMMIT/actual --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
         aws s3 cp screenshot/expected s3://flownes/$WERCKER_GIT_COMMIT/expected --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
+        aws s3 cp screenshot/diff s3://flownes/$WERCKER_GIT_COMMIT/diff --recursive --exclude "*" --include "*.png" --content-type image/png --acl public-read
         aws s3 cp screenshot/report.html s3://flownes/$WERCKER_GIT_COMMIT --exclude "*" --include "*.html" --content-type text/html --acl public-read          
 
   # after-steps:
