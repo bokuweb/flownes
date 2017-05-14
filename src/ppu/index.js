@@ -5,16 +5,6 @@ import type { Byte, Word } from '../types/common';
 import RAM from '../ram';
 import PpuBus from '../bus/ppu-bus';
 import Interrupts from '../interrupts';
-// import log from '../helper/log';
-
-// interface Registers {
-//   spriteMemoryAddr: Byte;
-//   spriteMemoryData: Byte;
-//   scrollOffset: Byte;
-//   memoryAddr: Byte;
-//   memoryData: Byte;
-//   status: Byte;
-// }
 
 const SPRITES_NUMBER = 0x100;
 
@@ -137,23 +127,26 @@ export default class Ppu {
     this.background = [];
     this.sprites = [];
     this.bus = bus;
-    this.palette = [];
     this.interrupts = interrupts;
     this.config = config;
     this.scrollX = 0;
     this.scrollY = 0;
   }
 
-  get vramOffset() {
+  get vramOffset(): Byte {
     return (this.registers[0x00] & 0x04) ? 32 : 1;
   }
 
+  get nameTableId(): Byte {
+    return this.registers[0x00] & 0x03;
+  }
+
   getPalette(): Palette {
-    this.palette = [];
+    const palette = [];
     for (let i = 0; i < 0x20; i = (i + 1) | 0) {
-      this.palette.push(this.vram.read(0x1F00 + i));
+      palette.push(this.vram.read(0x1F00 + i));
     }
-    return this.palette;
+    return palette;
   }
 
   clearSpriteHit() {
@@ -178,9 +171,14 @@ export default class Ppu {
     return !!(this.registers[0x01] & 0x04);
   }
 
+  setVblank() {
+    this.registers[0x02] |= 0x80;
+  }
+
   clearVblank() {
     this.registers[0x02] &= 0x7F;
   }
+
   // The PPU draws one line at 341 clocks and prepares for the next line.
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
@@ -188,6 +186,7 @@ export default class Ppu {
   exec(cycle: number): RenderingData | null {
     this.cycle += cycle;
     if (this.line === 0) {
+      // console.log(this.background, 'bg')
       this.background = [];
       this.clearSpriteHit();
       this.buildSprites();
@@ -202,7 +201,7 @@ export default class Ppu {
         this.buildBackground();
       }
       if (this.line === 240) {
-        this.registers[0x02] |= 0x80;
+        this.setVblank();
         if (this.registers[0] & 0x80) {
           this.interrupts.assertNmi();
         }
@@ -213,6 +212,7 @@ export default class Ppu {
         this.line = 0;
         this.interrupts.deassertNmi();
         // if (this.isBackgroundEnable()) debugger
+        // console.log(this.background, 'bg')
         return {
           background: this.isBackgroundEnable() ? this.background : null,
           sprites: this.isSpriteEnable() ? this.sprites : null,
@@ -317,14 +317,14 @@ export default class Ppu {
     if (addr === 0x0002) {
       this.isHorizontalScroll = true;
       const data = this.registers[0x02];
-      this.registers[0x02] = this.registers[0x02] & 0x7F;
+      this.clearVblank();
       return data;
     }
     if (addr === 0x0007) {
       this.vramAddr += this.vramOffset;
       return this.vram.read(this.vramAddr);
     }
-    throw new Error('PPU read error occurred. It is a prohibited PPU address.');
+    throw new Error('PPU error occurred. It is a prohibited PPU address.');
   }
 
   write(addr: Word, data: Byte): void {
@@ -380,6 +380,13 @@ export default class Ppu {
   }
 
   writeVramData(data: Byte) {
+    // console.log(data, this.vramAddr.toString(16))
+    // FIXME: For debug
+    // if (this.vramAddr >= 0x3F00 && this.vramAddr < 0x3f20 && data === 1) {
+    //   debugger;
+    //   this.vramAddr += this.vramOffset;
+    //   return;
+    // }
     this.writeVram(this.vramAddr - 0x2000, data);
     this.vramAddr += this.vramOffset;
   }

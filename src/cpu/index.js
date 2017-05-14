@@ -388,6 +388,7 @@ export default class Cpu {
         this.registors.X = (this.registors.X - 1) & 0xFF;
         this.registors.P.negative = !!(this.registors.X & 0x80);
         this.registors.P.zero = !this.registors.X;
+        // console.log(this.registors.X, this.registors.P.negative, this.registors.P.zero , 'dex')
         break;
       }
       case 'DEY': {
