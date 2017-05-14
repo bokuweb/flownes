@@ -82,4 +82,8 @@ export default class Noise {
       this.source.setVolume(this.volume);
     }
   }
+
+  close() {
+    this.source.close();
+  }
 }

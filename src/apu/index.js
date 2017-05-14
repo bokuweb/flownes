@@ -105,4 +105,11 @@ export default class Apu {
     // TODO: 
     return addr;
   }
+
+  close() {
+    this.noise.close();
+    this.square[0].close();
+    this.square[1].close();
+    this.triangle.close();
+  }
 }

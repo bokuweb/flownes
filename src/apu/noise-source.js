@@ -47,4 +47,8 @@ export default class NoiseSource {
   setFrequency(frequency: number) {
     this.bandpass.frequency.value = frequency > 22050 ? 22050 : frequency;
   }
+
+  close() {
+    this.context.close();
+  }
 }

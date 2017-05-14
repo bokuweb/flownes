@@ -109,4 +109,8 @@ export class NES {
   start() {
     requestAnimationFrame(this.frame);
   }
+
+  close() {
+    this.apu.close();
+  }
 }
