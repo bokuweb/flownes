@@ -251,6 +251,7 @@ export default class Ppu {
       const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
       let spriteAddr = tileNumber + nameTableId * 0x400;
       let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
+
       if (this.config.isHorizontalMirror) {
         if (spriteAddr >= 0x0400 && spriteAddr < 0x0800 || spriteAddr >= 0x0C00) {
           spriteAddr -= 0x400;
@@ -367,13 +368,15 @@ export default class Ppu {
 
   writeVramAddr(data: Byte) {
     if (this.isLowerVramAddr) {
-      const upper = this.vramAddr & 0xFF00;
-      this.vramAddr = upper + data;
+      this.vramAddr += data;
+      // const upper = this.vramAddr & 0xFF00;
+      // this.vramAddr = upper + data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
-      const lower = this.vramAddr & 0xFF;
-      this.vramAddr = data << 8 + lower;
+      this.vramAddr = data << 8;
+      // const lower = this.vramAddr & 0xFF;
+      // this.vramAddr = data << 8 + lower;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
     }
