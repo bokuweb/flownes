@@ -24,6 +24,7 @@ export default class Oscillator {
       /* eslint-disable no-console */
       console.error('Web Audio isn\'t supported in this browser!');
       // throw new Error('Web Audio isn\'t supported in this browser!');
+      return;
     }
     this.type = type || 'square';
     this.oscillator = this.createOscillator({ kind: this.type });
@@ -32,6 +33,7 @@ export default class Oscillator {
   }
 
   start() {
+    if (!this.context) return;
     if (this.playing) {
       this.stop();
     }
@@ -40,6 +42,7 @@ export default class Oscillator {
   }
 
   stop() {
+    if (!this.context) return;
     if (this.playing) {
       this.playing = false;
       this.oscillator.stop(this.context.currentTime);
@@ -69,6 +72,7 @@ export default class Oscillator {
   }
 
   setPulseWidth(pulseWidth: number) {
+    if (!this.context) return;
     const real = [0]
     const imag = [0]
     for (let i = 1; i < 8192; i += 1) {
@@ -83,14 +87,17 @@ export default class Oscillator {
   }
 
   setFrequency(frequency: number) {
+    if (!this.context) return;
     this.oscillator.frequency.value = frequency;
   }
 
   changeFrequency(frequency: number) {
+    if (!this.context) return;
     this.oscillator.frequency.setValueAtTime(frequency, this.context.currentTime)
   }
 
   setVolume(volume: number) {
+    if (!this.context) return;
     volume = Math.max(0, Math.min(1, volume));
     this.gain.gain.value = volume;
   }
