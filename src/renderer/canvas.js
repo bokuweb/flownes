@@ -47,7 +47,7 @@ export default class CanvasRenderer {
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderTile(sprite: Sprite, tileX: number, tileY: number, palette: Palette, paletteId: Byte, offsetX: Byte, offsetY: Byte) {
+  renderTile(sprite: Sprite, tileX: number, tileY: number, palette: Palette, paletteId: Byte, offsetX: Byte/*, offsetY: Byte*/) {
     if (!this.ctx) return;
     const { data } = this.image;
     for (let i = 0; i < 8; i = (i + 1) | 0) {
