@@ -388,6 +388,7 @@ export default class Cpu {
         this.registors.X = (this.registors.X - 1) & 0xFF;
         this.registors.P.negative = !!(this.registors.X & 0x80);
         this.registors.P.zero = !this.registors.X;
+        // console.log(this.registors.X, this.registors.P.negative, this.registors.P.zero , 'dex')
         break;
       }
       case 'DEY': {
@@ -550,13 +551,17 @@ export default class Cpu {
         break;
       }
       case 'BVS': {
+        if (this.registors.P.overflow) this.branch(addrOrData);
+        break;
+      }
+      case 'BVC': {
         if (!this.registors.P.overflow) this.branch(addrOrData);
         break;
       }
       case 'CLD': {
         this.registors.P.decimal = false;
         break;
-      }      
+      }
       case 'CLC': {
         this.registors.P.carry = false;
         break;
@@ -580,7 +585,7 @@ export default class Cpu {
       case 'SED': {
         this.registors.P.decimal = true;
         break;
-      }          
+      }
       case 'BRK': {
         this.push((this.registors.PC >> 8) & 0xFF);
         this.push(this.registors.PC & 0xFF);
@@ -593,7 +598,7 @@ export default class Cpu {
       case 'NOP': {
         break;
       }
-      default: throw new Error('Unknown opecode ${opecode} deteced.');
+      default: throw new Error(`Unknown opecode ${baseName} detected.`);
     }
   }
 

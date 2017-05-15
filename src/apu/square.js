@@ -139,4 +139,8 @@ export default class Square {
     this.oscillator.start();
     this.oscillator.setFrequency(this.frequency);
   }
+
+  close() {
+    this.oscillator.close();
+  }  
 }

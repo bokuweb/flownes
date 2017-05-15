@@ -21,7 +21,7 @@ export default class Oscillator {
       const AudioContext = window.AudioContext || window.webkitAudioContext
       this.context = new AudioContext();
     } catch (e) {
-      throw new Error('Web Audio isn\'t supported in this browser!');
+      Error('Web Audio isn\'t supported in this browser!');
     }
     this.type = type || 'square';
     this.oscillator = this.createOscillator({ kind: this.type });
@@ -44,6 +44,10 @@ export default class Oscillator {
       this.oscillator = this.createOscillator();
       this.setPulseWidth(0.5);
     }
+  }
+
+  close() {
+    this.context.close();
   }
 
   createOscillator(options: OscillatorOption = {}) {
