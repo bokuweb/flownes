@@ -144,7 +144,10 @@ export default class Ppu {
   getPalette(): Palette {
     const palette = [];
     for (let i = 0; i < 0x20; i = (i + 1) | 0) {
-      palette.push(this.vram.read(0x1F00 + i));
+      const isMirror = (i === 0x10) || (i === 0x14) || (i === 0x18) || (i === 0x1c);
+      //NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
+      const addr = isMirror ? (0x1F00 + (i - 0x10)) : (i + 0x1F00);
+      palette.push(this.vram.read(addr));
     }
     return palette;
   }
@@ -390,7 +393,11 @@ export default class Ppu {
     //   this.vramAddr += this.vramOffset;
     //   return;
     // }
-    this.writeVram(this.vramAddr - 0x2000, data);
+    let addr = this.vramAddr - 0x2000;
+    const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
+    //NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
+    addr = isMirror ? (addr - 0x10) : addr;
+    this.writeVram(addr, data);
     this.vramAddr += this.vramOffset;
   }
 
