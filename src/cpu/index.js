@@ -217,14 +217,14 @@ export default class Cpu {
   }
 
   pushStatus() {
-    const status: Byte = parseInt(this.registors.P.negative) << 7 |
-      parseInt(this.registors.P.overflow) << 6 |
-      parseInt(this.registors.P.reserved) << 5 |
-      parseInt(this.registors.P.break) << 4 |
-      parseInt(this.registors.P.decimal) << 3 |
-      parseInt(this.registors.P.interrupt) << 2 |
-      parseInt(this.registors.P.zero) << 1 |
-      parseInt(this.registors.P.carry);
+    const status: Byte = (+this.registors.P.negative) << 7 |
+      (+this.registors.P.overflow) << 6 |
+      (+this.registors.P.reserved) << 5 |
+      (+this.registors.P.break) << 4 |
+      (+this.registors.P.decimal) << 3 |
+      (+this.registors.P.interrupt) << 2 |
+      (+this.registors.P.zero) << 1 |
+      (+this.registors.P.carry);
     this.push(status);
   }
 
@@ -388,7 +388,6 @@ export default class Cpu {
         this.registors.X = (this.registors.X - 1) & 0xFF;
         this.registors.P.negative = !!(this.registors.X & 0x80);
         this.registors.P.zero = !this.registors.X;
-        // console.log(this.registors.X, this.registors.P.negative, this.registors.P.zero , 'dex')
         break;
       }
       case 'DEY': {
@@ -479,7 +478,7 @@ export default class Cpu {
       }
       case 'SBC': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const operated = data - this.registors.A - parseInt(!this.registors.P.carry);
+        const operated = data - this.registors.A - (!this.registors.P.carry ? 1 : 0);
         this.registors.P.overflow = !((this.registors.A ^ operated) & 0x80);
         this.registors.P.carry = operated > 0xFF;
         this.registors.P.negative = !!(operated & 0x80);
