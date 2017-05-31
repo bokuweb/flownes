@@ -131,6 +131,9 @@ export default class Ppu {
     this.config = config;
     this.scrollX = 0;
     this.scrollY = 0;
+
+    // debug
+    this.dump = new Array(32);
   }
 
   get vramOffset(): Byte {
@@ -216,6 +219,14 @@ export default class Ppu {
         this.interrupts.deassertNmi();
         // if (this.isBackgroundEnable()) debugger
         // console.log(this.background, 'bg')
+
+        // debug
+        for (let i = 0; i < 32; i++) {
+          if (this.dump[i]) {
+            console.log(this.dump[i].join(' '));
+          }
+        }
+
         return {
           background: this.isBackgroundEnable() ? this.background : null,
           sprites: this.isSpriteEnable() ? this.sprites : null,
@@ -227,6 +238,7 @@ export default class Ppu {
   }
 
   buildBackground() {
+
     if (this.line % 8) return;
     const tileY = ~~(this.line / 8);
     // TODO: See. ines header mirror flag..
@@ -248,11 +260,11 @@ export default class Ppu {
       const scrollTileX = ~~(this.scrollX / 8);
       const tileX = x + scrollTileX;
       // TODO: Add vertical scroll logic
-      const nameTableId = ~~(tileX / 32) + this.nameTableId;
+      const nameTableId = /* ~~(tileX / 32) + */ this.nameTableId;
       const tileNumber = tileY * 32 + (tileX % 32);
       // TODO: Fix offset
       const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
-      let spriteAddr = tileNumber + nameTableId * 0x400;
+      let spriteAddr = tileNumber + (nameTableId * 0x400);
       let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
 
       if (this.config.isHorizontalMirror) {
@@ -265,6 +277,11 @@ export default class Ppu {
       }
       const spriteId = this.vram.read(spriteAddr);
       // console.log(spriteAddr.toString(16), spriteId)
+
+      // debug
+      if (!this.dump[tileY]) this.dump[tileY] = new Array(32);
+      this.dump[tileY][tileX] = spriteId;
+
       const attr = this.vram.read(attrAddr);
       const paletteId = (attr >> (blockId % 4 * 2)) & 0x03;
       const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
@@ -347,6 +364,7 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
+    // console.log('ppu reg', addr, data.toString(16))
     this.registers[addr] = data;
   }
 
@@ -386,7 +404,7 @@ export default class Ppu {
   }
 
   writeVramData(data: Byte) {
-    // console.log(data, this.vramAddr.toString(16))
+    console.log(data, this.vramAddr.toString(16))
     // FIXME: For debug
     // if (this.vramAddr >= 0x3F00 && this.vramAddr < 0x3f20 && data === 1) {
     //   debugger;
