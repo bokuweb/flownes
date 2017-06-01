@@ -20,7 +20,7 @@ describe('integration hello spec', () => {
     setTimeout(() => {
       screenshot('screenshot/actual/hello.png').then(done);
       nes.close();
-    }, 1000);
+    }, 500);
   });
 
   it('should render sprite', (done) => {
@@ -32,7 +32,19 @@ describe('integration hello spec', () => {
     setTimeout(() => {
       screenshot('screenshot/actual/giko005.png').then(done);
       nes.close();
-    }, 1000);
+    }, 500);
   });
+
+  it('should render road game', (done) => {
+    const fs = window.require('fs');
+    const nesFile = fs.readFileSync('static/roms/giko016.nes');
+    const nes = new NES();
+    nes.setup(nesFile);
+    nes.start();
+    setTimeout(() => {
+      screenshot('screenshot/actual/giko016.png').then(done);
+      nes.close();
+    }, 500);
+  });  
 });
 
