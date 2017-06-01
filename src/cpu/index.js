@@ -484,7 +484,7 @@ export default class Cpu {
       }
       case 'SBC': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const operated = this.registors.A  - data - !this.registors.P.carry;
+        const operated = this.registors.A  - data + this.registors.P.carry;
         this.registors.P.overflow = !!((this.registors.A ^ operated) & 0x80)
         this.registors.P.carry = operated >= 0;
         this.registors.P.negative = !!(operated & 0x80);
