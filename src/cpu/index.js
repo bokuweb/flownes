@@ -629,7 +629,6 @@ export default class Cpu {
     //   log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
     //   log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
     // }
-    if(this.registors.P.overflow === 128) debugger;
     this.execInstruction(baseName, addrOrData, mode);
     return cycle + additionalCycle + (this.hasBranched ? 1 : 0);
   }
