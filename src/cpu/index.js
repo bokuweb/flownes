@@ -24,7 +24,7 @@ interface Registors {
   X: Byte;
   Y: Byte;
   P: CpuStatus;
-  SP: Byte;
+  SP: Word;
   PC: Word;
 }
 
@@ -217,14 +217,14 @@ export default class Cpu {
   }
 
   pushStatus() {
-    const status: Byte = parseInt(this.registors.P.negative) << 7 |
-      parseInt(this.registors.P.overflow) << 6 |
-      parseInt(this.registors.P.reserved) << 5 |
-      parseInt(this.registors.P.break) << 4 |
-      parseInt(this.registors.P.decimal) << 3 |
-      parseInt(this.registors.P.interrupt) << 2 |
-      parseInt(this.registors.P.zero) << 1 |
-      parseInt(this.registors.P.carry);
+    const status: Byte = (+this.registors.P.negative) << 7 |
+      (+this.registors.P.overflow) << 6 |
+      (+this.registors.P.reserved) << 5 |
+      (+this.registors.P.break) << 4 |
+      (+this.registors.P.decimal) << 3 |
+      (+this.registors.P.interrupt) << 2 |
+      (+this.registors.P.zero) << 1 |
+      (+this.registors.P.carry);
     this.push(status);
   }
 
@@ -291,7 +291,7 @@ export default class Cpu {
         break;
       }
       case 'TSX': {
-        this.registors.X = this.registors.SP;
+        this.registors.X = this.registors.SP & 0xFF;
         this.registors.P.negative = !!(this.registors.X & 0x80);
         this.registors.P.zero = !this.registors.X;
         break;
@@ -303,9 +303,10 @@ export default class Cpu {
         break;
       }
       case 'TXS': {
-        this.registors.SP = this.registors.X;
-        this.registors.P.negative = !!(this.registors.SP & 0x80);
-        this.registors.P.zero = !this.registors.SP;
+        this.registors.SP = this.registors.X + 0x0100;
+        // TODO: It's unneeded ?
+        // this.registors.P.negative = !!(this.registors.SP & 0x80);
+        // this.registors.P.zero = !this.registors.SP;
         break;
       }
       case 'TYA': {
@@ -317,10 +318,10 @@ export default class Cpu {
       case 'ADC': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
         const operated = data + this.registors.A + this.registors.P.carry;
-        this.registors.P.overflow = !((this.registors.A ^ operated) & 0x80);
+        this.registors.P.overflow = !!((this.registors.A ^ operated) & 0x80);
         this.registors.P.carry = operated > 0xFF;
         this.registors.P.negative = !!(operated & 0x80);
-        this.registors.P.zero = !operated;
+        this.registors.P.zero = !(operated & 0xFF);
         this.registors.A = operated & 0xFF;
         break;
       }
@@ -337,13 +338,15 @@ export default class Cpu {
           const acc = this.registors.A;
           this.registors.P.carry = !!(acc & 0x80);
           this.registors.A = (acc << 1) & 0xFF;
+          this.registors.P.zero = !this.registors.A;
         } else {
           const data = this.read(addrOrData);
           this.registors.P.carry = !!(data & 0x80);
-          this.write(addrOrData, (data << 1) & 0xFF);
+          const shifted = (data << 1) & 0xFF;
+          this.write(addrOrData, shifted);
+          this.registors.P.zero = !shifted;
         }
         this.registors.P.negative = false;
-        this.registors.P.zero = !this.registors.A;
         break;
       }
       case 'BIT': {
@@ -358,7 +361,7 @@ export default class Cpu {
         const compared = this.registors.A - data;
         this.registors.P.carry = compared >= 0;
         this.registors.P.negative = !!(compared & 0x80);
-        this.registors.P.zero = !compared;
+        this.registors.P.zero = !(compared & 0xff);
         break;
       }
       case 'CPX': {
@@ -366,7 +369,7 @@ export default class Cpu {
         const compared = this.registors.X - data;
         this.registors.P.carry = compared >= 0;
         this.registors.P.negative = !!(compared & 0x80);
-        this.registors.P.zero = !compared;
+        this.registors.P.zero = !(compared & 0xff);
         break;
       }
       case 'CPY': {
@@ -374,11 +377,11 @@ export default class Cpu {
         const compared = this.registors.Y - data;
         this.registors.P.carry = compared >= 0;
         this.registors.P.negative = !!(compared & 0x80);
-        this.registors.P.zero = !compared;
+        this.registors.P.zero = !(compared & 0xff);
         break;
       }
       case 'DEC': {
-        const data = this.read(addrOrData) - 1;
+        const data = (this.read(addrOrData) - 1) & 0xFF;
         this.registors.P.negative = !!(data & 0x80);
         this.registors.P.zero = !data;
         this.write(addrOrData, data);
@@ -388,7 +391,6 @@ export default class Cpu {
         this.registors.X = (this.registors.X - 1) & 0xFF;
         this.registors.P.negative = !!(this.registors.X & 0x80);
         this.registors.P.zero = !this.registors.X;
-        // console.log(this.registors.X, this.registors.P.negative, this.registors.P.zero , 'dex')
         break;
       }
       case 'DEY': {
@@ -406,7 +408,7 @@ export default class Cpu {
         break;
       }
       case 'INC': {
-        const data = this.read(addrOrData) + 1;
+        const data = (this.read(addrOrData) + 1) & 0xFF;
         this.registors.P.negative = !!(data & 0x80);
         this.registors.P.zero = !data;
         this.write(addrOrData, data);
@@ -426,16 +428,17 @@ export default class Cpu {
       }
       case 'LSR': {
         if (mode === 'accumulator') {
-          const acc = this.registors.A;
+          const acc = this.registors.A & 0xFF;
           this.registors.P.carry = !!(acc & 0x01);
           this.registors.A = acc >> 1;
+          this.registors.P.zero = !this.registors.A;
         } else {
           const data = this.read(addrOrData);
           this.registors.P.carry = !!(data & 0x01);
+          this.registors.P.zero = !(data >> 1);
           this.write(addrOrData, data >> 1);
         }
         this.registors.P.negative = false;
-        this.registors.P.zero = !this.registors.A;
         break;
       }
       case 'ORA': {
@@ -451,15 +454,16 @@ export default class Cpu {
           const acc = this.registors.A;
           this.registors.A = (acc << 1) & 0xFF | (this.registors.P.carry ? 0x01 : 0x00);
           this.registors.P.carry = !!(acc & 0x80);
+          this.registors.P.zero = !this.registors.A;
 
         } else {
           const data = this.read(addrOrData);
           const writeData = (data << 1 | (this.registors.P.carry ? 0x01 : 0x00)) & 0xFF;
           this.write(addrOrData, writeData);
           this.registors.P.carry = !!(data & 0x80);
+          this.registors.P.zero = !writeData;
         }
         this.registors.P.negative = false;
-        this.registors.P.zero = !this.registors.A;
         break;
       }
       case 'ROR': {
@@ -467,23 +471,24 @@ export default class Cpu {
           const acc = this.registors.A;
           this.registors.A = acc >> 1 | (this.registors.P.carry ? 0x80 : 0x00);
           this.registors.P.carry = !!(acc & 0x01);
+          this.registors.P.zero = !this.registors.A;
         } else {
           const data = this.read(addrOrData);
           const writeData = data >> 1 | (this.registors.P.carry ? 0x80 : 0x00);
           this.write(addrOrData, writeData);
           this.registors.P.carry = !!(data & 0x01);
+          this.registors.P.zero = !writeData;
         }
         this.registors.P.negative = false;
-        this.registors.P.zero = !this.registors.A;
         break;
       }
       case 'SBC': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const operated = data - this.registors.A - parseInt(!this.registors.P.carry);
-        this.registors.P.overflow = !((this.registors.A ^ operated) & 0x80);
-        this.registors.P.carry = operated > 0xFF;
+        const operated = this.registors.A  - data - (this.registors.P.carry ? 0 : 1);
+        this.registors.P.overflow = !!((this.registors.A ^ operated) & 0x80)
+        this.registors.P.carry = operated >= 0;
         this.registors.P.negative = !!(operated & 0x80);
-        this.registors.P.zero = !operated;
+        this.registors.P.zero = !(operated & 0xFF);
         this.registors.A = operated & 0xFF;
         break;
       }
