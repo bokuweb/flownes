@@ -50,7 +50,7 @@ export default class Ppu {
   | 0x0000-0x0FFF  |  Pattern table#0           |
   | 0x1000-0x1FFF  |  Pattern table#1           |
   | 0x2000-0x23BF  |  Name table                |
-  | 0x23C0-0x23FF  |  Atribute table            |
+  | 0x23C0-0x23FF  |  Attribute table            |
   | 0x2400-0x27BF  |  Name table                |
   | 0x27C0-0x27FF  |  Attribute table           |
   | 0x2800-0x2BBF  |  Name table                |
@@ -220,12 +220,12 @@ export default class Ppu {
         // if (this.isBackgroundEnable()) debugger
         // console.log(this.background, 'bg')
 
-        // debug
-        for (let i = 0; i < 32; i++) {
-          if (this.dump[i]) {
-            console.log(this.dump[i].join(' '));
-          }
-        }
+        // For debug
+        // for (let i = 0; i < 32; i++) {
+        //   if (this.dump[i]) {
+        //     console.log(this.dump[i].join(' '));
+        //   }
+        // }
 
         return {
           background: this.isBackgroundEnable() ? this.background : null,
@@ -260,7 +260,7 @@ export default class Ppu {
       const scrollTileX = ~~(this.scrollX / 8);
       const tileX = x + scrollTileX;
       // TODO: Add vertical scroll logic
-      const nameTableId = /* ~~(tileX / 32) + */ this.nameTableId;
+      const nameTableId = ~~(tileX / 32) + this.nameTableId;
       const tileNumber = tileY * 32 + (tileX % 32);
       // TODO: Fix offset
       const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
@@ -390,22 +390,16 @@ export default class Ppu {
   writeVramAddr(data: Byte) {
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
-      // const upper = this.vramAddr & 0xFF00;
-      // this.vramAddr = upper + data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
       this.vramAddr = data << 8;
-      // const lower = this.vramAddr & 0xFF;
-      // this.vramAddr = data << 8 + lower;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
     }
   }
 
   writeVramData(data: Byte) {
-    console.log(data, this.vramAddr.toString(16))
-    // FIXME: For debug
     // if (this.vramAddr >= 0x3F00 && this.vramAddr < 0x3f20 && data === 1) {
     //   debugger;
     //   this.vramAddr += this.vramOffset;
