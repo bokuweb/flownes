@@ -50,7 +50,7 @@ export default class Ppu {
   | 0x0000-0x0FFF  |  Pattern table#0           |
   | 0x1000-0x1FFF  |  Pattern table#1           |
   | 0x2000-0x23BF  |  Name table                |
-  | 0x23C0-0x23FF  |  Attribute table            |
+  | 0x23C0-0x23FF  |  Attribute table           |
   | 0x2400-0x27BF  |  Name table                |
   | 0x27C0-0x27FF  |  Attribute table           |
   | 0x2800-0x2BBF  |  Name table                |
@@ -133,7 +133,7 @@ export default class Ppu {
     this.scrollY = 0;
 
     // debug
-    this.dump = new Array(32);
+    // this.dump = new Array(32);
   }
 
   get vramOffset(): Byte {
@@ -279,8 +279,8 @@ export default class Ppu {
       // console.log(spriteAddr.toString(16), spriteId)
 
       // debug
-      if (!this.dump[tileY]) this.dump[tileY] = new Array(32);
-      this.dump[tileY][tileX] = spriteId;
+      // if (!this.dump[tileY]) this.dump[tileY] = new Array(32);
+      // this.dump[tileY][tileX] = spriteId;
 
       const attr = this.vram.read(attrAddr);
       const paletteId = (attr >> (blockId % 4 * 2)) & 0x03;
