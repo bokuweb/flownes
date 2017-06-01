@@ -593,7 +593,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8002,
         };
         assert.equal(cycle, 5);
@@ -610,7 +610,7 @@ describe('cpu spec', () => {
         const expected = {
           ...defaultRegistors,
           X: 0x05,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8002,
         };
         assert.equal(cycle, 6);
@@ -625,7 +625,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8003,
         };
         assert.equal(cycle, 6);
@@ -641,7 +641,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8003,
           X: 0x05,
         };
@@ -658,7 +658,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8003,
           X: 0xFF,
         };
@@ -691,7 +691,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8002,
         };
         assert.equal(cycle, 5);
@@ -708,7 +708,7 @@ describe('cpu spec', () => {
         const expected = {
           ...defaultRegistors,
           X: 0x05,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8002,
         };
         assert.equal(cycle, 6);
@@ -723,7 +723,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8003,
         };
         assert.equal(cycle, 6);
@@ -739,7 +739,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8003,
           X: 0x05,
         };
@@ -756,7 +756,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true },
           PC: 0x8003,
           X: 0xFF,
         };
@@ -791,7 +791,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8002,
         };
         assert.equal(cycle, 5);
@@ -809,7 +809,7 @@ describe('cpu spec', () => {
         const expected = {
           ...defaultRegistors,
           X: 0x05,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8002,
         };
         assert.equal(cycle, 6);
@@ -825,7 +825,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8003,
         };
         assert.equal(cycle, 6);
@@ -842,7 +842,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8003,
           X: 0x05,
         };
@@ -860,7 +860,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8003,
           X: 0xFF,
         };
@@ -895,7 +895,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8002,
         };
         assert.equal(cycle, 5);
@@ -913,7 +913,7 @@ describe('cpu spec', () => {
         const expected = {
           ...defaultRegistors,
           X: 0x05,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8002,
         };
         assert.equal(cycle, 6);
@@ -929,7 +929,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8003,
         };
         assert.equal(cycle, 6);
@@ -946,7 +946,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8003,
           X: 0x05,
         };
@@ -964,7 +964,7 @@ describe('cpu spec', () => {
         const cycle = cpu.exec();
         const expected = {
           ...defaultRegistors,
-          P: { ...defaultRegistors.P, carry: true, zero: true },
+          P: { ...defaultRegistors.P, carry: true, zero: false },
           PC: 0x8003,
           X: 0xFF,
         };
