@@ -240,7 +240,8 @@ export default class Ppu {
   buildBackground() {
 
     if (this.line % 8) return;
-    const tileY = ~~(this.line / 8);
+    const scrollTileY = ~~(this.scrollY / 8);
+    const tileY = ~~(this.line / 8) + scrollTileY;
     // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
@@ -257,10 +258,13 @@ export default class Ppu {
         |            |            |
         +------------+------------+       
       */
+      // TODO: use sprite size
       const scrollTileX = ~~(this.scrollX / 8);
       const tileX = x + scrollTileX;
       // TODO: Add vertical scroll logic
-      const nameTableId = ~~(tileX / 32) + this.nameTableId;
+      const tableIdOffset = /* (this.nameTableId === 0 || this.nameTableId === 1) &&*/ ~~(tileY / 30) ? 2 : 0;
+      const nameTableId = ~~(tileX / 32) + /*this.nameTableId + */ tableIdOffset;
+      // console.log(nameTableId, (~~(tileY / 30) * 2))
       const tileNumber = tileY * 32 + (tileX % 32);
       // TODO: Fix offset
       const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
