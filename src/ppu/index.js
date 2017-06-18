@@ -200,7 +200,12 @@ export default class Ppu {
     if (this.cycle >= 341) {
       this.cycle -= 341;
       this.line++;
-      if (this.line < 240) {
+
+      // if (this.line <= 8) {
+      //   return null;
+      // }
+
+      if (this.line < 260) {
         if (this.hasSpriteHit()) {
           this.setSpriteHit();
         }
@@ -242,6 +247,7 @@ export default class Ppu {
     if (this.line % 8) return;
     const scrollTileY = ~~(this.scrollY / 8);
     const tileY = ~~(this.line / 8) + scrollTileY;
+    if (tileY === 30 || tileY === 31) return;
     // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
@@ -262,8 +268,8 @@ export default class Ppu {
       const scrollTileX = ~~(this.scrollX / 8);
       const tileX = x + scrollTileX;
       // TODO: Add vertical scroll logic
-      const tableIdOffset = /* (this.nameTableId === 0 || this.nameTableId === 1) &&*/ ~~(tileY / 30) ? 2 : 0;
-      const nameTableId = ~~(tileX / 32) + /*this.nameTableId + */ tableIdOffset;
+      const tableIdOffset = ~~(tileY / 32) ? 2 : 0;
+      const nameTableId = ~~(tileX / 32) + tableIdOffset;
       // console.log(nameTableId, (~~(tileY / 30) * 2))
       const tileNumber = tileY * 32 + (tileX % 32);
       // TODO: Fix offset
@@ -387,6 +393,8 @@ export default class Ppu {
       this.scrollX = data & 0xFF;
     } else {
       this.scrollY = data & 0xFF;
+      console.log(this.scrollY);
+      // if (this.scrollY === 230) debugger;
       this.isHorizontalScroll = true;
     }
   }

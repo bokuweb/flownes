@@ -28,7 +28,7 @@ export default class CanvasRenderer {
     // this.div.style.boxShadow = imageData2Css(background);
     // console.timeEnd('css renderer')
     // console.log(background.length)
-    for (let i = 0; i < background.length; i++) {
+    for (let i = 0; i < background.length - 33; i++) {
       const { sprite, paletteId, scrollX, scrollY } = background[i];
       const x = (i % 33) * 8;
       const y = ~~(i / 33) * 8;
@@ -56,7 +56,7 @@ export default class CanvasRenderer {
         const color = colors[colorId];
         const x = tileX + j - offsetX;
         const y = tileY + i - offsetY;
-        if (x >= 0 && 0xFF >= x && y >= 0) {
+        if (x >= 0 && 0xFF >= x && y >= 0 && y < 224) {
           const index = (x + (y * 0x100)) * 4;
           data[index] = color[0];
           data[index + 1] = color[1];
