@@ -204,8 +204,11 @@ export default class Ppu {
       // if (this.line <= 8) {
       //   return null;
       // }
+      if (this.line < 8 || (this.line > 232 && this.line < 240)) {
+        return null;
+      }
 
-      if (this.line < 256) {
+      if (this.line < 240) {
         if (this.hasSpriteHit()) {
           this.setSpriteHit();
         }
@@ -248,6 +251,7 @@ export default class Ppu {
     const scrollTileY = ~~(this.scrollY / 8);
     const tileY = ~~(this.line / 8) + scrollTileY;
     const tableIdOffset = ~~(tileY / 30) ? 2 : 0;
+    const tileYNumber = tileY % 30;
     // TODO: FIx later
     // if (tileY === 0 || tileY === 30 || tileY === 31 || tileY === 60) return;
     // TODO: See. ines header mirror flag..
@@ -272,11 +276,11 @@ export default class Ppu {
       // TODO: Add vertical scroll logic
 
       const nameTableId = ~~(tileX / 32) + tableIdOffset;
-      console.log(nameTableId)
+      // console.log(nameTableId)
       // console.log(nameTableId, (~~(tileY / 30) * 2))
-      const tileNumber = (tileY % 30) * 32 + (tileX % 32);
+      const tileNumber = (tileYNumber) * 32 + (tileX % 32);
       // TODO: Fix offset
-      const blockId = (~~((tileX % 32) / 2) + ~~((tileY % 30) / 2));
+      const blockId = (~~((tileX % 32) / 2) + ~~(tileYNumber / 2));
       let spriteAddr = tileNumber + (nameTableId * 0x400);
       let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
 
