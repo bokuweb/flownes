@@ -14,7 +14,7 @@ export default class CanvasRenderer {
     const canvas = ((document.getElementById(elementName): any): HTMLCanvasElement);
     this.ctx = canvas.getContext('2d');
     if (this.ctx) {
-      this.image = this.ctx.createImageData(256, 240);
+      this.image = this.ctx.createImageData(256, 224);
       // this.ctx.scale(2, 2);
     }
     // this.div = ((document.getElementById('nes-div'): any): HTMLElement);
@@ -28,7 +28,7 @@ export default class CanvasRenderer {
     // this.div.style.boxShadow = imageData2Css(background);
     // console.timeEnd('css renderer')
     // console.log(background.length)
-    for (let i = 0; i < background.length - 33; i++) {
+    for (let i = 0; i < background.length; i++) {
       const { sprite, paletteId, scrollX, scrollY } = background[i];
       const x = (i % 33) * 8;
       const y = ~~(i / 33) * 8;

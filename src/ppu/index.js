@@ -205,7 +205,7 @@ export default class Ppu {
       //   return null;
       // }
 
-      if (this.line < 260) {
+      if (this.line < 256) {
         if (this.hasSpriteHit()) {
           this.setSpriteHit();
         }
@@ -247,7 +247,9 @@ export default class Ppu {
     if (this.line % 8) return;
     const scrollTileY = ~~(this.scrollY / 8);
     const tileY = ~~(this.line / 8) + scrollTileY;
-    if (tileY === 30 || tileY === 31) return;
+    const tableIdOffset = ~~(tileY / 30) ? 2 : 0;
+    // TODO: FIx later
+    // if (tileY === 0 || tileY === 30 || tileY === 31 || tileY === 60) return;
     // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
@@ -262,18 +264,19 @@ export default class Ppu {
         |            |            | 
         |  2(0x2800) |  3(0x2C00) | 
         |            |            |
-        +------------+------------+       
+        +------------+------------+             
       */
       // TODO: use sprite size
       const scrollTileX = ~~(this.scrollX / 8);
       const tileX = x + scrollTileX;
       // TODO: Add vertical scroll logic
-      const tableIdOffset = ~~(tileY / 32) ? 2 : 0;
+
       const nameTableId = ~~(tileX / 32) + tableIdOffset;
+      console.log(nameTableId)
       // console.log(nameTableId, (~~(tileY / 30) * 2))
-      const tileNumber = tileY * 32 + (tileX % 32);
+      const tileNumber = (tileY % 30) * 32 + (tileX % 32);
       // TODO: Fix offset
-      const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
+      const blockId = (~~((tileX % 32) / 2) + ~~((tileY % 30) / 2));
       let spriteAddr = tileNumber + (nameTableId * 0x400);
       let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
 
@@ -393,7 +396,7 @@ export default class Ppu {
       this.scrollX = data & 0xFF;
     } else {
       this.scrollY = data & 0xFF;
-      console.log(this.scrollY);
+      // console.log(this.scrollY);
       // if (this.scrollY === 230) debugger;
       this.isHorizontalScroll = true;
     }
