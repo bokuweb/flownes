@@ -246,7 +246,6 @@ export default class Ppu {
   }
 
   buildBackground() {
-
     if (this.line % 8) return;
     const scrollTileY = ~~(this.scrollY / 8);
     const tileY = ~~(this.line / 8) + scrollTileY;
@@ -270,14 +269,9 @@ export default class Ppu {
         |            |            |
         +------------+------------+             
       */
-      // TODO: use sprite size
-      const scrollTileX = ~~(this.scrollX / 8);
+      const scrollTileX = ~~((this.scrollX + ((this.nameTableId % 2) * 256)) / 8);
       const tileX = x + scrollTileX;
-      // TODO: Add vertical scroll logic
-
-      const nameTableId = ~~(tileX / 32) + tableIdOffset;
-      // console.log(nameTableId)
-      // console.log(nameTableId, (~~(tileY / 30) * 2))
+      const nameTableId = (~~(tileX / 32) % 2) + tableIdOffset;
       const tileNumber = (tileYNumber) * 32 + (tileX % 32);
       // TODO: Fix offset
       const blockId = (~~((tileX % 32) / 2) + ~~(tileYNumber / 2));
@@ -399,6 +393,7 @@ export default class Ppu {
     if (this.isHorizontalScroll) {
       this.isHorizontalScroll = false;
       this.scrollX = data & 0xFF;
+      console.log(this.scrollX, this.nameTableId)
     } else {
       this.scrollY = data & 0xFF;
       // console.log(this.scrollY);
