@@ -196,6 +196,7 @@ export default class Ppu {
       this.background = [];
       this.clearSpriteHit();
       this.buildSprites();
+      this.latchedNameTableId = this.nameTableId;
     }
 
     if (this.cycle >= 341) {
@@ -249,13 +250,11 @@ export default class Ppu {
 
   buildBackground() {
     if (this.line % 8) return;
+    if (this.scrollY > 240) return;
     const scrollTileY = ~~((this.scrollY + (~~(this.nameTableId / 2) * 240)) / 8);
     const tileY = ~~(this.line / 8) + scrollTileY;
     const tableIdOffset = (~~(tileY / 30) % 2) ? 2 : 0;
     const tileYNumber = (tileY % 30);
-    console.log(tileYNumber, scrollTileY, this.scrollY)
-    // TODO: FIx later
-    // if (tileY === 0 || tileY === 30 || tileY === 31 || tileY === 60) return;
     // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
@@ -398,7 +397,7 @@ export default class Ppu {
       this.scrollX = data & 0xFF;
     } else {
       // if (this.scrollY === 0 ) debugger;
-      data = data === 254 ? 238 : data;
+      // data = data === 254 ? 238 : data;
       this.scrollY = data & 0xFF;
       // console.log(this.scrollY, this.nameTableId)
       // console.log(this.scrollY);

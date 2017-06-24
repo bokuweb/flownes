@@ -55,8 +55,8 @@ export default class CanvasRenderer {
         const colorId = palette[paletteId * 4 + sprite[i][j]];
         const color = colors[colorId];
         const x = tileX + j - offsetX;
-        const y = tileY + i - offsetY;
-        if (x >= 0 && 0xFF >= x && y >= 8 && y < 232) {
+        const y = tileY + i - offsetY - 8;
+        if (x >= 0 && 0xFF >= x && y >= 0 && y < 224) {
           const index = (x + (y * 0x100)) * 4;
           data[index] = color[0];
           data[index + 1] = color[1];
