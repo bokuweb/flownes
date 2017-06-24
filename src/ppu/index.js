@@ -250,6 +250,10 @@ export default class Ppu {
 
   buildBackground() {
     if (this.line % 8) return;
+    // HACK: Ignore background when scrollY > 240
+    // INFO: Horizontal offsets range from 0 to 255. "Normal" vertical offsets range from 0 to 239,
+    // while values of 240 to 255 are treated as -16 through -1 in a way, but tile data is incorrectly
+    // fetched from the attribute table.
     if (this.scrollY > 240) return;
     const scrollTileY = ~~((this.scrollY + (~~(this.nameTableId / 2) * 240)) / 8);
     const tileY = ~~(this.line / 8) + scrollTileY;
