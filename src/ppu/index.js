@@ -196,7 +196,6 @@ export default class Ppu {
       this.background = [];
       this.clearSpriteHit();
       this.buildSprites();
-      this.latchedNameTableId = this.nameTableId;
     }
 
     if (this.cycle >= 341) {
