@@ -359,8 +359,9 @@ export default class Ppu {
       return data;
     }
     if (addr === 0x0007) {
+      const data = this.vram.read(this.vramAddr - 0x2000);
       this.vramAddr += this.vramOffset;
-      return this.vram.read(this.vramAddr);
+      return data;
     }
     throw new Error('PPU error occurred. It is a prohibited PPU address.');
   }
