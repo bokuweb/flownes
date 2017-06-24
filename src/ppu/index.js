@@ -197,16 +197,17 @@ export default class Ppu {
       this.clearSpriteHit();
       this.buildSprites();
     }
+
     if (this.cycle >= 341) {
       this.cycle -= 341;
-      this.line++;
 
       // if (this.line <= 8) {
       //   return null;
       // }
-      if (this.line < 8 || (this.line > 232 && this.line < 240)) {
-        return null;
-      }
+      // if (this.line < 8 || (this.line > 232 && this.line < 240)) {
+      //   this.line++;
+      //  return null;
+      // }
 
       if (this.line < 240) {
         if (this.hasSpriteHit()) {
@@ -214,7 +215,7 @@ export default class Ppu {
         }
         this.buildBackground();
       }
-      if (this.line === 240) {
+      if (this.line === 241) {
         this.setVblank();
         if (this.registers[0] & 0x80) {
           this.interrupts.assertNmi();
@@ -241,16 +242,18 @@ export default class Ppu {
           palette: this.getPalette(),
         };
       }
+      this.line++;
     }
     return null;
   }
 
   buildBackground() {
     if (this.line % 8) return;
-    const scrollTileY = ~~(this.scrollY / 8);
+    const scrollTileY = ~~((this.scrollY + (~~(this.nameTableId / 2) * 240)) / 8);
     const tileY = ~~(this.line / 8) + scrollTileY;
-    const tableIdOffset = ~~(tileY / 30) ? 2 : 0;
-    const tileYNumber = tileY % 30;
+    const tableIdOffset = (~~(tileY / 30) % 2) ? 2 : 0;
+    const tileYNumber = (tileY % 30);
+    console.log(tileYNumber, scrollTileY, this.scrollY)
     // TODO: FIx later
     // if (tileY === 0 || tileY === 30 || tileY === 31 || tileY === 60) return;
     // TODO: See. ines header mirror flag..
@@ -393,9 +396,11 @@ export default class Ppu {
     if (this.isHorizontalScroll) {
       this.isHorizontalScroll = false;
       this.scrollX = data & 0xFF;
-      console.log(this.scrollX, this.nameTableId)
     } else {
+      // if (this.scrollY === 0 ) debugger;
+      data = data === 254 ? 238 : data;
       this.scrollY = data & 0xFF;
+      // console.log(this.scrollY, this.nameTableId)
       // console.log(this.scrollY);
       // if (this.scrollY === 230) debugger;
       this.isHorizontalScroll = true;
