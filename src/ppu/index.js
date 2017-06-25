@@ -200,7 +200,7 @@ export default class Ppu {
 
     if (this.cycle >= 341) {
       this.cycle -= 341;
-
+      this.line++;
       // if (this.line <= 8) {
       //   return null;
       // }
@@ -242,7 +242,6 @@ export default class Ppu {
           palette: this.getPalette(),
         };
       }
-      this.line++;
     }
     return null;
   }
