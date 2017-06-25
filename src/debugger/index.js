@@ -48,8 +48,13 @@ export default class Debugger {
       opcodeIndex++;
       pc++;
     }
+    this.debugInfo = debugInfo;
     /* eslint-disable */
     // console.log(debugInfo)
     // debugInfo.forEach(d => console.log(d));
+  }
+
+  displayCode() {
+    this.debugInfo.forEach(d => console.log(d));
   }
 }

@@ -58,6 +58,7 @@ export class NES {
     if (process.env.NODE_ENV !== 'production') {
       const nesDebugger = new Debugger();
       nesDebugger.setup(programROM);
+      // nesDebugger.displayCode();
     }
     const ppuConfig = {
       isHorizontalMirror,

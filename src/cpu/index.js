@@ -622,6 +622,7 @@ export default class Cpu {
   exec(): number {
     if (this.interrupts.isNmiAssert) this.processNmi();
     const opecode = this.fetch(this.registors.PC);
+    // console.log(opecode, this.registors.PC.toString(16))
     const { baseName, mode, cycle } = this.opecodeList[opecode];
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
     // if (window.debug) {
