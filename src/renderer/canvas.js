@@ -40,6 +40,7 @@ export default class CanvasRenderer {
   renderSprites(sprites: $ReadOnlyArray<SpriteWithAttribute>, palette: Palette) {
     if (!this.ctx) return;
     for (const sprite of sprites) {
+      console.log(sprite)
       if (sprite) {
         this.renderSprite(sprite.sprite, sprite.x, sprite.y, sprite.attr, palette);
       }

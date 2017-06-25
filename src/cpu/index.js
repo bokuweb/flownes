@@ -247,11 +247,11 @@ export default class Cpu {
 
   execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode) {
     this.hasBranched = false;
-    if (this.registers.PC === 34569) debugger;
+    // if (this.registers.PC === 34569) debugger;
     switch (baseName) {
       case 'LDA': {
         this.registers.A = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        if (typeof this.registers.A === 'undefined') debugger;
+        // if (typeof this.registers.A === 'undefined') debugger;
         this.registers.P.negative = !!(this.registers.A & 0x80);
         this.registers.P.zero = !this.registers.A;
         break;

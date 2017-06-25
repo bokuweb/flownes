@@ -315,7 +315,8 @@ export default class Ppu {
   buildSprites() {
     for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       // INFO: Offset sprite Y position, because First and last 8line is not rendered.
-      const y = this.spriteRam.read(i) - 8;
+      // FIXME: when offset -8, mario not rendered...., why.... 
+      const y = this.spriteRam.read(i) - 9;
       const spriteId = this.spriteRam.read(i + 1);
       const attr = this.spriteRam.read(i + 2);
       const x = this.spriteRam.read(i + 3);
@@ -422,7 +423,7 @@ export default class Ppu {
     } else {
       this.vramAddr = data << 8;
       console.log(this.vramAddr.toString(16))
-      if (this.vramAddr.toString(16) === '1e00') debugger;
+      // if (this.vramAddr.toString(16) === '1e00') debugger;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
     }
