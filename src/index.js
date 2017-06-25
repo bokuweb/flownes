@@ -2,7 +2,7 @@
 
 import { NES } from './nes';
 
-fetch('./static/roms/color-bars-mapper0.nes')
+fetch('./static/roms/giko016.nes')
     .then((res) => res.arrayBuffer())
     .then((nesFile: ArrayBuffer) => {
         const nes = new NES();

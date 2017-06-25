@@ -169,11 +169,11 @@ export default class Ppu {
     );
   }
 
-  isBackgroundEnable(): boolean {
+  get isBackgroundEnable(): boolean {
     return !!(this.registers[0x01] & 0x08);
   }
 
-  isSpriteEnable(): boolean {
+  get isSpriteEnable(): boolean {
     return !!(this.registers[0x01] & 0x10);
   }
 
@@ -235,9 +235,10 @@ export default class Ppu {
         //     // console.log(this.dump[i].join(' '));
         //   }
         // }
+        console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable)
         return {
-          background: this.isBackgroundEnable() ? this.background : null,
-          sprites: this.isSpriteEnable() ? this.sprites : null,
+          background: this.isBackgroundEnable ? this.background : null,
+          sprites: this.isSpriteEnable ? this.sprites : null,
           palette: this.getPalette(),
         };
       }
@@ -413,12 +414,15 @@ export default class Ppu {
   }
 
   writeVramAddr(data: Byte) {
+    console.log(data.toString(16))
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
       this.vramAddr = data << 8;
+      console.log(this.vramAddr.toString(16))
+      if (this.vramAddr.toString(16) === '1e00') debugger;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
     }
@@ -432,7 +436,7 @@ export default class Ppu {
     // }
     let addr = this.vramAddr - 0x2000;
     const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
-    //NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
+    // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
     addr = isMirror ? (addr - 0x10) : addr;
     this.writeVram(addr, data);
     this.vramAddr += this.vramOffset;

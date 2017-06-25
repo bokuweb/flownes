@@ -4,6 +4,10 @@ import { dict } from '../cpu/opcode';
 
 export default class Debugger {
 
+  constructor() {
+    window.__disassembled = () => this.displayDisaasembled();
+  }
+
   setup(rom: Uint8Array) {
     const debugInfo = [];
     let pc = 0;
@@ -54,7 +58,7 @@ export default class Debugger {
     // debugInfo.forEach(d => console.log(d));
   }
 
-  displayCode() {
+  displayDisaasembled() {
     this.debugInfo.forEach(d => console.log(d));
   }
 }
