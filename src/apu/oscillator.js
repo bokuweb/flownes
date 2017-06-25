@@ -51,7 +51,7 @@ export default class Oscillator {
   }
 
   createOscillator(options: OscillatorOption = {}) {
-    const oscillator = this.context.createOscillator({ kind: this.type });
+    const oscillator = this.context.createOscillator();
     if (options.kind) oscillator.type = options.kind;
     if (options.frequency) oscillator.frequency.value = options.frequency;
     if (options.harmonics) {

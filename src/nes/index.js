@@ -12,6 +12,7 @@ import PpuBus from '../bus/ppu-bus';
 import Keypad from '../keypad';
 import CanvasRenderer from '../renderer/canvas';
 import Interrupts from '../interrupts';
+import Debugger from '../debugger';
 // import log from '../helper/log';
 
 export class NES {
@@ -27,6 +28,7 @@ export class NES {
   keypad: Keypad;
   dma: Dma;
   interrupts: Interrupts;
+  debugger: Debugger;
 
   frame: () => void;
 
@@ -53,6 +55,10 @@ export class NES {
 
   setup(nes: ArrayBuffer) {
     const { characterROM, programROM, isHorizontalMirror } = parse(nes);
+    if (process.env.NODE_ENV !== 'production') {
+      const nesDebugger = new Debugger();
+      nesDebugger.setup(programROM);
+    }
     const ppuConfig = {
       isHorizontalMirror,
     };

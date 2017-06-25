@@ -14,7 +14,7 @@ export default class CanvasRenderer {
     const canvas = ((document.getElementById(elementName): any): HTMLCanvasElement);
     this.ctx = canvas.getContext('2d');
     if (this.ctx) {
-      this.image = this.ctx.createImageData(256, 240);
+      this.image = this.ctx.createImageData(256, 224);
       // this.ctx.scale(2, 2);
     }
     // this.div = ((document.getElementById('nes-div'): any): HTMLElement);
@@ -47,7 +47,7 @@ export default class CanvasRenderer {
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderTile(sprite: Sprite, tileX: number, tileY: number, palette: Palette, paletteId: Byte, offsetX: Byte/*, offsetY: Byte*/) {
+  renderTile(sprite: Sprite, tileX: number, tileY: number, palette: Palette, paletteId: Byte, offsetX: Byte, offsetY: Byte) {
     if (!this.ctx) return;
     const { data } = this.image;
     for (let i = 0; i < 8; i = (i + 1) | 0) {
@@ -55,8 +55,9 @@ export default class CanvasRenderer {
         const colorId = palette[paletteId * 4 + sprite[i][j]];
         const color = colors[colorId];
         const x = tileX + j - offsetX;
-        if (x >= 0 && 0xFF >= x) {
-          const index = ((x) + (tileY + i) * 0x100) * 4;
+        const y = tileY + i - offsetY;
+        if (x >= 0 && 0xFF >= x && y >= 0 && y < 224) {
+          const index = (x + (y * 0x100)) * 4;
           data[index] = color[0];
           data[index + 1] = color[1];
           data[index + 2] = color[2];

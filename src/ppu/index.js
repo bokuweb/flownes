@@ -197,16 +197,25 @@ export default class Ppu {
       this.clearSpriteHit();
       this.buildSprites();
     }
+
     if (this.cycle >= 341) {
       this.cycle -= 341;
       this.line++;
+      // if (this.line <= 8) {
+      //   return null;
+      // }
+      // if (this.line < 8 || (this.line > 232 && this.line < 240)) {
+      //   this.line++;
+      //  return null;
+      // }
+
       if (this.line < 240) {
         if (this.hasSpriteHit()) {
           this.setSpriteHit();
         }
         this.buildBackground();
       }
-      if (this.line === 240) {
+      if (this.line === 241) {
         this.setVblank();
         if (this.registers[0] & 0x80) {
           this.interrupts.assertNmi();
@@ -238,9 +247,16 @@ export default class Ppu {
   }
 
   buildBackground() {
-
     if (this.line % 8) return;
-    const tileY = ~~(this.line / 8);
+    // HACK: Ignore background when scrollY > 240
+    // INFO: Horizontal offsets range from 0 to 255. "Normal" vertical offsets range from 0 to 239,
+    // while values of 240 to 255 are treated as -16 through -1 in a way, but tile data is incorrectly
+    // fetched from the attribute table.
+    if (this.scrollY > 240) return;
+    const scrollTileY = ~~((this.scrollY + (~~(this.nameTableId / 2) * 240)) / 8);
+    const tileY = ~~(this.line / 8) + scrollTileY;
+    const tableIdOffset = (~~(tileY / 30) % 2) ? 2 : 0;
+    const tileYNumber = (tileY % 30);
     // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
@@ -255,15 +271,14 @@ export default class Ppu {
         |            |            | 
         |  2(0x2800) |  3(0x2C00) | 
         |            |            |
-        +------------+------------+       
+        +------------+------------+             
       */
-      const scrollTileX = ~~(this.scrollX / 8);
+      const scrollTileX = ~~((this.scrollX + ((this.nameTableId % 2) * 256)) / 8);
       const tileX = x + scrollTileX;
-      // TODO: Add vertical scroll logic
-      const nameTableId = ~~(tileX / 32) + this.nameTableId;
-      const tileNumber = tileY * 32 + (tileX % 32);
+      const nameTableId = (~~(tileX / 32) % 2) + tableIdOffset;
+      const tileNumber = (tileYNumber) * 32 + (tileX % 32);
       // TODO: Fix offset
-      const blockId = (~~((tileX % 32) / 2) + ~~(tileY / 2));
+      const blockId = (~~((tileX % 32) / 2) + ~~(tileYNumber / 2));
       let spriteAddr = tileNumber + (nameTableId * 0x400);
       let attrAddr = ~~(blockId / 4) + 0x03C0 + (nameTableId * 0x400);
 
@@ -342,8 +357,9 @@ export default class Ppu {
       return data;
     }
     if (addr === 0x0007) {
+      const data = this.vram.read(this.vramAddr - 0x2000);
       this.vramAddr += this.vramOffset;
-      return this.vram.read(this.vramAddr);
+      return data;
     }
     throw new Error('PPU error occurred. It is a prohibited PPU address.');
   }
@@ -382,7 +398,12 @@ export default class Ppu {
       this.isHorizontalScroll = false;
       this.scrollX = data & 0xFF;
     } else {
+      // if (this.scrollY === 0 ) debugger;
+      // data = data === 254 ? 238 : data;
       this.scrollY = data & 0xFF;
+      // console.log(this.scrollY, this.nameTableId)
+      // console.log(this.scrollY);
+      // if (this.scrollY === 230) debugger;
       this.isHorizontalScroll = true;
     }
   }
