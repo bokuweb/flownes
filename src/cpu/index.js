@@ -146,7 +146,7 @@ export default class Cpu {
         const addr = (this.fetch(this.registers.PC, "Word"));
         const additionalCycle = (addr & 0xFF00) !== ((addr + this.registers.X) & 0xFF00) ? 1 : 0;
         return {
-          addrOrData: addr + this.registers.X,
+          addrOrData: (addr + this.registers.X) & 0xFFFF,
           additionalCycle,
         }
       }
@@ -162,7 +162,7 @@ export default class Cpu {
         const baseAddr = (this.fetch(this.registers.PC) + this.registers.X) & 0xFF;
         const addr = this.read(baseAddr, "Word");
         return {
-          addrOrData: addr,
+          addrOrData: addr & 0xFFFF,
           additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
         }
       }
@@ -170,16 +170,17 @@ export default class Cpu {
         const addrOrData = this.fetch(this.registers.PC);
         const baseAddr = this.read(addrOrData, "Word");
         const addr = baseAddr + this.registers.Y;
+        // if (addr > 0xFFFF) debugger;
         return {
-          addrOrData: addr,
+          addrOrData: addr & 0xFFFF,
           additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
         }
       }
       case 'indirectAbsolute': {
         const addrOrData = this.fetch(this.registers.PC, "Word");
-        const addr = this.read(addrOrData, "Word");
+        const addr = this.read(addrOrData) + (this.read((addrOrData & 0xFF00) | (((addrOrData & 0xFF) + 1) & 0xFF)) << 8);
         return {
-          addrOrData: addr,
+          addrOrData: addr & 0xFFFF,
           additionalCycle: 0,
         }
       }
@@ -209,7 +210,7 @@ export default class Cpu {
 
   pop(): Byte {
     this.registers.SP++;
-    return this.read(this.registers.SP);
+    return this.read(0x100 | (this.registers.SP & 0xFF));
   }
 
   branch(addr: Word) {
@@ -251,6 +252,7 @@ export default class Cpu {
     // if (this.registers.PC === 34569) debugger;
     switch (baseName) {
       case 'LDA': {
+        // if (mode === 'postIndexedIndirect') debugger;
         this.registers.A = mode === 'immediate' ? addrOrData : this.read(addrOrData);
         // if (typeof this.registers.A === 'undefined') debugger;
         this.registers.P.negative = !!(this.registers.A & 0x80);
@@ -270,7 +272,8 @@ export default class Cpu {
         break;
       }
       case 'STA': {
-        this.write(addrOrData, this.registers.A);
+        const addr = mode === 'preIndexedIndirect' ? this.read(addrOrData) : addrOrData;
+        this.write(addr, this.registers.A);
         break;
       }
       case 'STX': {
@@ -505,6 +508,7 @@ export default class Cpu {
         break;
       }
       case 'PHP': {
+        debugger;
         this.pushStatus();
         break;
       }
@@ -606,6 +610,7 @@ export default class Cpu {
         this.pushStatus();
         this.registers.P.interrupt = true;
         this.registers.PC = this.read(0xFFFE, "Word");
+        this.registers.PC--;
         break;
       }
       case 'NOP': {
@@ -627,10 +632,13 @@ export default class Cpu {
   }
 
   exec(): number {
+    if (this.registers.PC === 50876) debugger;
     if (this.interrupts.isNmiAssert) this.processNmi();
     const opecode = this.fetch(this.registers.PC);
     // console.log(opecode, this.registers.PC.toString(16))
+    if (!this.opecodeList[opecode]) debugger;
     const { baseName, mode, cycle } = this.opecodeList[opecode];
+    // console.log(baseName)
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
     // if (window.debug) {
     //   const { PC, SP, A, X, Y, P } = this.registers;
