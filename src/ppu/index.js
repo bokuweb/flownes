@@ -235,7 +235,7 @@ export default class Ppu {
         //     // console.log(this.dump[i].join(' '));
         //   }
         // }
-        console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable)
+        // console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable)
         return {
           background: this.isBackgroundEnable ? this.background : null,
           sprites: this.isSpriteEnable ? this.sprites : null,
@@ -415,14 +415,14 @@ export default class Ppu {
   }
 
   writeVramAddr(data: Byte) {
-    console.log(data.toString(16))
+    // console.log(data.toString(16))
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
       this.vramAddr = data << 8;
-      console.log(this.vramAddr.toString(16))
+      // console.log(this.vramAddr.toString(16))
       // if (this.vramAddr.toString(16) === '1e00') debugger;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;

@@ -154,15 +154,16 @@ export default class Cpu {
         const addr = (this.fetch(this.registers.PC, "Word"));
         const additionalCycle = (addr & 0xFF00) !== ((addr + this.registers.Y) & 0xFF00) ? 1 : 0;
         return {
-          addrOrData: addr + this.registers.Y,
+          addrOrData: (addr + this.registers.Y) & 0xFFFF,
           additionalCycle,
         }
       }
       case 'preIndexedIndirect': {
-        const addr = ((this.fetch(this.registers.PC)) + this.registers.X) & 0xFF;
+        const baseAddr = (this.fetch(this.registers.PC) + this.registers.X) & 0xFF;
+        const addr = this.read(baseAddr, "Word");
         return {
-          addrOrData: this.read(addr, "Word"),
-          additionalCycle: 0,
+          addrOrData: addr,
+          additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
         }
       }
       case 'postIndexedIndirect': {
@@ -320,7 +321,8 @@ export default class Cpu {
       case 'ADC': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
         const operated = data + this.registers.A + this.registers.P.carry;
-        this.registers.P.overflow = !!((this.registers.A ^ operated) & 0x80);
+        const overflow = (!(((this.registers.A ^ data) & 0x80) != 0) && (((this.registers.A ^ operated) & 0x80)) != 0);
+        this.registers.P.overflow = overflow;
         this.registers.P.carry = operated > 0xFF;
         this.registers.P.negative = !!(operated & 0x80);
         this.registers.P.zero = !(operated & 0xFF);
@@ -487,9 +489,11 @@ export default class Cpu {
         break;
       }
       case 'SBC': {
+        // if (mode === 'immediate') debugger;
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
         const operated = this.registers.A - data - (this.registers.P.carry ? 0 : 1);
-        this.registers.P.overflow = !!((this.registers.A ^ operated) & 0x80);
+        const overflow = (((this.registers.A ^ operated) & 0x80) != 0 && ((this.registers.A ^ data) & 0x80) != 0);
+        this.registers.P.overflow = overflow;
         this.registers.P.carry = operated >= 0;
         this.registers.P.negative = !!(operated & 0x80);
         this.registers.P.zero = !(operated & 0xFF);
