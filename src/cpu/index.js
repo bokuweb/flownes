@@ -47,7 +47,7 @@ const defaultRegisters: Registers = {
     zero: false,
     carry: false,
   },
-  SP: 0x01FF, // 0xFD?
+  SP: 0x01FD,
   PC: 0x0000,
 };
 
@@ -168,7 +168,7 @@ export default class Cpu {
       }
       case 'postIndexedIndirect': {
         const addrOrData = this.fetch(this.registers.PC);
-        const baseAddr = this.read(addrOrData, "Word");
+        const baseAddr = this.read(addrOrData) + (this.read((addrOrData + 1) & 0xFF) << 8);
         const addr = baseAddr + this.registers.Y;
         // if (addr > 0xFFFF) debugger;
         return {
@@ -194,6 +194,7 @@ export default class Cpu {
   }
 
   read(addr: Word, size?: "Byte" | "Word"): Byte {
+    addr &= 0xFFFF;
     return size === "Word"
       ? (this.bus.readByCpu(addr) | this.bus.readByCpu(addr + 1) << 8)
       : this.bus.readByCpu(addr);
@@ -249,7 +250,6 @@ export default class Cpu {
 
   execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode) {
     this.hasBranched = false;
-    // if (this.registers.PC === 34569) debugger;
     switch (baseName) {
       case 'LDA': {
         // if (mode === 'postIndexedIndirect') debugger;
@@ -272,8 +272,8 @@ export default class Cpu {
         break;
       }
       case 'STA': {
-        const addr = mode === 'preIndexedIndirect' ? this.read(addrOrData) : addrOrData;
-        this.write(addr, this.registers.A);
+        // const addr = mode === 'preIndexedIndirect' ? this.read(addrOrData) : addrOrData;
+        this.write(addrOrData, this.registers.A);
         break;
       }
       case 'STX': {
@@ -508,7 +508,6 @@ export default class Cpu {
         break;
       }
       case 'PHP': {
-        debugger;
         this.pushStatus();
         break;
       }
@@ -610,7 +609,7 @@ export default class Cpu {
         this.pushStatus();
         this.registers.P.interrupt = true;
         this.registers.PC = this.read(0xFFFE, "Word");
-        this.registers.PC--;
+        // this.registers.PC--;
         break;
       }
       case 'NOP': {
@@ -632,11 +631,9 @@ export default class Cpu {
   }
 
   exec(): number {
-    if (this.registers.PC === 50876) debugger;
     if (this.interrupts.isNmiAssert) this.processNmi();
     const opecode = this.fetch(this.registers.PC);
     // console.log(opecode, this.registers.PC.toString(16))
-    if (!this.opecodeList[opecode]) debugger;
     const { baseName, mode, cycle } = this.opecodeList[opecode];
     // console.log(baseName)
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
