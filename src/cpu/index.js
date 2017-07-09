@@ -159,8 +159,9 @@ export default class Cpu {
         }
       }
       case 'preIndexedIndirect': {
+        if (this.registers.PC === 53258) debugger
         const baseAddr = (this.fetch(this.registers.PC) + this.registers.X) & 0xFF;
-        const addr = this.read(baseAddr, "Word");
+        const addr = this.read(baseAddr) + (this.read((baseAddr + 1) & 0xFF) << 8);
         return {
           addrOrData: addr & 0xFFFF,
           additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
@@ -254,6 +255,7 @@ export default class Cpu {
       case 'LDA': {
         // if (mode === 'postIndexedIndirect') debugger;
         this.registers.A = mode === 'immediate' ? addrOrData : this.read(addrOrData);
+        if (typeof this.registers.A === 'undefined') debugger;
         // if (typeof this.registers.A === 'undefined') debugger;
         this.registers.P.negative = !!(this.registers.A & 0x80);
         this.registers.P.zero = !this.registers.A;
@@ -272,6 +274,7 @@ export default class Cpu {
         break;
       }
       case 'STA': {
+        if (mode === 'preIndexedIndirect') debugger;
         // const addr = mode === 'preIndexedIndirect' ? this.read(addrOrData) : addrOrData;
         this.write(addrOrData, this.registers.A);
         break;
@@ -508,6 +511,8 @@ export default class Cpu {
         break;
       }
       case 'PHP': {
+        debugger;
+        this.registers.P.break = true;
         this.pushStatus();
         break;
       }
@@ -519,6 +524,7 @@ export default class Cpu {
       }
       case 'PLP': {
         this.popStatus();
+        this.registers.P.reserved = true;
         break;
       }
       case 'JMP': {
@@ -540,6 +546,7 @@ export default class Cpu {
       case 'RTI': {
         this.popStatus();
         this.popPC();
+        this.registers.P.reserved = true;
         break;
       }
       case 'BCC': {
@@ -603,6 +610,7 @@ export default class Cpu {
         break;
       }
       case 'BRK': {
+        this.registers.PC++;
         this.push((this.registers.PC >> 8) & 0xFF);
         this.push(this.registers.PC & 0xFF);
         this.registers.P.break = true;

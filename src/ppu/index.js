@@ -364,6 +364,7 @@ export default class Ppu {
     }
     if (addr === 0x0007) {
       const data = this.vram.read(this.vramAddr - 0x2000);
+      if (typeof data === 'undefined') debugger;
       this.vramAddr += this.vramOffset;
       return data;
     }
@@ -415,15 +416,15 @@ export default class Ppu {
   }
 
   writeVramAddr(data: Byte) {
-    // console.log(data.toString(16))
+    console.log(data.toString(16))
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
       this.vramAddr = data << 8;
-      // console.log(this.vramAddr.toString(16))
-      // if (this.vramAddr.toString(16) === '1e00') debugger;
+      console.log(this.vramAddr.toString(16))
+      if (this.vramAddr.toString(16) === '1ec0') debugger;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
     }
