@@ -24,11 +24,11 @@ export type AddressingMode =
 
 /* eslint-disable */
 export const
-  
+
   //
   //  NONE            IMM             ZERO             ABS             ZEROX              ZEROY             ABSX             ABSY             INDX             INDY
   //
-  
+
 
   LDA_IMM = 0xA9, LDA_ZERO = 0xA5, LDA_ABS = 0xAD, LDA_ZEROX = 0xB5, LDA_ABSX = 0xBD, LDA_ABSY = 0xB9, LDA_INDX = 0xA1, LDA_INDY = 0xB1,
   LDX_IMM = 0xA2, LDX_ZERO = 0xA6, LDX_ABS = 0xAE, LDX_ZEROY = 0xB6, LDX_ABSY = 0xBE,
@@ -270,4 +270,60 @@ export const dict: { [code: string]: OpecodeProps } = {
   'F0': { fullName: 'BEQ', baseName: 'BEQ', mode: 'relative', cycle: cycles[0xF0] },
   'F8': { fullName: 'SED', baseName: 'SED', mode: 'implied', cycle: cycles[0xF8] },
   'D8': { fullName: 'CLD', baseName: 'CLD', mode: 'implied', cycle: cycles[0xD8] },
+  // unofficial opecode
+  // Also see https://wiki.nesdev.com/w/index.php/CPU_unofficial_opcodes
+  '1A': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x1A] },
+  '3A': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x3A] },
+  '5A': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x5A] },
+  '7A': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x7A] },
+  'DA': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0xDA] },
+  'FA': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0xFA] },
+
+  '02': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x02] },
+  '12': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x12] },
+  '22': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x22] },
+  '32': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x32] },
+  '42': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x42] },
+  '52': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x52] },
+  '62': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x62] },
+  '72': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x72] },
+  '92': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0x92] },
+  'B2': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0xB2] },
+  'D2': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0xD2] },
+  'F2': { fullName: 'NOP', baseName: 'NOP', mode: 'implied', cycle: cycles[0xF2] },
+
+  '80': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x80] },
+  '82': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x82] },
+  '89': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x89] },
+  'C2': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0xC2] },
+  'E2': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0xE2] },
+  '04': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x04] },
+  '44': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x44] },
+  '64': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x64] },
+  '14': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x14] },
+  '34': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x34] },
+  '54': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x54] },
+  '74': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0x74] },
+  'D4': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0xD4] },
+  'F4': { fullName: 'NOPD', baseName: 'NOPD', mode: 'implied', cycle: cycles[0xF4] },
+
+  '0C': { fullName: 'NOPI', baseName: 'NOPI', mode: 'implied', cycle: cycles[0x0C] },
+  '1C': { fullName: 'NOPI', baseName: 'NOPI', mode: 'implied', cycle: cycles[0x1C] },
+  '3C': { fullName: 'NOPI', baseName: 'NOPI', mode: 'implied', cycle: cycles[0x3C] },
+  '5C': { fullName: 'NOPI', baseName: 'NOPI', mode: 'implied', cycle: cycles[0x5C] },
+  '7C': { fullName: 'NOPI', baseName: 'NOPI', mode: 'implied', cycle: cycles[0x7C] },
+  'DC': { fullName: 'NOPI', baseName: 'NOPI', mode: 'implied', cycle: cycles[0xDC] },
+  'FC': { fullName: 'NOPI', baseName: 'NOPI', mode: 'implied', cycle: cycles[0xFC] },
+  // LAX
+  'A7': { fullName: 'LAX_ZERO', baseName: 'LAX', mode: 'zeroPage', cycle: cycles[0xA7] },
+  'B7': { fullName: 'LAX_ZEROY', baseName: 'LAX', mode: 'zeroPageY', cycle: cycles[0xB7] },
+  'AF': { fullName: 'LAX_ABS', baseName: 'LAX', mode: 'absolute', cycle: cycles[0xAF] },
+  'BF': { fullName: 'LAX_ABSY', baseName: 'LAX', mode: 'absoluteY', cycle: cycles[0xBF] },
+  'A3': { fullName: 'LAX_INDX', baseName: 'LAX', mode: 'preIndexedIndirect', cycle: cycles[0xA3] },
+  'B3': { fullName: 'LAX_INDY', baseName: 'LAX', mode: 'postIndexedIndirect', cycle: cycles[0xB3] },
+  // SAX
+  '87': { fullName: 'SAX_ZERO', baseName: 'SAX', mode: 'zeroPage', cycle: cycles[0x87] },
+  '97': { fullName: 'SAX_ZEROY', baseName: 'SAX', mode: 'zeroPageY', cycle: cycles[0x97] },
+  '8F': { fullName: 'SAX_ABS', baseName: 'SAX', mode: 'absolute', cycle: cycles[0x8F] },
+  '83': { fullName: 'SAX_INDX', baseName: 'SAX', mode: 'preIndexedIndirect', cycle: cycles[0x83] },
 };

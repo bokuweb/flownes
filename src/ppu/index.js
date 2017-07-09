@@ -164,9 +164,9 @@ export default class Ppu {
   }
 
   hasSpriteHit(): boolean {
-    return this.sprites.some((sprite: SpriteWithAttribute): boolean => (
-      sprite.y === this.line && sprite.spriteId === 0)
-    );
+    return this.sprites.some((sprite: SpriteWithAttribute): boolean => {
+      return (sprite.y === this.line) && sprite.spriteId === 0
+    });
   }
 
   get isBackgroundEnable(): boolean {
@@ -209,7 +209,7 @@ export default class Ppu {
       //  return null;
       // }
 
-      if (this.line < 240) {
+      if (this.line <= 240) {
         if (this.hasSpriteHit()) {
           this.setSpriteHit();
         }
@@ -316,15 +316,14 @@ export default class Ppu {
     for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       // INFO: Offset sprite Y position, because First and last 8line is not rendered.
       // FIXME: when offset -8, mario not rendered...., why.... 
-      const y = this.spriteRam.read(i) - 9;
+      const y = this.spriteRam.read(i) - 8;
+      if (y < 0) return;
       const spriteId = this.spriteRam.read(i + 1);
       const attr = this.spriteRam.read(i + 2);
       const x = this.spriteRam.read(i + 3);
       const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
-      if (y >= 0) {
-        this.sprites[i / 4] = { sprite, x, y, attr, spriteId };
-      }
+      this.sprites[i / 4] = { sprite, x, y, attr, spriteId };
     }
   }
 
@@ -416,14 +415,14 @@ export default class Ppu {
   }
 
   writeVramAddr(data: Byte) {
-    console.log(data.toString(16))
+    // console.log(data.toString(16))
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
       this.vramAddr = data << 8;
-      console.log(this.vramAddr.toString(16))
+      // console.log(this.vramAddr.toString(16))
       if (this.vramAddr.toString(16) === '1ec0') debugger;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;

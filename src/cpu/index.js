@@ -159,7 +159,6 @@ export default class Cpu {
         }
       }
       case 'preIndexedIndirect': {
-        if (this.registers.PC === 53258) debugger
         const baseAddr = (this.fetch(this.registers.PC) + this.registers.X) & 0xFF;
         const addr = this.read(baseAddr) + (this.read((baseAddr + 1) & 0xFF) << 8);
         return {
@@ -274,7 +273,6 @@ export default class Cpu {
         break;
       }
       case 'STA': {
-        if (mode === 'preIndexedIndirect') debugger;
         // const addr = mode === 'preIndexedIndirect' ? this.read(addrOrData) : addrOrData;
         this.write(addrOrData, this.registers.A);
         break;
@@ -495,7 +493,6 @@ export default class Cpu {
         break;
       }
       case 'SBC': {
-        // if (mode === 'immediate') debugger;
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
         const operated = this.registers.A - data - (this.registers.P.carry ? 0 : 1);
         const overflow = (((this.registers.A ^ operated) & 0x80) != 0 && ((this.registers.A ^ data) & 0x80) != 0);
@@ -511,7 +508,6 @@ export default class Cpu {
         break;
       }
       case 'PHP': {
-        debugger;
         this.registers.P.break = true;
         this.pushStatus();
         break;
@@ -610,17 +606,41 @@ export default class Cpu {
         break;
       }
       case 'BRK': {
+        const interrupt = this.registers.P.interrupt;
         this.registers.PC++;
         this.push((this.registers.PC >> 8) & 0xFF);
         this.push(this.registers.PC & 0xFF);
         this.registers.P.break = true;
         this.pushStatus();
         this.registers.P.interrupt = true;
-        this.registers.PC = this.read(0xFFFE, "Word");
-        // this.registers.PC--;
+        // Ignore interrupt when already set.
+        if (!interrupt) {
+          this.registers.PC = this.read(0xFFFE, "Word");
+        }
+        this.registers.PC--;
         break;
       }
       case 'NOP': {
+        break;
+      }
+      // Unofficial Opecode
+      case 'NOPD': {
+        this.registers.PC++;
+        break;
+      }
+      case 'NOPI': {
+        this.registers.PC += 2;
+        break;
+      }
+      case 'LAX': {
+        this.registers.A = this.registers.X = this.read(addrOrData);
+        this.registers.P.negative = !!(this.registers.A & 0x80);
+        this.registers.P.zero = !this.registers.A;
+        break;
+      }
+      case 'SAX': {
+        const operated = this.registers.A & this.registers.X;
+        this.write(addrOrData, operated);
         break;
       }
       default: throw new Error(`Unknown opecode ${baseName} detected.`);
@@ -642,8 +662,10 @@ export default class Cpu {
     if (this.interrupts.isNmiAssert) this.processNmi();
     const opecode = this.fetch(this.registers.PC);
     // console.log(opecode, this.registers.PC.toString(16))
+    if (!this.opecodeList[opecode]) debugger;
     const { baseName, mode, cycle } = this.opecodeList[opecode];
     // console.log(baseName)
+
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
     // if (window.debug) {
     //   const { PC, SP, A, X, Y, P } = this.registers;
