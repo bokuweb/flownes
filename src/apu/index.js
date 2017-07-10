@@ -4,6 +4,7 @@ import type { Byte } from '../types/common';
 import Square from './square';
 import Noise from './noise';
 import Triangle from './triangle';
+import Interrupts from '../interrupts';
 import { DIVIDE_COUNT_FOR_240HZ } from '../constants/apu';
 
 export default class Apu {
@@ -17,8 +18,10 @@ export default class Apu {
   noise: Noise;
   sequencerMode: number;
   enableIrq: boolean;
+  interrupts: Interrupts;
 
-  constructor() {
+  constructor(interrupts: Interrupts) {
+    this.interrupts = interrupts;
     // APU Registers
     // (0x4000 〜 0x4017)
     this.registers = new Uint8Array(0x18);
@@ -27,6 +30,7 @@ export default class Apu {
     this.square = [new Square(), new Square()];
     this.triangle = new Triangle();
     this.noise = new Noise();
+    this.enableIrq = false;
   }
 
   exec(cycle: number) {
@@ -50,7 +54,7 @@ export default class Apu {
     this.step++;
     if (this.step === 4) {
       if (this.enableIrq) {
-        // TODO: assert IRQ
+        this.interrupts.assertIrq();
       }
       this.step = 0;
     }
@@ -81,7 +85,7 @@ export default class Apu {
 
   write(addr: Byte, data: Byte) {
     /* eslint-disable */
-    // console.log('apu write', addr, data);
+    console.log('apu write', addr, data);
     if (addr <= 0x03) {
       // square wave control register
       this.square[0].write(addr, data);
@@ -102,8 +106,12 @@ export default class Apu {
   }
 
   read(addr: Byte): Byte {
-    // TODO: 
-    return addr;
+    // console.log('apu read')
+    // TODO: Implement other registers
+    if (addr === 0x15) {
+      this.interrupts.deassertIrq();
+    }
+
   }
 
   close() {

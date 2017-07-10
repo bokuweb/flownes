@@ -254,7 +254,6 @@ export default class Cpu {
       case 'LDA': {
         // if (mode === 'postIndexedIndirect') debugger;
         this.registers.A = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        if (typeof this.registers.A === 'undefined') debugger;
         // if (typeof this.registers.A === 'undefined') debugger;
         this.registers.P.negative = !!(this.registers.A & 0x80);
         this.registers.P.zero = !this.registers.A;
@@ -658,8 +657,20 @@ export default class Cpu {
     this.registers.PC = this.read(0xFFFA, "Word");
   }
 
+  processIrq() {
+    console.log('assert irq')
+    this.interrupts.deassertIrq();
+    this.registers.P.break = false;
+    this.push((this.registers.PC >> 8) & 0xFF);
+    this.push(this.registers.PC & 0xFF);
+    this.pushStatus();
+    this.registers.P.interrupt = true;
+    this.registers.PC = this.read(0xFFFE, "Word");
+  }
+
   exec(): number {
     if (this.interrupts.isNmiAssert) this.processNmi();
+    if (this.interrupts.isIrqAssert) this.processIrq();
     const opecode = this.fetch(this.registers.PC);
     // console.log(opecode, this.registers.PC.toString(16))
     if (!this.opecodeList[opecode]) debugger;
