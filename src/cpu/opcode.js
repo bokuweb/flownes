@@ -326,4 +326,6 @@ export const dict: { [code: string]: OpecodeProps } = {
   '97': { fullName: 'SAX_ZEROY', baseName: 'SAX', mode: 'zeroPageY', cycle: cycles[0x97] },
   '8F': { fullName: 'SAX_ABS', baseName: 'SAX', mode: 'absolute', cycle: cycles[0x8F] },
   '83': { fullName: 'SAX_INDX', baseName: 'SAX', mode: 'preIndexedIndirect', cycle: cycles[0x83] },
+  // SBC
+  'EB': { fullName: 'SBC_IMM', baseName: 'SBC', mode: 'immediate', cycle: cycles[0xEB] },
 };
