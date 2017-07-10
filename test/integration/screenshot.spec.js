@@ -62,5 +62,31 @@ describe('integration hello spec', () => {
       nes.close();
     }, 500);
   });
+
+  it('should render 018', function (done) {
+    this.timeout(5000);
+    const fs = window.require('fs');
+    const nesFile = fs.readFileSync('static/roms/giko018.nes');
+    const nes = new NES();
+    nes.setup(nesFile);
+    nes.start();
+    setTimeout(() => {
+      screenshot('screenshot/actual/giko018.png').then(done);
+      nes.close();
+    }, 500);
+  });  
+
+  it('should render color bar', function (done) {
+    this.timeout(5000);
+    const fs = window.require('fs');
+    const nesFile = fs.readFileSync('static/roms/color-bars-mapper0.nes');
+    const nes = new NES();
+    nes.setup(nesFile);
+    nes.start();
+    setTimeout(() => {
+      screenshot('screenshot/actual/color-bars-mapper0.png').then(done);
+      nes.close();
+    }, 500);
+  });    
 });
 

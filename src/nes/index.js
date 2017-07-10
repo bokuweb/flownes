@@ -58,6 +58,7 @@ export class NES {
     if (process.env.NODE_ENV !== 'production') {
       const nesDebugger = new Debugger();
       nesDebugger.setup(programROM);
+      // nesDebugger.displayCode();
     }
     const ppuConfig = {
       isHorizontalMirror,
@@ -68,7 +69,7 @@ export class NES {
     this.programROM = new Rom(programROM);
     this.ppuBus = new PpuBus(this.characterROM);
     this.interrupts = new Interrupts();
-    this.apu = new Apu();
+    this.apu = new Apu(this.interrupts);
     this.ppu = new Ppu(this.ppuBus, this.interrupts, ppuConfig);
     this.dma = new Dma(this.ram, this.ppu);
     this.cpuBus = new CpuBus(

@@ -43,7 +43,7 @@ export default class CpuBus {
       return +this.keypad.read();
     } else if (addr >= 0xC000) {
       // Mirror, if prom block number equals 1
-      if (this.programROM.size < 0x8000) {
+      if (this.programROM.size <= 0x4000) {
         return this.programROM.read(addr - 0xC000);
       }
       return this.programROM.read(addr - 0x8000);

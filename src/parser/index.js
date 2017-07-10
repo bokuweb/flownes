@@ -15,7 +15,9 @@ export const parse = (nesBuffer: ArrayBuffer): NesROM => {
     throw new Error('This file is not NES format.');
   }
   const programROMPages = nes[4];
+  // console.log('prom pages =', programROMPages);
   const characterROMPages = nes[5];
+  // console.log('crom pages =', characterROMPages);
   const isHorizontalMirror = !(nes[6] & 0x01);
   const characterROMStart = NES_HEADER_SIZE + programROMPages * PROGRAM_ROM_SIZE;
   const characterROMEnd = characterROMStart + characterROMPages * CHARACTER_ROM_SIZE;

@@ -19,7 +19,7 @@ interface CpuStatus {
   carry: boolean;
 }
 
-interface Registors {
+interface Registers {
   A: Byte;
   X: Byte;
   Y: Byte;
@@ -33,7 +33,7 @@ interface AddrOrDataAndAdditionalCycle {
   additionalCycle: number;
 }
 
-const defaultRegistors: Registors = {
+const defaultRegisters: Registers = {
   A: 0x00,
   X: 0x00,
   Y: 0x00,
@@ -47,22 +47,22 @@ const defaultRegistors: Registors = {
     zero: false,
     carry: false,
   },
-  SP: 0x01FF, // 0xFD?
+  SP: 0x01FD,
   PC: 0x0000,
 };
 
 export default class Cpu {
 
-  registors: Registors;
+  registers: Registers;
   hasBranched: boolean;
   bus: CpuBus;
   opecodeList: Array<OpecodeProps>;
   interrupts: Interrupts;
 
   constructor(bus: CpuBus, interrupts: Interrupts) {
-    this.registors = {
-      ...defaultRegistors,
-      P: { ...defaultRegistors.P },
+    this.registers = {
+      ...defaultRegisters,
+      P: { ...defaultRegisters.P },
     };
     this.hasBranched = false;
     this.bus = bus;
@@ -79,13 +79,13 @@ export default class Cpu {
 
   reset() {
     log.info('cpu reset...');
-    this.registors = {
-      ...defaultRegistors,
-      P: { ...defaultRegistors.P }
+    this.registers = {
+      ...defaultRegisters,
+      P: { ...defaultRegisters.P }
     };
     // HACK: For rom, not set reset handler.
-    this.registors.PC = this.read(0xFFFC, "Word") || 0x8000;
-    log.debug(`pc = ${(this.registors.PC).toString(16)}`);
+    this.registers.PC = this.read(0xFFFC, "Word") || 0x8000;
+    log.info(`pc = ${(this.registers.PC).toString(16)}`);
   }
 
   getAddrOrDataAndAdditionalCycle(mode: AddressingMode): AddrOrDataAndAdditionalCycle {
@@ -104,81 +104,83 @@ export default class Cpu {
       }
       case 'immediate': {
         return {
-          addrOrData: this.fetch(this.registors.PC),
+          addrOrData: this.fetch(this.registers.PC),
           additionalCycle: 0,
         }
       }
       case 'relative': {
-        const baseAddr = this.fetch(this.registors.PC);
-        const addr = baseAddr < 0x80 ? baseAddr + this.registors.PC : baseAddr + this.registors.PC - 256;
+        const baseAddr = this.fetch(this.registers.PC);
+        const addr = baseAddr < 0x80 ? baseAddr + this.registers.PC : baseAddr + this.registers.PC - 256;
         return {
           addrOrData: addr,
-          additionalCycle: (addr & 0xFF00) !== (this.registors.PC & 0xFF00) ? 1 : 0,
+          additionalCycle: (addr & 0xFF00) !== (this.registers.PC & 0xFF00) ? 1 : 0,
         }
       }
       case 'zeroPage': {
         return {
-          addrOrData: this.fetch(this.registors.PC),
+          addrOrData: this.fetch(this.registers.PC),
           additionalCycle: 0,
         }
       }
       case 'zeroPageX': {
-        const addr = this.fetch(this.registors.PC);
+        const addr = this.fetch(this.registers.PC);
         return {
-          addrOrData: (addr + this.registors.X) & 0xFF,
+          addrOrData: (addr + this.registers.X) & 0xFF,
           additionalCycle: 0,
         }
       }
       case 'zeroPageY': {
-        const addr = this.fetch(this.registors.PC);
+        const addr = this.fetch(this.registers.PC);
         return {
-          addrOrData: (addr + this.registors.Y & 0xFF),
+          addrOrData: (addr + this.registers.Y & 0xFF),
           additionalCycle: 0,
         }
       }
       case 'absolute': {
         return {
-          addrOrData: (this.fetch(this.registors.PC, "Word")),
+          addrOrData: (this.fetch(this.registers.PC, "Word")),
           additionalCycle: 0,
         }
       }
       case 'absoluteX': {
-        const addr = (this.fetch(this.registors.PC, "Word"));
-        const additionalCycle = (addr & 0xFF00) !== ((addr + this.registors.X) & 0xFF00) ? 1 : 0;
+        const addr = (this.fetch(this.registers.PC, "Word"));
+        const additionalCycle = (addr & 0xFF00) !== ((addr + this.registers.X) & 0xFF00) ? 1 : 0;
         return {
-          addrOrData: addr + this.registors.X,
+          addrOrData: (addr + this.registers.X) & 0xFFFF,
           additionalCycle,
         }
       }
       case 'absoluteY': {
-        const addr = (this.fetch(this.registors.PC, "Word"));
-        const additionalCycle = (addr & 0xFF00) !== ((addr + this.registors.Y) & 0xFF00) ? 1 : 0;
+        const addr = (this.fetch(this.registers.PC, "Word"));
+        const additionalCycle = (addr & 0xFF00) !== ((addr + this.registers.Y) & 0xFF00) ? 1 : 0;
         return {
-          addrOrData: addr + this.registors.Y,
+          addrOrData: (addr + this.registers.Y) & 0xFFFF,
           additionalCycle,
         }
       }
       case 'preIndexedIndirect': {
-        const addr = ((this.fetch(this.registors.PC)) + this.registors.X) & 0xFF;
+        const baseAddr = (this.fetch(this.registers.PC) + this.registers.X) & 0xFF;
+        const addr = this.read(baseAddr) + (this.read((baseAddr + 1) & 0xFF) << 8);
         return {
-          addrOrData: this.read(addr, "Word"),
-          additionalCycle: 0,
+          addrOrData: addr & 0xFFFF,
+          additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
         }
       }
       case 'postIndexedIndirect': {
-        const addrOrData = this.fetch(this.registors.PC);
-        const baseAddr = this.read(addrOrData, "Word");
-        const addr = baseAddr + this.registors.Y;
+        const addrOrData = this.fetch(this.registers.PC);
+        const baseAddr = this.read(addrOrData) + (this.read((addrOrData + 1) & 0xFF) << 8);
+        const addr = baseAddr + this.registers.Y;
+        // if (addr > 0xFFFF) debugger;
         return {
-          addrOrData: addr,
+          addrOrData: addr & 0xFFFF,
           additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
         }
       }
       case 'indirectAbsolute': {
-        const addrOrData = this.fetch(this.registors.PC, "Word");
-        const addr = this.read(addrOrData, "Word");
+        const addrOrData = this.fetch(this.registers.PC, "Word");
+        const addr = this.read(addrOrData) + (this.read((addrOrData & 0xFF00) | (((addrOrData & 0xFF) + 1) & 0xFF)) << 8);
         return {
-          addrOrData: addr,
+          addrOrData: addr & 0xFFFF,
           additionalCycle: 0,
         }
       }
@@ -187,11 +189,12 @@ export default class Cpu {
   }
 
   fetch(addr: Word, size?: "Byte" | "Word"): Byte {
-    this.registors.PC += size === "Word" ? 2 : 1;
+    this.registers.PC += size === "Word" ? 2 : 1;
     return this.read(addr, size);
   }
 
   read(addr: Word, size?: "Byte" | "Word"): Byte {
+    addr &= 0xFFFF;
     return size === "Word"
       ? (this.bus.readByCpu(addr) | this.bus.readByCpu(addr + 1) << 8)
       : this.bus.readByCpu(addr);
@@ -202,430 +205,481 @@ export default class Cpu {
   }
 
   push(data: Byte) {
-    this.write(this.registors.SP, data);
-    this.registors.SP--;
+    this.write(this.registers.SP, data);
+    this.registers.SP--;
   }
 
   pop(): Byte {
-    this.registors.SP++;
-    return this.read(this.registors.SP);
+    this.registers.SP++;
+    return this.read(0x100 | (this.registers.SP & 0xFF));
   }
 
   branch(addr: Word) {
-    this.registors.PC = addr;
+    this.registers.PC = addr;
     this.hasBranched = true;
   }
 
   pushStatus() {
-    const status: Byte = (+this.registors.P.negative) << 7 |
-      (+this.registors.P.overflow) << 6 |
-      (+this.registors.P.reserved) << 5 |
-      (+this.registors.P.break) << 4 |
-      (+this.registors.P.decimal) << 3 |
-      (+this.registors.P.interrupt) << 2 |
-      (+this.registors.P.zero) << 1 |
-      (+this.registors.P.carry);
+    const status: Byte = (+this.registers.P.negative) << 7 |
+      (+this.registers.P.overflow) << 6 |
+      (+this.registers.P.reserved) << 5 |
+      (+this.registers.P.break) << 4 |
+      (+this.registers.P.decimal) << 3 |
+      (+this.registers.P.interrupt) << 2 |
+      (+this.registers.P.zero) << 1 |
+      (+this.registers.P.carry);
     this.push(status);
   }
 
   popStatus() {
     const status = this.pop();
-    this.registors.P.negative = !!(status & 0x80);
-    this.registors.P.overflow = !!(status & 0x40);
-    this.registors.P.reserved = !!(status & 0x20);
-    this.registors.P.break = !!(status & 0x10);
-    this.registors.P.decimal = !!(status & 0x08);
-    this.registors.P.interrupt = !!(status & 0x04);
-    this.registors.P.zero = !!(status & 0x02);
-    this.registors.P.carry = !!(status & 0x01);
+    this.registers.P.negative = !!(status & 0x80);
+    this.registers.P.overflow = !!(status & 0x40);
+    this.registers.P.reserved = !!(status & 0x20);
+    this.registers.P.break = !!(status & 0x10);
+    this.registers.P.decimal = !!(status & 0x08);
+    this.registers.P.interrupt = !!(status & 0x04);
+    this.registers.P.zero = !!(status & 0x02);
+    this.registers.P.carry = !!(status & 0x01);
   }
 
   popPC() {
-    this.registors.PC = this.pop();
-    this.registors.PC += (this.pop() << 8);
+    this.registers.PC = this.pop();
+    this.registers.PC += (this.pop() << 8);
   }
 
   execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode) {
     this.hasBranched = false;
     switch (baseName) {
       case 'LDA': {
-        this.registors.A = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        this.registors.P.negative = !!(this.registors.A & 0x80);
-        this.registors.P.zero = !this.registors.A;
+        // if (mode === 'postIndexedIndirect') debugger;
+        this.registers.A = mode === 'immediate' ? addrOrData : this.read(addrOrData);
+        // if (typeof this.registers.A === 'undefined') debugger;
+        this.registers.P.negative = !!(this.registers.A & 0x80);
+        this.registers.P.zero = !this.registers.A;
         break;
       }
       case 'LDX': {
-        this.registors.X = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        this.registors.P.negative = !!(this.registors.X & 0x80);
-        this.registors.P.zero = !this.registors.X;
+        this.registers.X = mode === 'immediate' ? addrOrData : this.read(addrOrData);
+        this.registers.P.negative = !!(this.registers.X & 0x80);
+        this.registers.P.zero = !this.registers.X;
         break;
       }
       case 'LDY': {
-        this.registors.Y = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        this.registors.P.negative = !!(this.registors.Y & 0x80);
-        this.registors.P.zero = !this.registors.Y;
+        this.registers.Y = mode === 'immediate' ? addrOrData : this.read(addrOrData);
+        this.registers.P.negative = !!(this.registers.Y & 0x80);
+        this.registers.P.zero = !this.registers.Y;
         break;
       }
       case 'STA': {
-        this.write(addrOrData, this.registors.A);
+        // const addr = mode === 'preIndexedIndirect' ? this.read(addrOrData) : addrOrData;
+        this.write(addrOrData, this.registers.A);
         break;
       }
       case 'STX': {
-        this.write(addrOrData, this.registors.X);
+        this.write(addrOrData, this.registers.X);
         break;
       }
       case 'STY': {
-        this.write(addrOrData, this.registors.Y);
+        this.write(addrOrData, this.registers.Y);
         break;
       }
       case 'TAX': {
-        this.registors.X = this.registors.A;
-        this.registors.P.negative = !!(this.registors.X & 0x80);
-        this.registors.P.zero = !this.registors.X;
+        this.registers.X = this.registers.A;
+        this.registers.P.negative = !!(this.registers.X & 0x80);
+        this.registers.P.zero = !this.registers.X;
         break;
       }
       case 'TAY': {
-        this.registors.Y = this.registors.A;
-        this.registors.P.negative = !!(this.registors.Y & 0x80);
-        this.registors.P.zero = !this.registors.Y;
+        this.registers.Y = this.registers.A;
+        this.registers.P.negative = !!(this.registers.Y & 0x80);
+        this.registers.P.zero = !this.registers.Y;
         break;
       }
       case 'TSX': {
-        this.registors.X = this.registors.SP & 0xFF;
-        this.registors.P.negative = !!(this.registors.X & 0x80);
-        this.registors.P.zero = !this.registors.X;
+        this.registers.X = this.registers.SP & 0xFF;
+        this.registers.P.negative = !!(this.registers.X & 0x80);
+        this.registers.P.zero = !this.registers.X;
         break;
       }
       case 'TXA': {
-        this.registors.A = this.registors.X;
-        this.registors.P.negative = !!(this.registors.A & 0x80);
-        this.registors.P.zero = !this.registors.A;
+        this.registers.A = this.registers.X;
+        this.registers.P.negative = !!(this.registers.A & 0x80);
+        this.registers.P.zero = !this.registers.A;
         break;
       }
       case 'TXS': {
-        this.registors.SP = this.registors.X + 0x0100;
+        this.registers.SP = this.registers.X + 0x0100;
         // TODO: It's unneeded ?
-        // this.registors.P.negative = !!(this.registors.SP & 0x80);
-        // this.registors.P.zero = !this.registors.SP;
+        // this.registers.P.negative = !!(this.registers.SP & 0x80);
+        // this.registers.P.zero = !this.registers.SP;
         break;
       }
       case 'TYA': {
-        this.registors.A = this.registors.Y;
-        this.registors.P.negative = !!(this.registors.A & 0x80);
-        this.registors.P.zero = !this.registors.A;
+        this.registers.A = this.registers.Y;
+        this.registers.P.negative = !!(this.registers.A & 0x80);
+        this.registers.P.zero = !this.registers.A;
         break;
       }
       case 'ADC': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const operated = data + this.registors.A + this.registors.P.carry;
-        this.registors.P.overflow = !!((this.registors.A ^ operated) & 0x80);
-        this.registors.P.carry = operated > 0xFF;
-        this.registors.P.negative = !!(operated & 0x80);
-        this.registors.P.zero = !(operated & 0xFF);
-        this.registors.A = operated & 0xFF;
+        const operated = data + this.registers.A + this.registers.P.carry;
+        const overflow = (!(((this.registers.A ^ data) & 0x80) != 0) && (((this.registers.A ^ operated) & 0x80)) != 0);
+        this.registers.P.overflow = overflow;
+        this.registers.P.carry = operated > 0xFF;
+        this.registers.P.negative = !!(operated & 0x80);
+        this.registers.P.zero = !(operated & 0xFF);
+        this.registers.A = operated & 0xFF;
         break;
       }
       case 'AND': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const operated = data & this.registors.A;
-        this.registors.P.negative = !!(operated & 0x80);
-        this.registors.P.zero = !operated;
-        this.registors.A = operated & 0xFF;
+        const operated = data & this.registers.A;
+        this.registers.P.negative = !!(operated & 0x80);
+        this.registers.P.zero = !operated;
+        this.registers.A = operated & 0xFF;
         break;
       }
       case 'ASL': {
         if (mode === 'accumulator') {
-          const acc = this.registors.A;
-          this.registors.P.carry = !!(acc & 0x80);
-          this.registors.A = (acc << 1) & 0xFF;
-          this.registors.P.zero = !this.registors.A;
-          this.registors.P.negative = !!(this.registors.A & 0x80);
+          const acc = this.registers.A;
+          this.registers.P.carry = !!(acc & 0x80);
+          this.registers.A = (acc << 1) & 0xFF;
+          this.registers.P.zero = !this.registers.A;
+          this.registers.P.negative = !!(this.registers.A & 0x80);
         } else {
           const data = this.read(addrOrData);
-          this.registors.P.carry = !!(data & 0x80);
+          this.registers.P.carry = !!(data & 0x80);
           const shifted = (data << 1) & 0xFF;
           this.write(addrOrData, shifted);
-          this.registors.P.zero = !shifted;
-          this.registors.P.negative = !!(shifted & 0x80);
+          this.registers.P.zero = !shifted;
+          this.registers.P.negative = !!(shifted & 0x80);
         }
         break;
       }
       case 'BIT': {
         const data = this.read(addrOrData);
-        this.registors.P.negative = !!(data & 0x80);
-        this.registors.P.overflow = !!(data & 0x40);
-        this.registors.P.zero = !(this.registors.A & data);
+        this.registers.P.negative = !!(data & 0x80);
+        this.registers.P.overflow = !!(data & 0x40);
+        this.registers.P.zero = !(this.registers.A & data);
         break;
       }
       case 'CMP': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const compared = this.registors.A - data;
-        this.registors.P.carry = compared >= 0;
-        this.registors.P.negative = !!(compared & 0x80);
-        this.registors.P.zero = !(compared & 0xff);
+        const compared = this.registers.A - data;
+        this.registers.P.carry = compared >= 0;
+        this.registers.P.negative = !!(compared & 0x80);
+        this.registers.P.zero = !(compared & 0xff);
         break;
       }
       case 'CPX': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const compared = this.registors.X - data;
-        this.registors.P.carry = compared >= 0;
-        this.registors.P.negative = !!(compared & 0x80);
-        this.registors.P.zero = !(compared & 0xff);
+        const compared = this.registers.X - data;
+        this.registers.P.carry = compared >= 0;
+        this.registers.P.negative = !!(compared & 0x80);
+        this.registers.P.zero = !(compared & 0xff);
         break;
       }
       case 'CPY': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const compared = this.registors.Y - data;
-        this.registors.P.carry = compared >= 0;
-        this.registors.P.negative = !!(compared & 0x80);
-        this.registors.P.zero = !(compared & 0xff);
+        const compared = this.registers.Y - data;
+        this.registers.P.carry = compared >= 0;
+        this.registers.P.negative = !!(compared & 0x80);
+        this.registers.P.zero = !(compared & 0xff);
         break;
       }
       case 'DEC': {
         const data = (this.read(addrOrData) - 1) & 0xFF;
-        this.registors.P.negative = !!(data & 0x80);
-        this.registors.P.zero = !data;
+        this.registers.P.negative = !!(data & 0x80);
+        this.registers.P.zero = !data;
         this.write(addrOrData, data);
         break;
       }
       case 'DEX': {
-        this.registors.X = (this.registors.X - 1) & 0xFF;
-        this.registors.P.negative = !!(this.registors.X & 0x80);
-        this.registors.P.zero = !this.registors.X;
+        this.registers.X = (this.registers.X - 1) & 0xFF;
+        this.registers.P.negative = !!(this.registers.X & 0x80);
+        this.registers.P.zero = !this.registers.X;
         break;
       }
       case 'DEY': {
-        this.registors.Y = (this.registors.Y - 1) & 0xFF;
-        this.registors.P.negative = !!(this.registors.Y & 0x80);
-        this.registors.P.zero = !this.registors.Y;
+        this.registers.Y = (this.registers.Y - 1) & 0xFF;
+        this.registers.P.negative = !!(this.registers.Y & 0x80);
+        this.registers.P.zero = !this.registers.Y;
         break;
       }
       case 'EOR': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const operated = data ^ this.registors.A;
-        this.registors.P.negative = !!(operated & 0x80);
-        this.registors.P.zero = !operated;
-        this.registors.A = operated & 0xFF;
+        const operated = data ^ this.registers.A;
+        this.registers.P.negative = !!(operated & 0x80);
+        this.registers.P.zero = !operated;
+        this.registers.A = operated & 0xFF;
         break;
       }
       case 'INC': {
         const data = (this.read(addrOrData) + 1) & 0xFF;
-        this.registors.P.negative = !!(data & 0x80);
-        this.registors.P.zero = !data;
+        this.registers.P.negative = !!(data & 0x80);
+        this.registers.P.zero = !data;
         this.write(addrOrData, data);
         break;
       }
       case 'INX': {
-        this.registors.X = (this.registors.X + 1) & 0xFF;
-        this.registors.P.negative = !!(this.registors.X & 0x80);
-        this.registors.P.zero = !this.registors.X;
+        this.registers.X = (this.registers.X + 1) & 0xFF;
+        this.registers.P.negative = !!(this.registers.X & 0x80);
+        this.registers.P.zero = !this.registers.X;
         break;
       }
       case 'INY': {
-        this.registors.Y = (this.registors.Y + 1) & 0xFF;
-        this.registors.P.negative = !!(this.registors.Y & 0x80);
-        this.registors.P.zero = !this.registors.Y;
+        this.registers.Y = (this.registers.Y + 1) & 0xFF;
+        this.registers.P.negative = !!(this.registers.Y & 0x80);
+        this.registers.P.zero = !this.registers.Y;
         break;
       }
       case 'LSR': {
         if (mode === 'accumulator') {
-          const acc = this.registors.A & 0xFF;
-          this.registors.P.carry = !!(acc & 0x01);
-          this.registors.A = acc >> 1;
-          this.registors.P.zero = !this.registors.A;
+          const acc = this.registers.A & 0xFF;
+          this.registers.P.carry = !!(acc & 0x01);
+          this.registers.A = acc >> 1;
+          this.registers.P.zero = !this.registers.A;
         } else {
           const data = this.read(addrOrData);
-          this.registors.P.carry = !!(data & 0x01);
-          this.registors.P.zero = !(data >> 1);
+          this.registers.P.carry = !!(data & 0x01);
+          this.registers.P.zero = !(data >> 1);
           this.write(addrOrData, data >> 1);
         }
-        this.registors.P.negative = false;
+        this.registers.P.negative = false;
         break;
       }
       case 'ORA': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const operated = data | this.registors.A;
-        this.registors.P.negative = !!(operated & 0x80);
-        this.registors.P.zero = !operated;
-        this.registors.A = operated & 0xFF;
+        const operated = data | this.registers.A;
+        this.registers.P.negative = !!(operated & 0x80);
+        this.registers.P.zero = !operated;
+        this.registers.A = operated & 0xFF;
         break;
       }
       case 'ROL': {
         if (mode === 'accumulator') {
-          const acc = this.registors.A;
-          this.registors.A = (acc << 1) & 0xFF | (this.registors.P.carry ? 0x01 : 0x00);
-          this.registors.P.carry = !!(acc & 0x80);
-          this.registors.P.zero = !this.registors.A;
-          this.registors.P.negative = !!(this.registors.A & 0x80);
+          const acc = this.registers.A;
+          this.registers.A = (acc << 1) & 0xFF | (this.registers.P.carry ? 0x01 : 0x00);
+          this.registers.P.carry = !!(acc & 0x80);
+          this.registers.P.zero = !this.registers.A;
+          this.registers.P.negative = !!(this.registers.A & 0x80);
         } else {
           const data = this.read(addrOrData);
-          const writeData = (data << 1 | (this.registors.P.carry ? 0x01 : 0x00)) & 0xFF;
+          const writeData = (data << 1 | (this.registers.P.carry ? 0x01 : 0x00)) & 0xFF;
           this.write(addrOrData, writeData);
-          this.registors.P.carry = !!(data & 0x80);
-          this.registors.P.zero = !writeData;
-          this.registors.P.negative = !!(writeData & 0x80);
+          this.registers.P.carry = !!(data & 0x80);
+          this.registers.P.zero = !writeData;
+          this.registers.P.negative = !!(writeData & 0x80);
         }
         break;
       }
       case 'ROR': {
         if (mode === 'accumulator') {
-          const acc = this.registors.A;
-          this.registors.A = acc >> 1 | (this.registors.P.carry ? 0x80 : 0x00);
-          this.registors.P.carry = !!(acc & 0x01);
-          this.registors.P.zero = !this.registors.A;
-          this.registors.P.negative = !!(this.registors.A & 0x80);
+          const acc = this.registers.A;
+          this.registers.A = acc >> 1 | (this.registers.P.carry ? 0x80 : 0x00);
+          this.registers.P.carry = !!(acc & 0x01);
+          this.registers.P.zero = !this.registers.A;
+          this.registers.P.negative = !!(this.registers.A & 0x80);
         } else {
           const data = this.read(addrOrData);
-          const writeData = data >> 1 | (this.registors.P.carry ? 0x80 : 0x00);
+          const writeData = data >> 1 | (this.registers.P.carry ? 0x80 : 0x00);
           this.write(addrOrData, writeData);
-          this.registors.P.carry = !!(data & 0x01);
-          this.registors.P.zero = !writeData;
-          this.registors.P.negative = !!(writeData & 0x80);
+          this.registers.P.carry = !!(data & 0x01);
+          this.registers.P.zero = !writeData;
+          this.registers.P.negative = !!(writeData & 0x80);
         }
         break;
       }
       case 'SBC': {
         const data = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        const operated = this.registors.A - data - (this.registors.P.carry ? 0 : 1);
-        this.registors.P.overflow = !!((this.registors.A ^ operated) & 0x80);
-        this.registors.P.carry = operated >= 0;
-        this.registors.P.negative = !!(operated & 0x80);
-        this.registors.P.zero = !(operated & 0xFF);
-        this.registors.A = operated & 0xFF;
+        const operated = this.registers.A - data - (this.registers.P.carry ? 0 : 1);
+        const overflow = (((this.registers.A ^ operated) & 0x80) != 0 && ((this.registers.A ^ data) & 0x80) != 0);
+        this.registers.P.overflow = overflow;
+        this.registers.P.carry = operated >= 0;
+        this.registers.P.negative = !!(operated & 0x80);
+        this.registers.P.zero = !(operated & 0xFF);
+        this.registers.A = operated & 0xFF;
         break;
       }
       case 'PHA': {
-        this.push(this.registors.A);
+        this.push(this.registers.A);
         break;
       }
       case 'PHP': {
+        this.registers.P.break = true;
         this.pushStatus();
         break;
       }
       case 'PLA': {
-        this.registors.A = this.pop();
-        this.registors.P.negative = !!(this.registors.A & 0x80);
-        this.registors.P.zero = !this.registors.A;
+        this.registers.A = this.pop();
+        this.registers.P.negative = !!(this.registers.A & 0x80);
+        this.registers.P.zero = !this.registers.A;
         break;
       }
       case 'PLP': {
         this.popStatus();
+        this.registers.P.reserved = true;
         break;
       }
       case 'JMP': {
-        this.registors.PC = addrOrData;
+        this.registers.PC = addrOrData;
         break;
       }
       case 'JSR': {
-        const PC = this.registors.PC - 1;
+        const PC = this.registers.PC - 1;
         this.push((PC >> 8) & 0xFF);
         this.push(PC & 0xFF);
-        this.registors.PC = addrOrData;
+        this.registers.PC = addrOrData;
         break;
       }
       case 'RTS': {
         this.popPC();
-        this.registors.PC++;
+        this.registers.PC++;
         break;
       }
       case 'RTI': {
         this.popStatus();
         this.popPC();
+        this.registers.P.reserved = true;
         break;
       }
       case 'BCC': {
-        if (!this.registors.P.carry) this.branch(addrOrData);
+        if (!this.registers.P.carry) this.branch(addrOrData);
         break;
       }
       case 'BCS': {
-        if (this.registors.P.carry) this.branch(addrOrData);
+        if (this.registers.P.carry) this.branch(addrOrData);
         break;
       }
       case 'BEQ': {
-        if (this.registors.P.zero) this.branch(addrOrData);
+        if (this.registers.P.zero) this.branch(addrOrData);
         break;
       }
       case 'BMI': {
-        if (this.registors.P.negative) this.branch(addrOrData);
+        if (this.registers.P.negative) this.branch(addrOrData);
         break;
       }
       case 'BNE': {
-        if (!this.registors.P.zero) this.branch(addrOrData);
+        if (!this.registers.P.zero) this.branch(addrOrData);
         break;
       }
       case 'BPL': {
-        if (!this.registors.P.negative) this.branch(addrOrData);
+        if (!this.registers.P.negative) this.branch(addrOrData);
         break;
       }
       case 'BVS': {
-        if (this.registors.P.overflow) this.branch(addrOrData);
+        if (this.registers.P.overflow) this.branch(addrOrData);
         break;
       }
       case 'BVC': {
-        if (!this.registors.P.overflow) this.branch(addrOrData);
+        if (!this.registers.P.overflow) this.branch(addrOrData);
         break;
       }
       case 'CLD': {
-        this.registors.P.decimal = false;
+        this.registers.P.decimal = false;
         break;
       }
       case 'CLC': {
-        this.registors.P.carry = false;
+        this.registers.P.carry = false;
         break;
       }
       case 'CLI': {
-        this.registors.P.interrupt = false;
+        this.registers.P.interrupt = false;
         break;
       }
       case 'CLV': {
-        this.registors.P.overflow = false;
+        this.registers.P.overflow = false;
         break;
       }
       case 'SEC': {
-        this.registors.P.carry = true;
+        this.registers.P.carry = true;
         break;
       }
       case 'SEI': {
-        this.registors.P.interrupt = true;
+        this.registers.P.interrupt = true;
         break;
       }
       case 'SED': {
-        this.registors.P.decimal = true;
+        this.registers.P.decimal = true;
         break;
       }
       case 'BRK': {
-        this.push((this.registors.PC >> 8) & 0xFF);
-        this.push(this.registors.PC & 0xFF);
-        this.registors.P.break = true;
+        const interrupt = this.registers.P.interrupt;
+        this.registers.PC++;
+        this.push((this.registers.PC >> 8) & 0xFF);
+        this.push(this.registers.PC & 0xFF);
+        this.registers.P.break = true;
         this.pushStatus();
-        this.registors.P.interrupt = true;
-        this.registors.PC = this.read(0xFFFE, "Word");
+        this.registers.P.interrupt = true;
+        // Ignore interrupt when already set.
+        if (!interrupt) {
+          this.registers.PC = this.read(0xFFFE, "Word");
+        }
+        this.registers.PC--;
         break;
       }
       case 'NOP': {
         break;
       }
+      // Unofficial Opecode
+      case 'NOPD': {
+        this.registers.PC++;
+        break;
+      }
+      case 'NOPI': {
+        this.registers.PC += 2;
+        break;
+      }
+      case 'LAX': {
+        this.registers.A = this.registers.X = this.read(addrOrData);
+        this.registers.P.negative = !!(this.registers.A & 0x80);
+        this.registers.P.zero = !this.registers.A;
+        break;
+      }
+      case 'SAX': {
+        const operated = this.registers.A & this.registers.X;
+        this.write(addrOrData, operated);
+        break;
+      }
       default: throw new Error(`Unknown opecode ${baseName} detected.`);
     }
+    if (typeof this.registers.A === 'undefined') debugger;
   }
 
   processNmi() {
     this.interrupts.deassertNmi();
-    this.registors.P.break = false;
-    this.push((this.registors.PC >> 8) & 0xFF);
-    this.push(this.registors.PC & 0xFF);
+    this.registers.P.break = false;
+    this.push((this.registers.PC >> 8) & 0xFF);
+    this.push(this.registers.PC & 0xFF);
     this.pushStatus();
-    this.registors.P.interrupt = true;
-    this.registors.PC = this.read(0xFFFA, "Word");
+    this.registers.P.interrupt = true;
+    this.registers.PC = this.read(0xFFFA, "Word");
+  }
+
+  processIrq() {
+    console.log('assert irq')
+    this.interrupts.deassertIrq();
+    this.registers.P.break = false;
+    this.push((this.registers.PC >> 8) & 0xFF);
+    this.push(this.registers.PC & 0xFF);
+    this.pushStatus();
+    this.registers.P.interrupt = true;
+    this.registers.PC = this.read(0xFFFE, "Word");
   }
 
   exec(): number {
     if (this.interrupts.isNmiAssert) this.processNmi();
-    const opecode = this.fetch(this.registors.PC);
+    if (this.interrupts.isIrqAssert) this.processIrq();
+    const opecode = this.fetch(this.registers.PC);
+    // console.log(opecode, this.registers.PC.toString(16))
+    if (!this.opecodeList[opecode]) debugger;
     const { baseName, mode, cycle } = this.opecodeList[opecode];
+    // console.log(baseName)
+
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
     // if (window.debug) {
-    //   const { PC, SP, A, X, Y, P } = this.registors;
+    //   const { PC, SP, A, X, Y, P } = this.registers;
     //   const { fullName} = this.opecodeList[opecode];
     //   log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
     //   log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
