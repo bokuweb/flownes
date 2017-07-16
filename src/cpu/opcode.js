@@ -328,4 +328,12 @@ export const dict: { [code: string]: OpecodeProps } = {
   '83': { fullName: 'SAX_INDX', baseName: 'SAX', mode: 'preIndexedIndirect', cycle: cycles[0x83] },
   // SBC
   'EB': { fullName: 'SBC_IMM', baseName: 'SBC', mode: 'immediate', cycle: cycles[0xEB] },
+  // DCP
+  'C7': { fullName: 'DCP_ZERO', baseName: 'DCP', mode: 'zeroPage', cycle: cycles[0xC7]},
+	'D7': { fullName: 'DCP_ZEROX', baseName: 'DCP', mode: 'zeroPageX', cycle: cycles[0xD7]},
+	'CF': { fullName: 'DCP_ABS', baseName: 'DCP', mode: 'absolute', cycle: cycles[0xCF]},
+	'DF': { fullName: 'DCP_ABSX', baseName: 'DCP', mode: 'absoluteX', cycle: cycles[0xDF]},
+	'DB': { fullName: 'DCP_ABSY', baseName: 'DCP', mode: 'absoluteY', cycle: cycles[0xD8]},
+	'C3': { fullName: 'DCP_INDX', baseName: 'DCP', mode: 'preIndexedIndirect', cycle: cycles[0xC3]},
+	'D3': { fullName: 'DCP_INDY', baseName: 'DCP', mode: 'postIndexedIndirect', cycle: cycles[0xD3]},
 };

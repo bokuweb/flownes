@@ -642,6 +642,13 @@ export default class Cpu {
         this.write(addrOrData, operated);
         break;
       }
+      case 'DCP': {
+        const operated = (this.read(addrOrData) - 1) & 0xFF;
+        this.registers.P.negative = !!(((this.registers.A - operated) & 0x1FF) & 0x80);
+        this.registers.P.zero = !((this.registers.A - operated) & 0x1FF);
+        this.write(addrOrData, operated);
+        break;
+      }
       default: throw new Error(`Unknown opecode ${baseName} detected.`);
     }
     if (typeof this.registers.A === 'undefined') debugger;
