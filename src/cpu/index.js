@@ -658,7 +658,16 @@ export default class Cpu {
         this.registers.P.negative = !!(operated & 0x80);
         this.registers.P.zero = !(operated & 0xFF);
         this.registers.A = operated & 0xFF;
-
+        this.write(addrOrData, data);
+        break;
+      }
+      case 'SLO': {
+        let data = this.read(addrOrData);
+        this.registers.P.carry = !!(data & 0x80);
+        data = (data << 1) & 0xFF;
+        this.registers.A |= data;
+        this.registers.P.negative = !!(this.registers.A & 0x80);
+        this.registers.P.zero = !(this.registers.A & 0xFF);
         this.write(addrOrData, data);
         break;
       }
