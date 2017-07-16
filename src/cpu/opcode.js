@@ -335,5 +335,13 @@ export const dict: { [code: string]: OpecodeProps } = {
 	'DF': { fullName: 'DCP_ABSX', baseName: 'DCP', mode: 'absoluteX', cycle: cycles[0xDF]},
 	'DB': { fullName: 'DCP_ABSY', baseName: 'DCP', mode: 'absoluteY', cycle: cycles[0xD8]},
 	'C3': { fullName: 'DCP_INDX', baseName: 'DCP', mode: 'preIndexedIndirect', cycle: cycles[0xC3]},
-	'D3': { fullName: 'DCP_INDY', baseName: 'DCP', mode: 'postIndexedIndirect', cycle: cycles[0xD3]},
+  'D3': { fullName: 'DCP_INDY', baseName: 'DCP', mode: 'postIndexedIndirect', cycle: cycles[0xD3]},
+  // ISB
+  'E7': { fullName: 'ISB_ZERO', baseName: 'ISB', mode: 'zeroPage', cycle: cycles[0xE7]},
+	'F7': { fullName: 'ISB_ZEROX', baseName: 'ISB', mode: 'zeroPageX', cycle: cycles[0xF7]},
+	'EF': { fullName: 'ISB_ABS', baseName: 'ISB', mode: 'absolute', cycle: cycles[0xEF]},
+	'FF': { fullName: 'ISB_ABSX', baseName: 'ISB', mode: 'absoluteX', cycle: cycles[0xFF]},
+	'FB': { fullName: 'ISB_ABSY', baseName: 'ISB', mode: 'absoluteY', cycle: cycles[0xF8]},
+	'E3': { fullName: 'ISB_INDX', baseName: 'ISB', mode: 'preIndexedIndirect', cycle: cycles[0xE3]},
+  'F3': { fullName: 'ISB_INDY', baseName: 'ISB', mode: 'postIndexedIndirect', cycle: cycles[0xF3]},
 };

@@ -649,6 +649,19 @@ export default class Cpu {
         this.write(addrOrData, operated);
         break;
       }
+      case 'ISB': {
+        const data = (this.read(addrOrData) + 1) & 0xFF;
+        const operated = (~data & 0xFF) + this.registers.A + this.registers.P.carry;
+        const overflow = (!(((this.registers.A ^ data) & 0x80) != 0) && (((this.registers.A ^ operated) & 0x80)) != 0);
+        this.registers.P.overflow = overflow;
+        this.registers.P.carry = operated > 0xFF;
+        this.registers.P.negative = !!(operated & 0x80);
+        this.registers.P.zero = !(operated & 0xFF);
+        this.registers.A = operated & 0xFF;
+
+        this.write(addrOrData, data);
+        break;
+      }
       default: throw new Error(`Unknown opecode ${baseName} detected.`);
     }
     if (typeof this.registers.A === 'undefined') debugger;
