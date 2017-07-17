@@ -205,7 +205,7 @@ export default class Cpu {
   }
 
   push(data: Byte) {
-    this.write(this.registers.SP, data);
+    this.write(0x100 | (this.registers.SP & 0xFF), data);
     this.registers.SP--;
   }
 
@@ -527,6 +527,7 @@ export default class Cpu {
         break;
       }
       case 'JSR': {
+        debugger;
         const PC = this.registers.PC - 1;
         this.push((PC >> 8) & 0xFF);
         this.push(PC & 0xFF);
@@ -534,6 +535,7 @@ export default class Cpu {
         break;
       }
       case 'RTS': {
+        debugger;
         this.popPC();
         this.registers.PC++;
         break;
@@ -720,7 +722,7 @@ export default class Cpu {
   }
 
   processIrq() {
-    console.log('assert irq')
+    if (this.registers.P.interrupt) return;
     this.interrupts.deassertIrq();
     this.registers.P.break = false;
     this.push((this.registers.PC >> 8) & 0xFF);
@@ -741,11 +743,11 @@ export default class Cpu {
 
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
     // if (window.debug) {
-    //   const { PC, SP, A, X, Y, P } = this.registers;
-    //   const { fullName} = this.opecodeList[opecode];
-    //   log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
-    //   log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
-    //   log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
+    // const { PC, SP, A, X, Y, P } = this.registers;
+    // const { fullName} = this.opecodeList[opecode];
+    // log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
+    // log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
+    // log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
     // }
     this.execInstruction(baseName, addrOrData, mode);
     return cycle + additionalCycle + (this.hasBranched ? 1 : 0);
