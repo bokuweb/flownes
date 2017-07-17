@@ -360,4 +360,20 @@ export const dict: { [code: string]: OpecodeProps } = {
   '3B': { fullName: 'RLA_ABSY', baseName: 'RLA', mode: 'absoluteY', cycle: cycles[0x3B] },
   '23': { fullName: 'RLA_INDX', baseName: 'RLA', mode: 'preIndexedIndirect', cycle: cycles[0x23] },
   '33': { fullName: 'RLA_INDY', baseName: 'RLA', mode: 'postIndexedIndirect', cycle: cycles[0x33] },  
+  // SRE
+  '47': { fullName: 'SRE_ZERO', baseName: 'SRE', mode: 'zeroPage', cycle: cycles[0x47] },
+  '57': { fullName: 'SRE_ZEROX', baseName: 'SRE', mode: 'zeroPageX', cycle: cycles[0x57] },
+  '4F': { fullName: 'SRE_ABS', baseName: 'SRE', mode: 'absolute', cycle: cycles[0x4F] },
+  '5F': { fullName: 'SRE_ABSX', baseName: 'SRE', mode: 'absoluteX', cycle: cycles[0x5F] },
+  '5B': { fullName: 'SRE_ABSY', baseName: 'SRE', mode: 'absoluteY', cycle: cycles[0x5B] },
+  '43': { fullName: 'SRE_INDX', baseName: 'SRE', mode: 'preIndexedIndirect', cycle: cycles[0x43] },
+  '53': { fullName: 'SRE_INDY', baseName: 'SRE', mode: 'postIndexedIndirect', cycle: cycles[0x53] },  
+  // RRA
+  '67': { fullName: 'RRA_ZERO', baseName: 'RRA', mode: 'zeroPage', cycle: cycles[0x67] },
+  '77': { fullName: 'RRA_ZEROX', baseName: 'RRA', mode: 'zeroPageX', cycle: cycles[0x77] },
+  '6F': { fullName: 'RRA_ABS', baseName: 'RRA', mode: 'absolute', cycle: cycles[0x6F] },
+  '7F': { fullName: 'RRA_ABSX', baseName: 'RRA', mode: 'absoluteX', cycle: cycles[0x7F] },
+  '7B': { fullName: 'RRA_ABSY', baseName: 'RRA', mode: 'absoluteY', cycle: cycles[0x7B] },
+  '63': { fullName: 'RRA_INDX', baseName: 'RRA', mode: 'preIndexedIndirect', cycle: cycles[0x63] },
+  '73': { fullName: 'RRA_INDY', baseName: 'RRA', mode: 'postIndexedIndirect', cycle: cycles[0x73] },    
 };

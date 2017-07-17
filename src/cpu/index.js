@@ -680,6 +680,30 @@ export default class Cpu {
         this.write(addrOrData, data);
         break;
       }
+      case 'SRE': {
+        let data = this.read(addrOrData);
+        this.registers.P.carry = !!(data & 0x01)
+        data >>= 1;
+        this.registers.A ^= data;
+        this.registers.P.negative = !!(this.registers.A & 0x80);
+        this.registers.P.zero = !(this.registers.A & 0xFF);
+        this.write(addrOrData, data);
+        break;
+      }
+      case 'RRA': {
+        let data = this.read(addrOrData);
+        const carry = !!(data & 0x01);
+        data = (data >> 1) | (this.registers.P.carry ? 0x80 : 0x00);
+        const operated = data + this.registers.A + carry;
+        const overflow = (!(((this.registers.A ^ data) & 0x80) != 0) && (((this.registers.A ^ operated) & 0x80)) != 0);
+        this.registers.P.overflow = overflow;
+        this.registers.P.negative = !!(operated & 0x80);
+        this.registers.P.zero = !(operated & 0xFF);
+        this.registers.A = operated & 0xFF;
+        this.registers.P.carry = operated > 0xFF;
+        this.write(addrOrData, data);
+        break;
+      }
       default: throw new Error(`Unknown opecode ${baseName} detected.`);
     }
     if (typeof this.registers.A === 'undefined') debugger;
