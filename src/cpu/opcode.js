@@ -352,4 +352,12 @@ export const dict: { [code: string]: OpecodeProps } = {
   '1B': { fullName: 'SLO_ABSY', baseName: 'SLO', mode: 'absoluteY', cycle: cycles[0x1B] },
   '03': { fullName: 'SLO_INDX', baseName: 'SLO', mode: 'preIndexedIndirect', cycle: cycles[0x03] },
   '13': { fullName: 'SLO_INDY', baseName: 'SLO', mode: 'postIndexedIndirect', cycle: cycles[0x13] },
+  // RLA
+  '27': { fullName: 'RLA_ZERO', baseName: 'RLA', mode: 'zeroPage', cycle: cycles[0x27] },
+  '37': { fullName: 'RLA_ZEROX', baseName: 'RLA', mode: 'zeroPageX', cycle: cycles[0x37] },
+  '2F': { fullName: 'RLA_ABS', baseName: 'RLA', mode: 'absolute', cycle: cycles[0x2F] },
+  '3F': { fullName: 'RLA_ABSX', baseName: 'RLA', mode: 'absoluteX', cycle: cycles[0x3F] },
+  '3B': { fullName: 'RLA_ABSY', baseName: 'RLA', mode: 'absoluteY', cycle: cycles[0x3B] },
+  '23': { fullName: 'RLA_INDX', baseName: 'RLA', mode: 'preIndexedIndirect', cycle: cycles[0x23] },
+  '33': { fullName: 'RLA_INDY', baseName: 'RLA', mode: 'postIndexedIndirect', cycle: cycles[0x33] },  
 };
