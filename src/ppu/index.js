@@ -361,6 +361,11 @@ export default class Ppu {
       this.clearVblank();
       return data;
     }
+    // Write OAM data here. Writes will increment OAMADDR after the write
+    // reads during vertical or forced blanking return the value from OAM at that address but do not increment.
+    if (addr === 0x0004) {
+      return this.spriteRam.read(this.spriteRamAddr);
+    }
     if (addr === 0x0007) {
       const data = this.vram.read(this.vramAddr - 0x2000);
       if (typeof data === 'undefined') debugger;

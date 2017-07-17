@@ -527,7 +527,6 @@ export default class Cpu {
         break;
       }
       case 'JSR': {
-        debugger;
         const PC = this.registers.PC - 1;
         this.push((PC >> 8) & 0xFF);
         this.push(PC & 0xFF);
@@ -535,7 +534,6 @@ export default class Cpu {
         break;
       }
       case 'RTS': {
-        debugger;
         this.popPC();
         this.registers.PC++;
         break;
