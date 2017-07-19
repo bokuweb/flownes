@@ -18,7 +18,7 @@ export interface SpriteWithAttribute {
   sprite: Sprite;
   x: Byte;
   y: Byte;
-  attr: Byte; // TODO
+  attr: Byte;
   spriteId: number;
 }
 
@@ -367,10 +367,27 @@ export default class Ppu {
       return this.spriteRam.read(this.spriteRamAddr);
     }
     if (addr === 0x0007) {
-      const data = this.vram.read(this.vramAddr - 0x2000);
-      if (typeof data === 'undefined') debugger;
-      this.vramAddr += this.vramOffset;
-      return data;
+      if (this.vramAddr >= 0x2000) {
+        let addr = this.vramAddr - 0x2000;
+        if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
+          const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
+          // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c      
+          addr = isMirror ? (addr - 0x10) : addr;
+          // NOTE: Palette should be mirrored within $3f00-$3fff.
+          addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
+        }
+        const data = this.vram.read(addr);
+        //this.vramAddr += this.vramOffset;
+        console.log('read ppu', addr.toString(16), data)
+        if (!data) debugger;
+        return data;
+      } else {
+        const data = this.readCharacterROM(this.vramAddr);
+        // this.vramAddr += this.vramOffset;
+        if (!data) debugger;
+        console.log('read ppu', addr.toString(16), data)
+        return data;
+      }
     }
     throw new Error(`PPU error occurred. It is a prohibited PPU address. ${addr.toString(16)}`);
   }
@@ -420,32 +437,52 @@ export default class Ppu {
   }
 
   writeVramAddr(data: Byte) {
-    // console.log(data.toString(16))
+    // Valid addresses are $0000-$3FFF; higher addresses will be mirrored down.
+    console.log(data.toString(16), 'addr')
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
       this.vramAddr = data << 8;
-      // console.log(this.vramAddr.toString(16))
-      if (this.vramAddr.toString(16) === '1ec0') debugger;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
     }
   }
 
   writeVramData(data: Byte) {
+    // Valid addresses are $0000-$3FFF; higher addresses will be mirrored down.
     // if (this.vramAddr >= 0x3F00 && this.vramAddr < 0x3f20 && data === 1) {
     //   debugger;
     //   this.vramAddr += this.vramOffset;
     //   return;
     // }
-    let addr = this.vramAddr - 0x2000;
-    const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
-    // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
-    addr = isMirror ? (addr - 0x10) : addr;
-    this.writeVram(addr, data);
-    this.vramAddr += this.vramOffset;
+    if (this.vramAddr >= 0x2000) {
+      let addr = this.vramAddr - 0x2000;
+      if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
+        const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
+        // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c      
+        addr = isMirror ? (addr - 0x10) : addr;
+        // NOTE: Palette should be mirrored within $3f00-$3fff.
+        addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
+      }
+      this.vramAddr += this.vramOffset;
+      console.log('write vram', addr.toString(16), this.vramAddr.toString(16), data)
+      // console.log('read vram', addr.toString(16), data)
+      this.writeVram(addr, data);
+    } else {
+      this.spriteRam.write(this.vramAddr, data);
+      this.vramAddr += this.vramOffset;
+    }
+
+    //let addr = this.vramAddr - 0x2000;
+    //if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
+    //   const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
+    //   // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c      
+    //   addr = isMirror ? (addr - 0x10) : addr;
+    //   // NOTE: Palette should be mirrored within $3f00-$3fff.
+    //   addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
+    // }
   }
 
   writeVram(addr: Word, data: Byte) {
