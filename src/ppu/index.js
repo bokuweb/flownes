@@ -164,9 +164,8 @@ export default class Ppu {
   }
 
   hasSpriteHit(): boolean {
-    return this.sprites.some((sprite: SpriteWithAttribute): boolean => {
-      return (sprite.y === this.line) && sprite.spriteId === 0
-    });
+    const y = this.spriteRam.read(0);
+    return y === this.line;
   }
 
   get isBackgroundEnable(): boolean {
