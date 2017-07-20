@@ -14,15 +14,13 @@ export default class CpuBus {
   ram: Ram;
   ppu: Ppu;
   apu: Apu;
-  characterROM: Rom;
   programROM: Rom;
   keypad: Keypad;
   dma: Dma;
 
-  constructor(ram: Ram, programROM: Rom, characterROM: Rom, ppu: Ppu, keypad: Keypad, dma: Dma, apu: Apu) {
+  constructor(ram: Ram, programROM: Rom, ppu: Ppu, keypad: Keypad, dma: Dma, apu: Apu) {
     this.ram = ram;
     this.programROM = programROM;
-    this.characterROM = characterROM;
     this.ppu = ppu;
     this.apu = apu;
     this.keypad = keypad;
@@ -77,15 +75,6 @@ export default class CpuBus {
         // APU
         this.apu.write(addr - 0x4000, data);
       }
-    }
-  }
-
-  readByPpu(addr: Word): Byte {
-    if (addr < 0x2000) {
-      return this.characterROM.read(addr);
-    } else {
-      // FIXME:
-      return 0;
     }
   }
 }

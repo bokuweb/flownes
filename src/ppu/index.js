@@ -133,7 +133,7 @@ export default class Ppu {
     this.scrollY = 0;
 
     // debug
-    this.dump = new Array(32);
+    // this.dump = new Array(32);
   }
 
   get vramOffset(): Byte {
@@ -232,10 +232,10 @@ export default class Ppu {
         // For debug
         // for (let i = 0; i < 32; i++) {
         //   if (this.dump[i]) {
-        //     // console.log(this.dump[i].join(' '));
+        //     console.log(this.dump[i].join(' '));
         //   }
         // }
-        // console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable)
+        // console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable, this.getPalette())
         return {
           background: this.isBackgroundEnable ? this.background : null,
           sprites: this.isSpriteEnable ? this.sprites : null,
@@ -315,7 +315,6 @@ export default class Ppu {
   buildSprites() {
     for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       // INFO: Offset sprite Y position, because First and last 8line is not rendered.
-      // FIXME: when offset -8, mario not rendered...., why.... 
       const y = this.spriteRam.read(i) - 8;
       if (y < 0) return;
       const spriteId = this.spriteRam.read(i + 1);
@@ -343,6 +342,10 @@ export default class Ppu {
 
   readCharacterROM(addr: Word): Byte {
     return this.bus.readByPpu(addr);
+  }
+
+  writeCharacterROM(addr: Word, data: Byte) {
+    this.bus.writeByPpu(addr, data);
   }
 
   read(addr: Word): Byte {
@@ -375,6 +378,8 @@ export default class Ppu {
           addr = isMirror ? (addr - 0x10) : addr;
           // NOTE: Palette should be mirrored within $3f00-$3fff.
           addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
+        } else if (this.vramAddr >= 0x3000 && this.vramAddr < 0x3f00) {
+          addr -= 0x1000;
         }
         const data = this.vram.read(addr);
         //this.vramAddr += this.vramOffset;
@@ -393,6 +398,7 @@ export default class Ppu {
   }
 
   write(addr: Word, data: Byte): void {
+    console.log('ppu reg', addr, data.toString(16))
     if (addr === 0x0003) {
       return this.writeSpriteRamAddr(data);
     }
@@ -408,7 +414,6 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
-    // console.log('ppu reg', addr, data.toString(16))
     this.registers[addr] = data;
   }
 
@@ -465,16 +470,18 @@ export default class Ppu {
         addr = isMirror ? (addr - 0x10) : addr;
         // NOTE: Palette should be mirrored within $3f00-$3fff.
         addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
+      } else if (this.vramAddr >= 0x3000 && this.vramAddr < 0x3f00) {
+        addr -= 0x1000;
       }
-      this.vramAddr += this.vramOffset;
       console.log('write vram', addr.toString(16), this.vramAddr.toString(16), data)
       // console.log('read vram', addr.toString(16), data)
       this.writeVram(addr, data);
     } else {
-      this.spriteRam.write(this.vramAddr, data);
-      this.vramAddr += this.vramOffset;
+      console.log(this.vramAddr.toString(16), data, 'write')
+      this.writeCharacterROM(this.vramAddr, data);
+      // throw new Error('0x0000 - 0x1ffff is read only area')
     }
-
+    this.vramAddr += this.vramOffset;
     //let addr = this.vramAddr - 0x2000;
     //if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
     //   const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
