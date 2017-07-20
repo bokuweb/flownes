@@ -103,7 +103,6 @@ export class NES {
       if (renderingData) {
         const { background, sprites, palette } = renderingData;
         if (background) {
-          console.log(background)
           this.canvasRenderer.renderBackground(background, palette);
         }
         if (sprites) {
