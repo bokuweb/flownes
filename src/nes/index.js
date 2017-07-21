@@ -93,7 +93,7 @@ export class NES {
     while (true) { // eslint-disable-line no-constant-condition
       let cycle: number;
       if (this.dma.isDmaProcessing) {
-        this.dma.execDma();
+        this.dma.runDma();
         cycle = 514;
       } else {
         cycle = this.cpu.exec();

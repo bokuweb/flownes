@@ -24,7 +24,7 @@ export default class Dma {
     return this.isProcessing;
   }
 
-  execDma() {
+  runDma() {
     if (!this.isProcessing) return;
     for (let i = 0; i < 0x100; i = (i + 1) | 0) {
       this.ppu.transferSprite(i, this.ram.read(this.ramAddr + i));
@@ -33,6 +33,7 @@ export default class Dma {
   }
 
   write(data: Byte) {
+    console.log('0x4014')
     this.ramAddr = data << 8;
     this.isProcessing = true;
   }

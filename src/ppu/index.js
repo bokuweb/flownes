@@ -352,6 +352,7 @@ export default class Ppu {
     // Write OAM data here. Writes will increment OAMADDR after the write
     // reads during vertical or forced blanking return the value from OAM at that address but do not increment.
     if (addr === 0x0004) {
+      console.log('read', this.spriteRam.read(this.spriteRamAddr))
       return this.spriteRam.read(this.spriteRamAddr);
     }
     if (addr === 0x0007) {
@@ -389,6 +390,7 @@ export default class Ppu {
   }
 
   writeSpriteRamData(data: Byte) {
+    console.log('write', data)
     this.spriteRam.write(this.spriteRamAddr, data);
     this.spriteRamAddr += 1;
   }
@@ -444,7 +446,15 @@ export default class Ppu {
     this.vram.write(addr, data);
   }
 
-  transferSprite(addr: Byte, data: Byte) {
+  transferSprite(index: Byte, data: Byte) {
+    // The DMA transfer will begin at the current OAM write address.
+    // It is common practice to initialize it to 0 with a write to PPU 0x2003 before the DMA transfer.
+    // Different starting addresses can be used for a simple OAM cycling technique
+    // to alleviate sprite priority conflicts by flickering. If using this technique
+    // after the DMA OAMADDR should be set to 0 before the end of vblank to prevent potential OAM corruption (See: Errata).
+    // However, due to OAMADDR writes also having a "corruption" effect[5] this technique is not recommended.
+    const addr = index + this.spriteRamAddr;
+    if (addr >= 0x100) return;
     this.spriteRam.write(addr, data);
   }
 }
