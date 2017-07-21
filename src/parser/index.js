@@ -22,7 +22,8 @@ export const parse = (nesBuffer: ArrayBuffer): NesROM => {
   const characterROMStart = NES_HEADER_SIZE + programROMPages * PROGRAM_ROM_SIZE;
   const characterROMEnd = characterROMStart + characterROMPages * CHARACTER_ROM_SIZE;
 
-  const nesROM = {
+  // console.log('prom pages = ', programROMPages);
+  const nesROM: NesROM = {
     isHorizontalMirror,
     programROM: nes.slice(NES_HEADER_SIZE, characterROMStart - 1),
     characterROM: nes.slice(characterROMStart, characterROMEnd - 1),

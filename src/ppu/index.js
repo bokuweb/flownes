@@ -18,7 +18,7 @@ export interface SpriteWithAttribute {
   sprite: Sprite;
   x: Byte;
   y: Byte;
-  attr: Byte; // TODO
+  attr: Byte;
   spriteId: number;
 }
 
@@ -133,7 +133,7 @@ export default class Ppu {
     this.scrollY = 0;
 
     // debug
-    this.dump = new Array(32);
+    // this.dump = new Array(32);
   }
 
   get vramOffset(): Byte {
@@ -164,9 +164,8 @@ export default class Ppu {
   }
 
   hasSpriteHit(): boolean {
-    return this.sprites.some((sprite: SpriteWithAttribute): boolean => {
-      return (sprite.y === this.line) && sprite.spriteId === 0
-    });
+    const y = this.spriteRam.read(0);
+    return y === this.line;
   }
 
   get isBackgroundEnable(): boolean {
@@ -192,7 +191,6 @@ export default class Ppu {
   exec(cycle: number): RenderingData | null {
     this.cycle += cycle;
     if (this.line === 0) {
-      // console.log(this.background, 'bg')
       this.background = [];
       this.clearSpriteHit();
       this.buildSprites();
@@ -201,13 +199,6 @@ export default class Ppu {
     if (this.cycle >= 341) {
       this.cycle -= 341;
       this.line++;
-      // if (this.line <= 8) {
-      //   return null;
-      // }
-      // if (this.line < 8 || (this.line > 232 && this.line < 240)) {
-      //   this.line++;
-      //  return null;
-      // }
 
       if (this.line <= 240) {
         if (this.hasSpriteHit()) {
@@ -226,16 +217,13 @@ export default class Ppu {
         this.clearVblank();
         this.line = 0;
         this.interrupts.deassertNmi();
-        // if (this.isBackgroundEnable()) debugger
-        // console.log(this.background, 'bg')
-
         // For debug
         // for (let i = 0; i < 32; i++) {
         //   if (this.dump[i]) {
-        //     // console.log(this.dump[i].join(' '));
+        //     console.log(this.dump[i].join(' '));
         //   }
         // }
-        // console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable)
+        // console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable, this.getPalette())
         return {
           background: this.isBackgroundEnable ? this.background : null,
           sprites: this.isSpriteEnable ? this.sprites : null,
@@ -293,12 +281,9 @@ export default class Ppu {
         }
       }
       const spriteId = this.vram.read(spriteAddr);
-      // console.log(spriteAddr.toString(16), spriteId)
-
       // debug
       // if (!this.dump[tileY]) this.dump[tileY] = new Array(32);
       // this.dump[tileY][tileX] = spriteId;
-
       const attr = this.vram.read(attrAddr);
       const paletteId = (attr >> (blockId * 2)) & 0x03;
       const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
@@ -315,7 +300,6 @@ export default class Ppu {
   buildSprites() {
     for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       // INFO: Offset sprite Y position, because First and last 8line is not rendered.
-      // FIXME: when offset -8, mario not rendered...., why.... 
       const y = this.spriteRam.read(i) - 8;
       if (y < 0) return;
       const spriteId = this.spriteRam.read(i + 1);
@@ -332,7 +316,7 @@ export default class Ppu {
     for (let i = 0; i < 16; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
         const addr = spriteId * 16 + i + offset;
-        const rom = this.readCharacterROM(addr);
+        const rom = this.readCharacterRAM(addr);
         if (rom & (0x80 >> j)) {
           sprite[i % 8][j] += 0x01 << (i / 8);
         }
@@ -341,8 +325,12 @@ export default class Ppu {
     return sprite;
   }
 
-  readCharacterROM(addr: Word): Byte {
+  readCharacterRAM(addr: Word): Byte {
     return this.bus.readByPpu(addr);
+  }
+
+  writeCharacterRAM(addr: Word, data: Byte) {
+    this.bus.writeByPpu(addr, data);
   }
 
   read(addr: Word): Byte {
@@ -361,11 +349,19 @@ export default class Ppu {
       this.clearVblank();
       return data;
     }
+    // Write OAM data here. Writes will increment OAMADDR after the write
+    // reads during vertical or forced blanking return the value from OAM at that address but do not increment.
+    if (addr === 0x0004) {
+      console.log('read', this.spriteRam.read(this.spriteRamAddr))
+      return this.spriteRam.read(this.spriteRamAddr);
+    }
     if (addr === 0x0007) {
-      const data = this.vram.read(this.vramAddr - 0x2000);
-      if (typeof data === 'undefined') debugger;
-      this.vramAddr += this.vramOffset;
-      return data;
+      if (this.vramAddr >= 0x2000) {
+        const addr = this.calcVramAddr();
+        return this.vram.read(addr);
+      } else {
+        return this.readCharacterRAM(this.vramAddr);
+      }
     }
     throw new Error(`PPU error occurred. It is a prohibited PPU address. ${addr.toString(16)}`);
   }
@@ -386,7 +382,6 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
-    // console.log('ppu reg', addr, data.toString(16))
     this.registers[addr] = data;
   }
 
@@ -395,6 +390,7 @@ export default class Ppu {
   }
 
   writeSpriteRamData(data: Byte) {
+    console.log('write', data)
     this.spriteRam.write(this.spriteRamAddr, data);
     this.spriteRamAddr += 1;
   }
@@ -404,42 +400,45 @@ export default class Ppu {
       this.isHorizontalScroll = false;
       this.scrollX = data & 0xFF;
     } else {
-      // if (this.scrollY === 0 ) debugger;
-      // data = data === 254 ? 238 : data;
       this.scrollY = data & 0xFF;
-      // console.log(this.scrollY, this.nameTableId)
-      // console.log(this.scrollY);
-      // if (this.scrollY === 230) debugger;
       this.isHorizontalScroll = true;
     }
   }
 
   writeVramAddr(data: Byte) {
-    // console.log(data.toString(16))
+    // Valid addresses are $0000-$3FFF; higher addresses will be mirrored down.
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
       this.vramAddr = data << 8;
-      // console.log(this.vramAddr.toString(16))
-      if (this.vramAddr.toString(16) === '1ec0') debugger;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
     }
   }
 
-  writeVramData(data: Byte) {
-    // if (this.vramAddr >= 0x3F00 && this.vramAddr < 0x3f20 && data === 1) {
-    //   debugger;
-    //   this.vramAddr += this.vramOffset;
-    //   return;
-    // }
+  calcVramAddr(): Word {
     let addr = this.vramAddr - 0x2000;
-    const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
-    // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
-    addr = isMirror ? (addr - 0x10) : addr;
-    this.writeVram(addr, data);
+    if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
+      const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
+      // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c      
+      addr = isMirror ? (addr - 0x10) : addr;
+      // NOTE: Palette should be mirrored within $3f00-$3fff.
+      addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
+    } else if (this.vramAddr >= 0x3000 && this.vramAddr < 0x3f00) {
+      addr -= 0x1000;
+    }
+    return addr;
+  }
+
+  writeVramData(data: Byte) {
+    if (this.vramAddr >= 0x2000) {
+      const addr = this.calcVramAddr();
+      this.writeVram(addr, data);
+    } else {
+      this.writeCharacterRAM(this.vramAddr, data);
+    }
     this.vramAddr += this.vramOffset;
   }
 
@@ -447,7 +446,15 @@ export default class Ppu {
     this.vram.write(addr, data);
   }
 
-  transferSprite(addr: Byte, data: Byte) {
+  transferSprite(index: Byte, data: Byte) {
+    // The DMA transfer will begin at the current OAM write address.
+    // It is common practice to initialize it to 0 with a write to PPU 0x2003 before the DMA transfer.
+    // Different starting addresses can be used for a simple OAM cycling technique
+    // to alleviate sprite priority conflicts by flickering. If using this technique
+    // after the DMA OAMADDR should be set to 0 before the end of vblank to prevent potential OAM corruption (See: Errata).
+    // However, due to OAMADDR writes also having a "corruption" effect[5] this technique is not recommended.
+    const addr = index + this.spriteRamAddr;
+    if (addr >= 0x100) return;
     this.spriteRam.write(addr, data);
   }
 }

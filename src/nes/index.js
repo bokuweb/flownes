@@ -20,7 +20,7 @@ export class NES {
   ppu: Ppu;
   apu: Apu;
   cpuBus: CpuBus;
-  characterROM: Rom;
+  characterMem: Ram;
   programROM: Rom;
   ram: Ram;
   ppuBus: PpuBus;
@@ -65,9 +65,13 @@ export class NES {
     };
     this.keypad = new Keypad();
     this.ram = new Ram(2048);
-    this.characterROM = new Rom(characterROM);
+    this.characterMem = new Ram(0x4000);
+    // copy charactorROM to internal RAM
+    for (let i = 0; i < characterROM.length; i++) {
+      this.characterMem.write(i, characterROM[i]);
+    }
     this.programROM = new Rom(programROM);
-    this.ppuBus = new PpuBus(this.characterROM);
+    this.ppuBus = new PpuBus(this.characterMem);
     this.interrupts = new Interrupts();
     this.apu = new Apu(this.interrupts);
     this.ppu = new Ppu(this.ppuBus, this.interrupts, ppuConfig);
@@ -75,7 +79,6 @@ export class NES {
     this.cpuBus = new CpuBus(
       this.ram,
       this.programROM,
-      this.characterROM,
       this.ppu,
       this.keypad,
       this.dma,
@@ -90,7 +93,7 @@ export class NES {
     while (true) { // eslint-disable-line no-constant-condition
       let cycle: number;
       if (this.dma.isDmaProcessing) {
-        this.dma.execDma();
+        this.dma.runDma();
         cycle = 514;
       } else {
         cycle = this.cpu.exec();

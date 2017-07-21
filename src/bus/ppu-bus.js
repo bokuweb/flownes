@@ -1,22 +1,21 @@
 /* @flow */
 
-import Rom from '../rom';
+import Ram from '../ram';
 import type { Word, Byte } from '../types/common';
 
 export default class PpuBus {
 
-  charactorROM: Rom;
+  characterRam: Ram;
 
-  constructor(charactorROM: Rom) {
-    this.charactorROM = charactorROM;
+  constructor(characterRam: Ram) {
+    this.characterRam = characterRam;
   }
 
   readByPpu(addr: Word): Byte {
-    if (addr < 0x2000) {
-      return this.charactorROM.read(addr);
-    } else {
-      // FIXME:
-      return 0;
-    }
+    return this.characterRam.read(addr);
+  }
+
+  writeByPpu(addr: Word, data: Byte) {
+    this.characterRam.write(addr, data);
   }
 }
