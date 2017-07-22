@@ -124,6 +124,7 @@ export default class Ppu {
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
     this.spriteRam = new RAM(0x100);
+    this.spriteRamAddr = 0;
     this.background = [];
     this.sprites = [];
     this.bus = bus;
@@ -454,7 +455,7 @@ export default class Ppu {
     // after the DMA OAMADDR should be set to 0 before the end of vblank to prevent potential OAM corruption (See: Errata).
     // However, due to OAMADDR writes also having a "corruption" effect[5] this technique is not recommended.
     const addr = index + this.spriteRamAddr;
-    if (addr >= 0x100) return;
+    if (addr > 0x100) return;
     this.spriteRam.write(addr, data);
   }
 }
