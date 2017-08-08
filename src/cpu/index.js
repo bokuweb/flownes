@@ -250,6 +250,10 @@ export default class Cpu {
 
   execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode) {
     this.hasBranched = false;
+    if ((baseName === 'LDA' && !this.first) || this.registers.PC === 32813) {
+      this.first = true;
+      debugger
+    }
     switch (baseName) {
       case 'LDA': {
         // if (mode === 'postIndexedIndirect') debugger;
@@ -732,7 +736,7 @@ export default class Cpu {
 
   exec(): number {
     if (this.interrupts.isNmiAssert) this.processNmi();
-    if (this.interrupts.isIrqAssert) this.processIrq();
+    // if (this.interrupts.isIrqAssert) this.processIrq();
     const opecode = this.fetch(this.registers.PC);
     // console.log(opecode, this.registers.PC.toString(16))
     if (!this.opecodeList[opecode]) debugger;

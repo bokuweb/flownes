@@ -92,7 +92,7 @@ export class NES {
     // console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
       let cycle: number;
-      if (this.dma.isDmaProcessing) {
+      if (this.dma.isDmaProcessing && this.ppu.isVblank()) {
         this.dma.runDma();
         cycle = 514;
       } else {
