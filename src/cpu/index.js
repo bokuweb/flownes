@@ -251,8 +251,8 @@ export default class Cpu {
   execInstruction(baseName: string, addrOrData: Word, mode: AddressingMode) {
     this.hasBranched = false;
     if ((baseName === 'LDA' && !this.first) || this.registers.PC === 32813) {
-      this.first = true;
-      debugger
+      // this.first = true;
+      // debugger
     }
     switch (baseName) {
       case 'LDA': {
