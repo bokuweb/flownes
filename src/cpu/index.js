@@ -735,7 +735,10 @@ export default class Cpu {
   }
 
   exec(): number {
-    if (this.interrupts.isNmiAssert) this.processNmi();
+    if (this.interrupts.isNmiAssert) {
+      // console.log('rcv nmi!!!!!!!!!!!!!!!!-----------------------------------------------')
+      this.processNmi();
+    }
     // if (this.interrupts.isIrqAssert) this.processIrq();
     const opecode = this.fetch(this.registers.PC);
     // console.log(opecode, this.registers.PC.toString(16))
@@ -745,11 +748,11 @@ export default class Cpu {
 
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
     // if (window.debug) {
-    // const { PC, SP, A, X, Y, P } = this.registers;
-    // const { fullName} = this.opecodeList[opecode];
-    // log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
-    // log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
-    // log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
+    const { PC, SP, A, X, Y, P } = this.registers;
+    const { fullName } = this.opecodeList[opecode];
+    // log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`,
+    // `carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
+    // console.log(`fullName = ${fullName}, PC = ${PC.toString(16)}`);
     // }
     this.execInstruction(baseName, addrOrData, mode);
     return cycle + additionalCycle + (this.hasBranched ? 1 : 0);

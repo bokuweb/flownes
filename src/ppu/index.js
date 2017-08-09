@@ -138,6 +138,7 @@ export default class Ppu {
     this.scrollY = 0;
 
     // debug
+
     this.dump = new Array(32);
   }
 
@@ -179,6 +180,14 @@ export default class Ppu {
 
   hasSpriteHit(): boolean {
     const y = this.spriteRam.read(0);
+    const id = this.spriteRam.read(1);
+    if (id === 0 ) return false;
+    // console.log(
+    //   y,
+    //   this.spriteRam.read(1),
+    //   this.spriteRam.read(2),
+    //   this.spriteRam.read(3)
+    // )
     // console.log(y, this.isBackgroundEnable, this.isSpriteEnable, this.spriteRam.read(3), this.registers[0x01].toString(16))
     return y === this.line && this.isBackgroundEnable && this.isSpriteEnable;
   }
@@ -218,16 +227,25 @@ export default class Ppu {
       this.cycle -= 341;
       this.line++;
 
+      if (this.hasSpriteHit()) {
+        this.setSpriteHit();
+        // console.log('hitline', this.line)
+      }
+
       if (this.line <= 240) {
-        if (this.hasSpriteHit()) {
-          this.setSpriteHit();
-        }
         this.buildBackground();
       }
       if (this.line === 241) {
         this.setVblank();
 
         if (this.registers[0] & 0x80) {
+          // console.log('reg0', this.registers[0])
+          // console.log('reg1', this.registers[1])
+          // console.log('reg2', this.registers[2])
+          // console.log('scroll', this.scrollX)
+          // console.log('scroll', this.scrollY)
+          // console.log('nmi assert')
+          // debugger;
           this.interrupts.assertNmi();
         }
       }
@@ -238,6 +256,7 @@ export default class Ppu {
         this.line = 0;
         this.interrupts.deassertNmi();
         // For debug
+        //console.log('=======================================================')
         for (let i = 0; i < 32; i++) {
           if (this.dump[i]) {
             console.log(this.dump[i].join(' '));
@@ -301,14 +320,13 @@ export default class Ppu {
           attrAddr -= 0x400;
         }
       }
-      // console.log('spadd', spriteAddr.toString(16), 'atterAddr', attrAddr.toString(16))
       const spriteId = this.vram.read(spriteAddr);
       // debug
       if (!this.dump[tileY]) this.dump[tileY] = new Array(32);
 
       const attr = this.vram.read(attrAddr);
       const paletteId = (attr >> (blockId * 2)) & 0x03;
-            this.dump[tileY][tileX] = blockId;
+      this.dump[tileY][tileX] = spriteId;
       const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
       this.background.push({
@@ -371,7 +389,8 @@ export default class Ppu {
       this.isHorizontalScroll = true;
       const data = this.registers[0x02];
       this.clearVblank();
-      this.clearSpriteHit();
+      // this.clearSpriteHit();
+      // console.log('0x2002', data.toString(16))
       return data;
     }
     // Write OAM data here. Writes will increment OAMADDR after the write
@@ -397,6 +416,7 @@ export default class Ppu {
   }
 
   write(addr: Word, data: Byte): void {
+    console.log('PPU write', addr.toString(16), this.vramAddr.toString(16), data.toString(16))
     if (addr === 0x0003) {
       return this.writeSpriteRamAddr(data);
     }
@@ -412,7 +432,7 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
-    // console.log('write', addr, this.vramAddr.toString(16), data.toString(16))
+    // console.log('writePPU', addr, this.vramAddr.toString(16), data.toString(16))
     this.registers[addr] = data;
   }
 
@@ -429,8 +449,7 @@ export default class Ppu {
     if (this.isHorizontalScroll) {
       this.isHorizontalScroll = false;
       this.scrollX = data & 0xFF;
-      console.log('scrollX', this.scrollX)
-
+      // console.log('scrollX', this.scrollX)
     } else {
       this.scrollY = data & 0xFF;
       this.isHorizontalScroll = true;
@@ -468,7 +487,6 @@ export default class Ppu {
   writeVramData(data: Byte) {
     if (this.vramAddr >= 0x2000) {
       const addr = this.calcVramAddr();
-      if (addr >= 0x1f00) console.log(data.toString(16), addr.toString(16))
       // console.log('vram write', data, this.vramAddr.toString(16), addr.toString(16))
       this.writeVram(addr, data);
     } else {
