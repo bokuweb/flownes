@@ -89,20 +89,20 @@ export default class Apu {
     // TODO: FIx perf
     if (addr <= 0x03) {
       // square wave control register
-      // this.square[0].write(addr, data);
+      this.square[0].write(addr, data);
     } else if (addr <= 0x07) {
       // square wave control register
-      // this.square[1].write(addr - 0x04, data);
+      this.square[1].write(addr - 0x04, data);
     } else if (addr <= 0x0B) {
       // triangle
-      // this.triangle.write(addr - 0x08, data);
+      this.triangle.write(addr - 0x08, data);
     } else if (addr <= 0x0F) {
       // noise
-      // this.noise.write(addr - 0x0C, data);
+      this.noise.write(addr - 0x0C, data);
     } else if (addr === 0x17) {
-      // this.sequencerMode = data & 0x80 ? 1 : 0;
-      // this.registers[addr] = data;
-      // this.enableIrq = !!(data & 0x40);
+      this.sequencerMode = data & 0x80 ? 1 : 0;
+      this.registers[addr] = data;
+      this.enableIrq = !!(data & 0x40);
     }
   }
 

@@ -36,7 +36,6 @@ export default class CpuBus {
     } else if (addr < 0x4000) {
       // mirror
       const data = this.ppu.read((addr - 0x2000) % 8);
-      console.log('PPU read', addr.toString(16), data.toString(16))
       return data;
     } else if (addr === 0x4016) {
       // TODO Add 2P
