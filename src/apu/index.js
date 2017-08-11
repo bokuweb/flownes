@@ -111,6 +111,7 @@ export default class Apu {
     if (addr === 0x15) {
       this.interrupts.deassertIrq();
     }
+    return 0;
   }
 
   close() {
