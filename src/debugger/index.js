@@ -4,6 +4,8 @@ import { dict } from '../cpu/opcode';
 
 export default class Debugger {
 
+  debugInfo: ([string] | [string, number] | [string, number, number])[];
+
   constructor() {
     window.__disassembled = () => this.displayDisaasembled();
   }
@@ -53,12 +55,10 @@ export default class Debugger {
       pc++;
     }
     this.debugInfo = debugInfo;
-    /* eslint-disable */
-    // console.log(debugInfo)
-    // debugInfo.forEach(d => console.log(d));
   }
 
   displayDisaasembled() {
+    /* eslint-disable */
     this.debugInfo.forEach(d => console.log(d));
   }
 }
