@@ -33,8 +33,6 @@ export default class Dma {
   }
 
   write(data: Byte) {
-    console.log('dma', data)
-    debugger;
     this.ramAddr = data << 8;
     this.isProcessing = true;
   }

@@ -107,12 +107,10 @@ export default class Apu {
   }
 
   read(addr: Byte): Byte {
-    // console.log('apu read')
     // TODO: Implement other registers
     if (addr === 0x15) {
       this.interrupts.deassertIrq();
     }
-
   }
 
   close() {

@@ -9,7 +9,7 @@
     "flow": "flow",
     "watch": "watchify --extension=js -o dist/bundle.js src/index.js",
     "karma": "NODE_ENV=test karma start",
-    "test": "npm run lint && npm run flow && npm run karma",
+    "test": "npm run lint && npm run flow",
     "reg": "reg-cli ./screenshot/actual ./screenshot/expected ./screenshot/diff -R ./screenshot/index.html -I",
     "reg:update": "reg-cli ./screenshot/actual ./screenshot/expected ./screenshot/diff -R ./screenshot/index.html -I",
     "test:watch": "karma start --auto-watch --no-single-run"

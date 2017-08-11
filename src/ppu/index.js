@@ -136,10 +136,6 @@ export default class Ppu {
     this.config = config;
     this.scrollX = 0;
     this.scrollY = 0;
-
-    // debug
-
-    this.dump = new Array(32);
   }
 
   get vramOffset(): Byte {
@@ -181,7 +177,7 @@ export default class Ppu {
   hasSpriteHit(): boolean {
     const y = this.spriteRam.read(0);
     const id = this.spriteRam.read(1);
-    if (id === 0 ) return false;
+    if (id === 0) return false;
     // console.log(
     //   y,
     //   this.spriteRam.read(1),
@@ -229,7 +225,6 @@ export default class Ppu {
 
       if (this.hasSpriteHit()) {
         this.setSpriteHit();
-        // console.log('hitline', this.line)
       }
 
       if (this.line <= 240) {
@@ -239,13 +234,6 @@ export default class Ppu {
         this.setVblank();
 
         if (this.registers[0] & 0x80) {
-          // console.log('reg0', this.registers[0])
-          // console.log('reg1', this.registers[1])
-          // console.log('reg2', this.registers[2])
-          // console.log('scroll', this.scrollX)
-          // console.log('scroll', this.scrollY)
-          // console.log('nmi assert')
-          // debugger;
           this.interrupts.assertNmi();
         }
       }
@@ -255,15 +243,6 @@ export default class Ppu {
         this.clearSpriteHit();
         this.line = 0;
         this.interrupts.deassertNmi();
-        // For debug
-        //console.log('=======================================================')
-        for (let i = 0; i < 32; i++) {
-          if (this.dump[i]) {
-            console.log(this.dump[i].join(' '));
-          }
-        }
-        // console.log('bg enable', this.isBackgroundEnable)
-        // console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable, this.getPalette(), this.vramAddr, this.spriteRamAddr)
         return {
           background: this.isBackgroundEnable ? this.background : null,
           sprites: this.isSpriteEnable ? this.sprites : null,
@@ -285,7 +264,6 @@ export default class Ppu {
     const tileY = ~~(this.line / 8) + scrollTileY;
     const clampedTileY = tileY % 30;
     const tableIdOffset = (~~(tileY / 30) % 2) ? 2 : 0;
-    // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
     for (let x = 0; x < 32 + 1; x = (x + 1) | 0) {
@@ -301,6 +279,7 @@ export default class Ppu {
         |            |            |
         +------------+------------+             
       */
+      // this.nameTableId = 2
       const scrollTileX = ~~((this.scrollX + ((this.nameTableId % 2) * 256)) / 8);
       const tileX = x + scrollTileX;
       const clampedTileX = tileX % 32;
@@ -321,12 +300,8 @@ export default class Ppu {
         }
       }
       const spriteId = this.vram.read(spriteAddr);
-      // debug
-      if (!this.dump[tileY]) this.dump[tileY] = new Array(32);
-
       const attr = this.vram.read(attrAddr);
       const paletteId = (attr >> (blockId * 2)) & 0x03;
-      this.dump[tileY][tileX] = spriteId;
       const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
       this.background.push({
@@ -390,33 +365,32 @@ export default class Ppu {
       const data = this.registers[0x02];
       this.clearVblank();
       // this.clearSpriteHit();
-      // console.log('0x2002', data.toString(16))
       return data;
     }
     // Write OAM data here. Writes will increment OAMADDR after the write
     // reads during vertical or forced blanking return the value from OAM at that address but do not increment.
     if (addr === 0x0004) {
-      // console.log('read', this.spriteRam.read(this.spriteRamAddr))
       return this.spriteRam.read(this.spriteRamAddr);
     }
     if (addr === 0x0007) {
       const buf = this.vramReadBuf;
       if (this.vramAddr >= 0x2000) {
         const addr = this.calcVramAddr();
+        this.vramAddr += this.vramOffset;
         if (addr >= 0x3F00) {
           return this.vram.read(addr);
         }
         this.vramReadBuf = this.vram.read(addr);
       } else {
         this.vramReadBuf = this.readCharacterRAM(this.vramAddr);
+        this.vramAddr += this.vramOffset;
       }
       return buf;
     }
-    // throw new Error(`PPU error occurred. It is a prohibited PPU address. ${addr.toString(16)}`);
+    return 0;
   }
 
   write(addr: Word, data: Byte): void {
-    console.log('PPU write', addr.toString(16), this.vramAddr.toString(16), data.toString(16))
     if (addr === 0x0003) {
       return this.writeSpriteRamAddr(data);
     }
@@ -432,7 +406,6 @@ export default class Ppu {
     if (addr === 0x0007) {
       return this.writeVramData(data);
     }
-    // console.log('writePPU', addr, this.vramAddr.toString(16), data.toString(16))
     this.registers[addr] = data;
   }
 
@@ -449,7 +422,6 @@ export default class Ppu {
     if (this.isHorizontalScroll) {
       this.isHorizontalScroll = false;
       this.scrollX = data & 0xFF;
-      // console.log('scrollX', this.scrollX)
     } else {
       this.scrollY = data & 0xFF;
       this.isHorizontalScroll = true;
@@ -457,7 +429,6 @@ export default class Ppu {
   }
 
   writeVramAddr(data: Byte) {
-    // Valid addresses are $0000-$3FFF; higher addresses will be mirrored down.
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;
@@ -487,7 +458,6 @@ export default class Ppu {
   writeVramData(data: Byte) {
     if (this.vramAddr >= 0x2000) {
       const addr = this.calcVramAddr();
-      // console.log('vram write', data, this.vramAddr.toString(16), addr.toString(16))
       this.writeVram(addr, data);
     } else {
       this.writeCharacterRAM(this.vramAddr, data);
