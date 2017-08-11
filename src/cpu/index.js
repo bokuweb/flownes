@@ -252,9 +252,7 @@ export default class Cpu {
     this.hasBranched = false;
     switch (baseName) {
       case 'LDA': {
-        // if (mode === 'postIndexedIndirect') debugger;
         this.registers.A = mode === 'immediate' ? addrOrData : this.read(addrOrData);
-        // if (typeof this.registers.A === 'undefined') debugger;
         this.registers.P.negative = !!(this.registers.A & 0x80);
         this.registers.P.zero = !this.registers.A;
         break;
@@ -272,7 +270,6 @@ export default class Cpu {
         break;
       }
       case 'STA': {
-        // const addr = mode === 'preIndexedIndirect' ? this.read(addrOrData) : addrOrData;
         this.write(addrOrData, this.registers.A);
         break;
       }
@@ -310,9 +307,6 @@ export default class Cpu {
       }
       case 'TXS': {
         this.registers.SP = this.registers.X + 0x0100;
-        // TODO: It's unneeded ?
-        // this.registers.P.negative = !!(this.registers.SP & 0x80);
-        // this.registers.P.zero = !this.registers.SP;
         break;
       }
       case 'TYA': {
@@ -706,7 +700,6 @@ export default class Cpu {
       }
       default: throw new Error(`Unknown opecode ${baseName} detected.`);
     }
-    if (typeof this.registers.A === 'undefined') debugger;
   }
 
   processNmi() {
@@ -731,22 +724,13 @@ export default class Cpu {
   }
 
   exec(): number {
-    if (this.interrupts.isNmiAssert) this.processNmi();
-    if (this.interrupts.isIrqAssert) this.processIrq();
+    if (this.interrupts.isNmiAssert) {
+      this.processNmi();
+    }
+    // if (this.interrupts.isIrqAssert) this.processIrq();
     const opecode = this.fetch(this.registers.PC);
-    // console.log(opecode, this.registers.PC.toString(16))
-    if (!this.opecodeList[opecode]) debugger;
     const { baseName, mode, cycle } = this.opecodeList[opecode];
-    // console.log(baseName)
-
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
-    // if (window.debug) {
-    // const { PC, SP, A, X, Y, P } = this.registers;
-    // const { fullName} = this.opecodeList[opecode];
-    // log.debug(`PC = ${PC.toString(16)}, SP = ${SP}, A = ${A}, X = ${X} , Y = ${Y}`);
-    // log.debug(`carry = ${P.carry.toString()}, zero = ${P.zero.toString()}, negative = ${P.negative.toString()}, overflow = ${P.overflow.toString()}`);
-    // log.debug(`fullName = ${fullName}, baseName = ${baseName}, mode = ${mode}, cycle = ${cycle}`);
-    // }
     this.execInstruction(baseName, addrOrData, mode);
     return cycle + additionalCycle + (this.hasBranched ? 1 : 0);
   }

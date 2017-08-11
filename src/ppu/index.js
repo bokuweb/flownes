@@ -38,6 +38,8 @@ export interface Config {
   isHorizontalMirror: boolean;
 }
 
+// let d;
+
 export default class Ppu {
 
   // PPU power up state
@@ -103,6 +105,7 @@ export default class Ppu {
   spriteRamAddr: Byte;
   vramAddr: Word;
   vram: RAM;
+  vramReadBuf: Byte;
   spriteRam: RAM;
   bus: PpuBus;
   background: Array<Background>;
@@ -123,7 +126,9 @@ export default class Ppu {
     this.isHorizontalScroll = true;
     this.vramAddr = 0x0000;
     this.vram = new RAM(0x2000);
+    this.vramReadBuf = 0;
     this.spriteRam = new RAM(0x100);
+    this.spriteRamAddr = 0;
     this.background = [];
     this.sprites = [];
     this.bus = bus;
@@ -131,9 +136,6 @@ export default class Ppu {
     this.config = config;
     this.scrollX = 0;
     this.scrollY = 0;
-
-    // debug
-    // this.dump = new Array(32);
   }
 
   get vramOffset(): Byte {
@@ -147,11 +149,20 @@ export default class Ppu {
   getPalette(): Palette {
     const palette = [];
     for (let i = 0; i < 0x20; i = (i + 1) | 0) {
-      const isMirror = (i === 0x10) || (i === 0x14) || (i === 0x18) || (i === 0x1c);
+      const isBackgroundMirror = (i === 0x04) || (i === 0x08) || (i === 0x0c);
+      const isSpriteMirror = (i === 0x10) || (i === 0x14) || (i === 0x18) || (i === 0x1c);
       //NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
-      const addr = isMirror ? (0x1F00 + (i - 0x10)) : (i + 0x1F00);
+      let addr;
+      if (isSpriteMirror) {
+        addr = (0x1F00 + (i - 0x10));
+      } else if (isBackgroundMirror) {
+        addr = 0x1F00;
+      } else {
+        addr = i + 0x1F00;
+      }
       palette.push(this.vram.read(addr));
     }
+    // console.log('palette', palette)
     return palette;
   }
 
@@ -165,7 +176,16 @@ export default class Ppu {
 
   hasSpriteHit(): boolean {
     const y = this.spriteRam.read(0);
-    return y === this.line;
+    const id = this.spriteRam.read(1);
+    if (id === 0) return false;
+    // console.log(
+    //   y,
+    //   this.spriteRam.read(1),
+    //   this.spriteRam.read(2),
+    //   this.spriteRam.read(3)
+    // )
+    // console.log(y, this.isBackgroundEnable, this.isSpriteEnable, this.spriteRam.read(3), this.registers[0x01].toString(16))
+    return y === this.line && this.isBackgroundEnable && this.isSpriteEnable;
   }
 
   get isBackgroundEnable(): boolean {
@@ -180,6 +200,10 @@ export default class Ppu {
     this.registers[0x02] |= 0x80;
   }
 
+  isVblank(): boolean {
+    return !!(this.registers[0x02] & 0x80);
+  }
+
   clearVblank() {
     this.registers[0x02] &= 0x7F;
   }
@@ -192,7 +216,6 @@ export default class Ppu {
     this.cycle += cycle;
     if (this.line === 0) {
       this.background = [];
-      this.clearSpriteHit();
       this.buildSprites();
     }
 
@@ -200,30 +223,26 @@ export default class Ppu {
       this.cycle -= 341;
       this.line++;
 
+      if (this.hasSpriteHit()) {
+        this.setSpriteHit();
+      }
+
       if (this.line <= 240) {
-        if (this.hasSpriteHit()) {
-          this.setSpriteHit();
-        }
         this.buildBackground();
       }
       if (this.line === 241) {
         this.setVblank();
+
         if (this.registers[0] & 0x80) {
           this.interrupts.assertNmi();
         }
       }
 
-      if (this.line === 261) {
+      if (this.line === 262) {
         this.clearVblank();
+        this.clearSpriteHit();
         this.line = 0;
         this.interrupts.deassertNmi();
-        // For debug
-        // for (let i = 0; i < 32; i++) {
-        //   if (this.dump[i]) {
-        //     console.log(this.dump[i].join(' '));
-        //   }
-        // }
-        // console.log(this.sprites, this.registers, this.scrollX, this.scrollY, this.isBackgroundEnable, this.getPalette())
         return {
           background: this.isBackgroundEnable ? this.background : null,
           sprites: this.isSpriteEnable ? this.sprites : null,
@@ -245,7 +264,6 @@ export default class Ppu {
     const tileY = ~~(this.line / 8) + scrollTileY;
     const clampedTileY = tileY % 30;
     const tableIdOffset = (~~(tileY / 30) % 2) ? 2 : 0;
-    // TODO: See. ines header mirror flag..
     // background of a line.
     // Build viewport + 1 tile for background scroll.
     for (let x = 0; x < 32 + 1; x = (x + 1) | 0) {
@@ -261,6 +279,7 @@ export default class Ppu {
         |            |            |
         +------------+------------+             
       */
+      // this.nameTableId = 2
       const scrollTileX = ~~((this.scrollX + ((this.nameTableId % 2) * 256)) / 8);
       const tileX = x + scrollTileX;
       const clampedTileX = tileX % 32;
@@ -268,7 +287,7 @@ export default class Ppu {
       const tileNumber = clampedTileY * 32 + clampedTileX;
       const offsetAddrByNameTable = nameTableId * 0x400;
       // INFO see. http://hp.vector.co.jp/authors/VA042397/nes/ppu.html
-      const blockId = ~~((clampedTileX % 4) / 2) + (~~(clampedTileY % 4 / 2));
+      const blockId = ~~((clampedTileX % 4) / 2) + (~~((clampedTileY % 4) / 2)) * 2;
       let spriteAddr = tileNumber + offsetAddrByNameTable;
       let attrAddr = ~~(clampedTileX / 4) + (~~(clampedTileY / 4) * 8) + 0x03C0 + offsetAddrByNameTable;
 
@@ -281,9 +300,6 @@ export default class Ppu {
         }
       }
       const spriteId = this.vram.read(spriteAddr);
-      // debug
-      // if (!this.dump[tileY]) this.dump[tileY] = new Array(32);
-      // this.dump[tileY][tileX] = spriteId;
       const attr = this.vram.read(attrAddr);
       const paletteId = (attr >> (blockId * 2)) & 0x03;
       const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
@@ -334,6 +350,7 @@ export default class Ppu {
   }
 
   read(addr: Word): Byte {
+    // console.log('read', addr, this.vramAddr.toString(16), this.spriteRamAddr)
     /*
     | bit  | description                                 |
     +------+---------------------------------------------+
@@ -347,23 +364,30 @@ export default class Ppu {
       this.isHorizontalScroll = true;
       const data = this.registers[0x02];
       this.clearVblank();
+      // this.clearSpriteHit();
       return data;
     }
     // Write OAM data here. Writes will increment OAMADDR after the write
     // reads during vertical or forced blanking return the value from OAM at that address but do not increment.
     if (addr === 0x0004) {
-      console.log('read', this.spriteRam.read(this.spriteRamAddr))
       return this.spriteRam.read(this.spriteRamAddr);
     }
     if (addr === 0x0007) {
+      const buf = this.vramReadBuf;
       if (this.vramAddr >= 0x2000) {
         const addr = this.calcVramAddr();
-        return this.vram.read(addr);
+        this.vramAddr += this.vramOffset;
+        if (addr >= 0x3F00) {
+          return this.vram.read(addr);
+        }
+        this.vramReadBuf = this.vram.read(addr);
       } else {
-        return this.readCharacterRAM(this.vramAddr);
+        this.vramReadBuf = this.readCharacterRAM(this.vramAddr);
+        this.vramAddr += this.vramOffset;
       }
+      return buf;
     }
-    throw new Error(`PPU error occurred. It is a prohibited PPU address. ${addr.toString(16)}`);
+    return 0;
   }
 
   write(addr: Word, data: Byte): void {
@@ -390,7 +414,6 @@ export default class Ppu {
   }
 
   writeSpriteRamData(data: Byte) {
-    console.log('write', data)
     this.spriteRam.write(this.spriteRamAddr, data);
     this.spriteRamAddr += 1;
   }
@@ -406,12 +429,12 @@ export default class Ppu {
   }
 
   writeVramAddr(data: Byte) {
-    // Valid addresses are $0000-$3FFF; higher addresses will be mirrored down.
     if (this.isLowerVramAddr) {
       this.vramAddr += data;
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
+      if (this.vramAddr >= 0x4000) throw new Error('TODO: should mirror down');
       this.vramAddr = data << 8;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;
@@ -421,11 +444,11 @@ export default class Ppu {
   calcVramAddr(): Word {
     let addr = this.vramAddr - 0x2000;
     if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
+      addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
       const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
       // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c      
       addr = isMirror ? (addr - 0x10) : addr;
       // NOTE: Palette should be mirrored within $3f00-$3fff.
-      addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
     } else if (this.vramAddr >= 0x3000 && this.vramAddr < 0x3f00) {
       addr -= 0x1000;
     }
@@ -454,7 +477,7 @@ export default class Ppu {
     // after the DMA OAMADDR should be set to 0 before the end of vblank to prevent potential OAM corruption (See: Errata).
     // However, due to OAMADDR writes also having a "corruption" effect[5] this technique is not recommended.
     const addr = index + this.spriteRamAddr;
-    if (addr >= 0x100) return;
+    if (addr > 0x100) return;
     this.spriteRam.write(addr, data);
   }
 }

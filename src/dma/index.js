@@ -33,7 +33,6 @@ export default class Dma {
   }
 
   write(data: Byte) {
-    console.log('0x4014')
     this.ramAddr = data << 8;
     this.isProcessing = true;
   }

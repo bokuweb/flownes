@@ -52,7 +52,9 @@ export default class CanvasRenderer {
     const { data } = this.image;
     for (let i = 0; i < 8; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
-        const colorId = palette[paletteId * 4 + sprite[i][j]];
+        const paletteIndex = paletteId * 4 + sprite[i][j];
+        const t = paletteIndex % 4 ===  0 ? 0 : paletteIndex;
+        const colorId = palette[t];
         const color = colors[colorId];
         const x = tileX + j - offsetX;
         const y = tileY + i - offsetY;

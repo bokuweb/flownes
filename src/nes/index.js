@@ -91,13 +91,12 @@ export class NES {
   frame() {
     // console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
-      let cycle: number;
-      if (this.dma.isDmaProcessing) {
+      let cycle: number = 0;
+      if (this.dma.isDmaProcessing /* && this.ppu.isVblank() */) {
         this.dma.runDma();
         cycle = 514;
-      } else {
-        cycle = this.cpu.exec();
       }
+      cycle += this.cpu.exec();
       const renderingData = this.ppu.exec(cycle * 3);
       this.apu.exec(cycle);
       if (renderingData) {
