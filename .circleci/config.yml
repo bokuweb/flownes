@@ -1,0 +1,28 @@
+
+defaults: &defaults
+  working_directory: ~/flownes
+  docker:
+    - image: quramy/node-nightmare
+      environment:
+        DISPLAY: ":99"
+
+version: 2
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: yarn
+      - run:
+          name: Lint
+          command: yarn run lint
+      # - run:
+      #     name: Test
+      #     command: yarn run test
+workflows:
+  version: 2
+  build_pipeline:
+    jobs:
+      - build
