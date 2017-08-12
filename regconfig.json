@@ -2,7 +2,7 @@
   "core": {
     "workingDir": ".reg",
     "actualDir": "screenshot/actual",
-    "threshold": 0
+    "threshold": 0.01
   },
   "plugins": {
     "reg-keygen-git-hash-plugin": {},
