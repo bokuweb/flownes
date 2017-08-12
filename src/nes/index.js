@@ -96,8 +96,8 @@ export class NES {
         this.dma.runDma();
         cycle = 514;
       }
-      cycle += this.cpu.exec();
-      const renderingData = this.ppu.exec(cycle * 3);
+      cycle += this.cpu.run();
+      const renderingData = this.ppu.run(cycle * 3);
       this.apu.exec(cycle);
       if (renderingData) {
         const { background, sprites, palette } = renderingData;

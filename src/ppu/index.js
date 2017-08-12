@@ -204,7 +204,7 @@ export default class Ppu {
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec(cycle: number): RenderingData | null {
+  run(cycle: number): RenderingData | null {
     this.cycle += cycle;
     if (this.line === 0) {
       this.background = [];

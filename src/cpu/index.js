@@ -87,7 +87,7 @@ export default class Cpu {
     log.info(`pc = ${(this.registers.PC).toString(16)}`);
   }
 
-  getAddrOrDataAndAdditionalCycle(mode: AddressingMode): AddrOrDataAndAdditionalCycle {
+  getAddrOrDataWithAdditionalCycle(mode: AddressingMode): AddrOrDataAndAdditionalCycle {
     switch (mode) {
       case 'accumulator': {
         return {
@@ -722,14 +722,16 @@ export default class Cpu {
     this.registers.PC = this.read(0xFFFE, "Word");
   }
 
-  exec(): number {
+  run(): number {
     if (this.interrupts.isNmiAssert) {
       this.processNmi();
     }
-    if (this.interrupts.isIrqAssert) this.processIrq();
+    if (this.interrupts.isIrqAssert) {
+      this.processIrq();
+    }
     const opecode = this.fetch(this.registers.PC);
     const { baseName, mode, cycle } = this.opecodeList[opecode];
-    const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
+    const { addrOrData, additionalCycle } = this.getAddrOrDataWithAdditionalCycle(mode);
     this.execInstruction(baseName, addrOrData, mode);
     return cycle + additionalCycle + (this.hasBranched ? 1 : 0);
   }
