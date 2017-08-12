@@ -88,3 +88,17 @@ test.serial('should render color bar', async t => {
   t.pass();
 });
 
+test.serial('should render nestest', async t => {
+  const fs = window.require('fs');
+  const nesFile = fs.readFileSync('static/roms/nestest.nes');
+  const nes = new NES();
+  nes.setup(nesFile);
+  nes.start();
+  await (() => new Promise((done) => setTimeout(() => {
+    screenshot('screenshot/actual/nestest.png').then(done);
+    nes.close();
+  }, 1000)))();
+  t.pass();
+});
+
+
