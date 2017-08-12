@@ -37,6 +37,10 @@
     "eslint-plugin-flowtype": "^2.35.0",
     "eslint-plugin-import": "^2.7.0",
     "flow-bin": "^0.52.0",
+    "reg-keygen-git-hash-plugin": "^0.5.0",
+    "reg-notify-github-plugin": "^0.5.0",
+    "reg-publish-s3-plugin": "^0.5.0",
+    "reg-suit": "^0.5.0",
     "sinon": "^3.2.0",
     "webpack": "^3.5.3",
     "webpack-dev-server": "^2.7.1"
