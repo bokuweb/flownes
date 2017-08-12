@@ -169,7 +169,6 @@ export default class Cpu {
         const addrOrData = this.fetch(this.registers.PC);
         const baseAddr = this.read(addrOrData) + (this.read((addrOrData + 1) & 0xFF) << 8);
         const addr = baseAddr + this.registers.Y;
-        // if (addr > 0xFFFF) debugger;
         return {
           addrOrData: addr & 0xFFFF,
           additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,

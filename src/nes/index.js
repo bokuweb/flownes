@@ -100,13 +100,7 @@ export class NES {
       const renderingData = this.ppu.run(cycle * 3);
       this.apu.exec(cycle);
       if (renderingData) {
-        const { background, sprites, palette } = renderingData;
-        if (background) {
-          this.canvasRenderer.renderBackground(background, palette);
-        }
-        if (sprites) {
-          this.canvasRenderer.renderSprites(sprites, palette);
-        }
+        this.canvasRenderer.render(renderingData);
         break;
       }
     }

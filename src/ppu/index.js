@@ -32,7 +32,7 @@ export type Background = $Exact<{
 export type RenderingData = $Exact<{
   palette: Palette;
   background: ?$ReadOnlyArray<Background>;
-  sprites: ?$ReadOnlyArray<SpriteWithAttribute>;
+sprites: ?$ReadOnlyArray<SpriteWithAttribute>;
 }>;
 
 export type Config = $Exact<{
@@ -179,6 +179,10 @@ export default class Ppu {
     return y === this.line && this.isBackgroundEnable && this.isSpriteEnable;
   }
 
+  get hasVblankIqrEnabled(): boolean {
+    return !!(this.registers[0] & 0x80);
+  }
+
   get isBackgroundEnable(): boolean {
     return !!(this.registers[0x01] & 0x08);
   }
@@ -203,9 +207,9 @@ export default class Ppu {
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  run(cycle: number): RenderingData | null {
+  run(cycle: number): ?RenderingData {
     this.cycle += cycle;
-    if (this.line === 0) {
+    if(this.line === 0) {
       this.background = [];
       this.buildSprites();
     }
@@ -223,8 +227,7 @@ export default class Ppu {
       }
       if (this.line === 241) {
         this.setVblank();
-
-        if (this.registers[0] & 0x80) {
+        if (this.hasVblankIqrEnabled) {
           this.interrupts.assertNmi();
         }
       }
@@ -323,8 +326,8 @@ export default class Ppu {
     for (let i = 0; i < 16; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
         const addr = spriteId * 16 + i + offset;
-        const rom = this.readCharacterRAM(addr);
-        if (rom & (0x80 >> j)) {
+        const ram = this.readCharacterRAM(addr);
+        if (ram & (0x80 >> j)) {
           sprite[i % 8][j] += 0x01 << (i / 8);
         }
       }

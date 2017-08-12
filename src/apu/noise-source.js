@@ -39,6 +39,7 @@ export default class NoiseSource {
     this.source.start(0);
   }
 
+  /* eslint-disable */
   setVolume(volume: number) {
     volume = Math.max(0, Math.min(1, volume));
     // this.gain.gain.value = volume;

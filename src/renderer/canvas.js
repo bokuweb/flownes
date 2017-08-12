@@ -1,7 +1,7 @@
 /* @flow */
 
 // import type { Byte } from '../types/common';
-import type { SpriteWithAttribute, Background, Palette } from '../ppu';
+import type { SpriteWithAttribute, Background, Palette, RenderingData } from '../ppu';
 import { colors } from './colors';
 // import { imageData2Css } from './image-data2css';
 
@@ -15,9 +15,29 @@ export default class CanvasRenderer {
     this.ctx = canvas.getContext('2d');
     if (this.ctx) {
       this.image = this.ctx.createImageData(256, 224);
-      // this.ctx.scale(2, 2);
     }
     // this.div = ((document.getElementById('nes-div'): any): HTMLElement);
+  }
+
+  shouldPixelHide(x: number, y: number): boolean {
+    const tileX = ~~(x / 8);
+    const tileY = ~~(y / 8);
+    const backgroundIndex = tileY * 33 + tileX;
+    const sprite = this.background[backgroundIndex] &&
+      this.background[backgroundIndex].sprite;
+    if (!sprite) return true;
+    // NOTE: If background pixel is not transparent, we need to hide sprite.
+    return !((sprite[y % 8] && sprite[y % 8][x % 8] % 4) === 0);
+  }
+
+  render(data: RenderingData) {
+    const { background, sprites, palette } = data;
+    if (background) {
+      this.renderBackground(background, palette);
+    }
+    if (sprites) {
+      this.renderSprites(sprites, palette);
+    }
   }
 
   renderBackground(background: $ReadOnlyArray<Background>, palette: Palette) {
@@ -28,7 +48,6 @@ export default class CanvasRenderer {
     // console.time('css renderer');
     // this.div.style.boxShadow = imageData2Css(background);
     // console.timeEnd('css renderer')
-    // console.log(background.length)
     for (let i = 0; i < background.length; i += 1 | 0) {
       const x = (i % 33) * 8;
       const y = ~~(i / 33) * 8;
@@ -55,7 +74,6 @@ export default class CanvasRenderer {
     for (let i = 0; i < 8; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
         const paletteIndex = paletteId * 4 + sprite[i][j];
-        // const t = paletteIndex % 4 === 0 ? 0 : paletteIndex;
         const colorId = palette[paletteIndex];
         const color = colors[colorId];
         const x = tileX + j - offsetX;
@@ -82,20 +100,10 @@ export default class CanvasRenderer {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
         const x = sprite.x + (isHorizontalReverse ? 7 - j : j);
         const y = sprite.y + (isVerticalReverse ? 7 - i : i);
-
-        // TODO: MOVE
-        const tempX = ~~(x / 8);
-        const tempY = ~~(y / 8);
-        const bgIndex = tempY * 33 + tempX;
-        // console.log(bgIndex, tempX, tempY)
-
-        const bgSprite = this.background[bgIndex] && this.background[bgIndex].sprite;
-        // const bgPaletteId = this.background[bgIndex].paletteId;
-        if (!bgSprite) continue;
-        if (isLowPriority && !((bgSprite[y % 8] && bgSprite[y % 8][x % 8] % 4) === 0)) {
+        if (isLowPriority && this.shouldPixelHide(x, y)) {
           continue;
         }
-        if (sprite.sprite[i][j] && x < 0x100 && y < 0x100) {
+        if (sprite.sprite[i][j]) {
           const colorId = palette[paletteId * 4 + sprite.sprite[i][j] + 0x10];
           const color = colors[colorId];
           const index = (x + y * 0x100) * 4;
