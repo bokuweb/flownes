@@ -7,7 +7,9 @@
     "start": "node server.js",
     "lint": "eslint src",
     "flow": "flow",
-    "test": "npm run lint && npm run flow"
+    "test:screenshot": "avaron test/screenshot/*.spec.js --renderer",
+    "test:unit": "avaron test/unit/*.spec.js",
+    "test": "npm run lint && npm run flow && npm run test:unit && npm run test:screenshot"
   },
   "repository": {
     "type": "git",
@@ -20,6 +22,7 @@
   },
   "homepage": "https://github.com/bokuweb/njs#readme",
   "devDependencies": {
+    "avaron": "^0.0.11",
     "babel-core": "^6.25.0",
     "babel-eslint": "^7.2.3",
     "babel-loader": "^7.1.1",
@@ -37,5 +40,12 @@
     "sinon": "^3.2.0",
     "webpack": "^3.5.3",
     "webpack-dev-server": "^2.7.1"
+  },
+  "avaron": {
+    "babel": "inherit",
+    "require": [
+      "babel-register",
+      "babel-polyfill"
+    ]
   }
 }

@@ -16,11 +16,11 @@ jobs:
           name: Install dependencies
           command: yarn
       - run:
-          name: Lint
-          command: yarn run lint
-      # - run:
-      #     name: Test
-      #     command: yarn run test
+          name: Test
+          command: |
+            xvfbd start
+            yarn run test
+            xvfbd stop
 workflows:
   version: 2
   build_pipeline:
