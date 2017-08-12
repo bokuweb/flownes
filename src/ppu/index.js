@@ -14,31 +14,30 @@ export type Palette = $ReadOnlyArray<Byte>;
 
 export type SpriteType = 'background' | 'sprite'
 
-export interface SpriteWithAttribute {
+export type SpriteWithAttribute = $Exact<{
   sprite: Sprite;
   x: Byte;
   y: Byte;
   attr: Byte;
   spriteId: number;
-}
+}>;
 
-export interface Background {
+export type Background = $Exact<{
   sprite: Sprite;
   paletteId: Byte;
   scrollX: Byte;
   scrollY: Byte;
-}
+}>;
 
-export interface RenderingData {
+export type RenderingData = $Exact<{
   palette: Palette;
   background: ?$ReadOnlyArray<Background>;
   sprites: ?$ReadOnlyArray<SpriteWithAttribute>;
-}
-export interface Config {
-  isHorizontalMirror: boolean;
-}
+}>;
 
-// let d;
+export type Config = $Exact<{
+  isHorizontalMirror: boolean;
+}>;
 
 export default class Ppu {
 

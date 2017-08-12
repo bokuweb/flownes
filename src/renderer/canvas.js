@@ -28,7 +28,7 @@ export default class CanvasRenderer {
     // this.div.style.boxShadow = imageData2Css(background);
     // console.timeEnd('css renderer')
     // console.log(background.length)
-    for (let i = 0; i < background.length; i++) {
+    for (let i = 0; i < background.length; i += 1 | 0) {
       const { sprite, paletteId, scrollX, scrollY } = background[i];
       const x = (i % 33) * 8;
       const y = ~~(i / 33) * 8;
@@ -41,7 +41,7 @@ export default class CanvasRenderer {
     if (!this.ctx) return;
     for (const sprite of sprites) {
       if (sprite) {
-        this.renderSprite(sprite.sprite, sprite.x, sprite.y, sprite.attr, palette);
+        this.renderSprite(sprite, palette);
       }
     }
     this.ctx.putImageData(this.image, 0, 0);
@@ -53,7 +53,7 @@ export default class CanvasRenderer {
     for (let i = 0; i < 8; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
         const paletteIndex = paletteId * 4 + sprite[i][j];
-        const t = paletteIndex % 4 ===  0 ? 0 : paletteIndex;
+        const t = paletteIndex % 4 === 0 ? 0 : paletteIndex;
         const colorId = palette[t];
         const color = colors[colorId];
         const x = tileX + j - offsetX;
@@ -69,18 +69,20 @@ export default class CanvasRenderer {
     }
   }
 
-  renderSprite(sprite: Sprite, x: number, y: number, attr: Byte, palette: Palette) {
+  renderSprite({ attr, x, y, sprite }: SpriteWithAttribute, palette: Palette) {
     if (!this.ctx) return;
     const { data } = this.image;
     const isVerticalReverse = !!(attr & 0x80);
     const isHorizontalReverse = !!(attr & 0x40);
+    // const isLowPriority = !!(attr & 0x20);
     const paletteId = attr & 0x03;
     for (let i = 0; i < 8; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
-        if (sprite[i][j]) {
+        const posX = x + (isHorizontalReverse ? 7 - j : j);
+        if (sprite[i][j] && posX < 0x100) {
           const colorId = palette[paletteId * 4 + sprite[i][j] + 0x10];
           const color = colors[colorId];
-          const index = ((x + (isHorizontalReverse ? 7 - j : j)) + (y + (isVerticalReverse ? 7 - i : i)) * 256) * 4;
+          const index = (posX + (y + (isVerticalReverse ? 7 - i : i)) * 0x100) * 4;
           data[index] = color[0];
           data[index + 1] = color[1];
           data[index + 2] = color[2];
