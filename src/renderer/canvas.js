@@ -1,14 +1,14 @@
 /* @flow */
 
-import type { Byte } from '../types/common';
-import type { Sprite, SpriteWithAttribute, Background, Palette } from '../ppu';
+// import type { Byte } from '../types/common';
+import type { SpriteWithAttribute, Background, Palette } from '../ppu';
 import { colors } from './colors';
 // import { imageData2Css } from './image-data2css';
 
 export default class CanvasRenderer {
-
   ctx: ?CanvasRenderingContext2D;
-  image: any;
+  image: ImageData;
+  background: $ReadOnlyArray<Background>;
 
   constructor(elementName: string) {
     const canvas = ((document.getElementById(elementName): any): HTMLCanvasElement);
@@ -20,8 +20,9 @@ export default class CanvasRenderer {
     // this.div = ((document.getElementById('nes-div'): any): HTMLElement);
   }
 
-  renderBackground(background: $ReadOnlyArray<Background>, palette: Palette, /* scrollX: Byte, /* TODO: scrollY: Byte */) {
+  renderBackground(background: $ReadOnlyArray<Background>, palette: Palette) {
     // this.pallete = pallete;
+    this.background = background;
     if (!this.ctx) return;
     // TODO: css renderer, move to css-renderer.js
     // console.time('css renderer');
@@ -29,10 +30,9 @@ export default class CanvasRenderer {
     // console.timeEnd('css renderer')
     // console.log(background.length)
     for (let i = 0; i < background.length; i += 1 | 0) {
-      const { sprite, paletteId, scrollX, scrollY } = background[i];
       const x = (i % 33) * 8;
       const y = ~~(i / 33) * 8;
-      this.renderTile(sprite, x, y, palette, paletteId, scrollX % 8, scrollY % 8);
+      this.renderTile(background[i], x, y, palette);
     }
     this.ctx.putImageData(this.image, 0, 0);
   }
@@ -47,14 +47,16 @@ export default class CanvasRenderer {
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderTile(sprite: Sprite, tileX: number, tileY: number, palette: Palette, paletteId: Byte, offsetX: Byte, offsetY: Byte) {
+  renderTile({ sprite, paletteId, scrollX, scrollY }: Background, tileX: number, tileY: number, palette: Palette) {
     if (!this.ctx) return;
+    const offsetX = scrollX % 8;
+    const offsetY = scrollY % 8;
     const { data } = this.image;
     for (let i = 0; i < 8; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
         const paletteIndex = paletteId * 4 + sprite[i][j];
-        const t = paletteIndex % 4 === 0 ? 0 : paletteIndex;
-        const colorId = palette[t];
+        // const t = paletteIndex % 4 === 0 ? 0 : paletteIndex;
+        const colorId = palette[paletteIndex];
         const color = colors[colorId];
         const x = tileX + j - offsetX;
         const y = tileY + i - offsetY;
@@ -69,20 +71,34 @@ export default class CanvasRenderer {
     }
   }
 
-  renderSprite({ attr, x, y, sprite }: SpriteWithAttribute, palette: Palette) {
+  renderSprite(sprite: SpriteWithAttribute, palette: Palette) {
     if (!this.ctx) return;
     const { data } = this.image;
-    const isVerticalReverse = !!(attr & 0x80);
-    const isHorizontalReverse = !!(attr & 0x40);
-    // const isLowPriority = !!(attr & 0x20);
-    const paletteId = attr & 0x03;
+    const isVerticalReverse = !!(sprite.attr & 0x80);
+    const isHorizontalReverse = !!(sprite.attr & 0x40);
+    const isLowPriority = !!(sprite.attr & 0x20);
+    const paletteId = sprite.attr & 0x03;
     for (let i = 0; i < 8; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
-        const posX = x + (isHorizontalReverse ? 7 - j : j);
-        if (sprite[i][j] && posX < 0x100) {
-          const colorId = palette[paletteId * 4 + sprite[i][j] + 0x10];
+        const x = sprite.x + (isHorizontalReverse ? 7 - j : j);
+        const y = sprite.y + (isVerticalReverse ? 7 - i : i);
+
+        // TODO: MOVE
+        const tempX = ~~(x / 8);
+        const tempY = ~~(y / 8);
+        const bgIndex = tempY * 33 + tempX;
+        // console.log(bgIndex, tempX, tempY)
+
+        const bgSprite = this.background[bgIndex] && this.background[bgIndex].sprite;
+        // const bgPaletteId = this.background[bgIndex].paletteId;
+        if (!bgSprite) continue;
+        if (isLowPriority && !((bgSprite[y % 8] && bgSprite[y % 8][x % 8] % 4) === 0)) {
+          continue;
+        }
+        if (sprite.sprite[i][j] && x < 0x100 && y < 0x100) {
+          const colorId = palette[paletteId * 4 + sprite.sprite[i][j] + 0x10];
           const color = colors[colorId];
-          const index = (posX + (y + (isVerticalReverse ? 7 - i : i)) * 0x100) * 4;
+          const index = (x + y * 0x100) * 4;
           data[index] = color[0];
           data[index + 1] = color[1];
           data[index + 2] = color[2];
