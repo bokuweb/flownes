@@ -7,10 +7,7 @@
   "plugins": {
     "reg-keygen-git-hash-plugin": {},
     "reg-notify-github-plugin": {
-      "installationId": "37909",
-      "owner": "bokuweb",
-      "repository": "flownes",
-      "prComment": true      
+      "clientId": "MzcxMjQ2sDDUT8vJL89LLdY3Nrc0sNRPys8uLU9NAgA="
     },
     "reg-publish-s3-plugin": {
       "bucketName": "reg-publish-bucket-b911dca0-0748-4a6a-82ee-62117a90b8ca"
