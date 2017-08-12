@@ -21,7 +21,7 @@ jobs:
             xvfbd start
             yarn run test
             xvfbd stop
-      - run: yarn run reg-suit            
+      - run: yarn reg-suit run            
 workflows:
   version: 2
   build_pipeline:
