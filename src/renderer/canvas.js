@@ -1,6 +1,5 @@
 /* @flow */
 
-// import type { Byte } from '../types/common';
 import type { SpriteWithAttribute, Background, Palette, RenderingData } from '../ppu';
 import { colors } from './colors';
 // import { imageData2Css } from './image-data2css';

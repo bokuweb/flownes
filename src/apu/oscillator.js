@@ -83,17 +83,7 @@ export default class Oscillator {
   }
 
   setPulseWidth(pulseWidth: number) {
-    // const real = [0]
-    // const imag = [0]
-    // for (let i = 1; i < 8192; i += 1) {
-    //   const realTerm = 4 / (i * Math.PI) * Math.sin(Math.PI * i * pulseWidth);
-    //   real.push(realTerm);
-    //   imag.push(0);
-    // }
-    this.oscillator.setPeriodicWave(this.waves[pulseWidth]);
-      /* eslint-disable no-undef */
-    //   this.context.createPeriodicWave(pulse[pulseWidth].real, pulse[pulseWidth].imag)
-    // );
+    this.oscillator.setPeriodicWave(this.waves[`${pulseWidth}`]);
   }
 
   setFrequency(frequency: number) {
