@@ -162,7 +162,6 @@ export default class Ppu {
       }
       palette.push(this.vram.read(addr));
     }
-    // console.log('palette', palette)
     return palette;
   }
 
@@ -178,13 +177,6 @@ export default class Ppu {
     const y = this.spriteRam.read(0);
     const id = this.spriteRam.read(1);
     if (id === 0) return false;
-    // console.log(
-    //   y,
-    //   this.spriteRam.read(1),
-    //   this.spriteRam.read(2),
-    //   this.spriteRam.read(3)
-    // )
-    // console.log(y, this.isBackgroundEnable, this.isSpriteEnable, this.spriteRam.read(3), this.registers[0x01].toString(16))
     return y === this.line && this.isBackgroundEnable && this.isSpriteEnable;
   }
 
@@ -349,8 +341,23 @@ export default class Ppu {
     this.bus.writeByPpu(addr, data);
   }
 
+  readVram(): Byte {
+    const buf = this.vramReadBuf;
+    if (this.vramAddr >= 0x2000) {
+      const addr = this.calcVramAddr();
+      this.vramAddr += this.vramOffset;
+      if (addr >= 0x3F00) {
+        return this.vram.read(addr);
+      }
+      this.vramReadBuf = this.vram.read(addr);
+    } else {
+      this.vramReadBuf = this.readCharacterRAM(this.vramAddr);
+      this.vramAddr += this.vramOffset;
+    }
+    return buf;
+  }
+
   read(addr: Word): Byte {
-    // console.log('read', addr, this.vramAddr.toString(16), this.spriteRamAddr)
     /*
     | bit  | description                                 |
     +------+---------------------------------------------+
@@ -373,19 +380,7 @@ export default class Ppu {
       return this.spriteRam.read(this.spriteRamAddr);
     }
     if (addr === 0x0007) {
-      const buf = this.vramReadBuf;
-      if (this.vramAddr >= 0x2000) {
-        const addr = this.calcVramAddr();
-        this.vramAddr += this.vramOffset;
-        if (addr >= 0x3F00) {
-          return this.vram.read(addr);
-        }
-        this.vramReadBuf = this.vram.read(addr);
-      } else {
-        this.vramReadBuf = this.readCharacterRAM(this.vramAddr);
-        this.vramAddr += this.vramOffset;
-      }
-      return buf;
+      return this.readVram();
     }
     return 0;
   }
@@ -434,7 +429,6 @@ export default class Ppu {
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
-      if (this.vramAddr >= 0x4000) throw new Error('TODO: should mirror down');
       this.vramAddr = data << 8;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;

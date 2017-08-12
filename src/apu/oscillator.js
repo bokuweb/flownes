@@ -16,6 +16,9 @@ export default class Oscillator {
   gain: GainNode;
   playing: boolean;
   type: Kind;
+  waves: {
+    [key: string]: PeriodicWave,
+  };
 
   constructor(type?: Kind) {
     try {
@@ -26,6 +29,14 @@ export default class Oscillator {
     }
     this.type = type || 'square';
     this.oscillator = this.createOscillator({ kind: this.type });
+
+    this.waves = {
+      '0.125': this.context.createPeriodicWave(pulse['0.125'].real, pulse['0.125'].imag),
+      '0.25': this.context.createPeriodicWave(pulse['0.25'].real, pulse['0.25'].imag),
+      '0.5': this.context.createPeriodicWave(pulse['0.5'].real, pulse['0.5'].imag),
+      '0.75': this.context.createPeriodicWave(pulse['0.75'].real, pulse['0.75'].imag),
+    };
+
     this.setPulseWidth(0.5);
     this.playing = false;
   }
@@ -79,10 +90,10 @@ export default class Oscillator {
     //   real.push(realTerm);
     //   imag.push(0);
     // }
-    this.oscillator.setPeriodicWave(
+    this.oscillator.setPeriodicWave(this.waves[pulseWidth]);
       /* eslint-disable no-undef */
-      this.context.createPeriodicWave(pulse[pulseWidth].real, pulse[pulseWidth].imag)
-    );
+    //   this.context.createPeriodicWave(pulse[pulseWidth].real, pulse[pulseWidth].imag)
+    // );
   }
 
   setFrequency(frequency: number) {

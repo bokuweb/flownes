@@ -83,7 +83,6 @@ export default class Cpu {
       ...defaultRegisters,
       P: { ...defaultRegisters.P }
     };
-    // HACK: For rom, not set reset handler.
     this.registers.PC = this.read(0xFFFC, "Word") || 0x8000;
     log.info(`pc = ${(this.registers.PC).toString(16)}`);
   }
@@ -727,7 +726,7 @@ export default class Cpu {
     if (this.interrupts.isNmiAssert) {
       this.processNmi();
     }
-    // if (this.interrupts.isIrqAssert) this.processIrq();
+    if (this.interrupts.isIrqAssert) this.processIrq();
     const opecode = this.fetch(this.registers.PC);
     const { baseName, mode, cycle } = this.opecodeList[opecode];
     const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
