@@ -1,5 +1,7 @@
 /* @flow */
 
+import pulse from './pulse';
+
 export type Kind = 'square' | 'triangle';
 
 export type OscillatorOption = {
@@ -9,7 +11,6 @@ export type OscillatorOption = {
 }
 
 export default class Oscillator {
-
   context: AudioContext;
   oscillator: OscillatorNode;
   gain: GainNode;
@@ -21,7 +22,7 @@ export default class Oscillator {
       const AudioContext = window.AudioContext || window.webkitAudioContext
       this.context = new AudioContext();
     } catch (e) {
-      Error('Web Audio isn\'t supported in this browser!');
+      throw new Error('Web Audio isn\'t supported in this browser!');
     }
     this.type = type || 'square';
     this.oscillator = this.createOscillator({ kind: this.type });
@@ -71,17 +72,17 @@ export default class Oscillator {
   }
 
   setPulseWidth(pulseWidth: number) {
-    const real = [0]
-    const imag = [0]
-    for (let i = 1; i < 8192; i += 1) {
-      const realTerm = 4 / (i * Math.PI) * Math.sin(Math.PI * i * pulseWidth);
-      real.push(realTerm);
-      imag.push(0);
-    }
+    // const real = [0]
+    // const imag = [0]
+    // for (let i = 1; i < 8192; i += 1) {
+    //   const realTerm = 4 / (i * Math.PI) * Math.sin(Math.PI * i * pulseWidth);
+    //   real.push(realTerm);
+    //   imag.push(0);
+    // }
     this.oscillator.setPeriodicWave(
       /* eslint-disable no-undef */
-      this.context.createPeriodicWave(new Float32Array(real), new Float32Array(imag)),
-    )
+      this.context.createPeriodicWave(pulse[pulseWidth].real, pulse[pulseWidth].imag)
+    );
   }
 
   setFrequency(frequency: number) {
