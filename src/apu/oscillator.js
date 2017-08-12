@@ -1,5 +1,7 @@
 /* @flow */
 
+import pulse from './pulse';
+
 export type Kind = 'square' | 'triangle';
 
 export type OscillatorOption = {
@@ -9,22 +11,32 @@ export type OscillatorOption = {
 }
 
 export default class Oscillator {
-
   context: AudioContext;
   oscillator: OscillatorNode;
   gain: GainNode;
   playing: boolean;
   type: Kind;
+  waves: {
+    [key: string]: PeriodicWave,
+  };
 
   constructor(type?: Kind) {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext
       this.context = new AudioContext();
     } catch (e) {
-      Error('Web Audio isn\'t supported in this browser!');
+      throw new Error('Web Audio isn\'t supported in this browser!');
     }
     this.type = type || 'square';
     this.oscillator = this.createOscillator({ kind: this.type });
+
+    this.waves = {
+      '0.125': this.context.createPeriodicWave(pulse['0.125'].real, pulse['0.125'].imag),
+      '0.25': this.context.createPeriodicWave(pulse['0.25'].real, pulse['0.25'].imag),
+      '0.5': this.context.createPeriodicWave(pulse['0.5'].real, pulse['0.5'].imag),
+      '0.75': this.context.createPeriodicWave(pulse['0.75'].real, pulse['0.75'].imag),
+    };
+
     this.setPulseWidth(0.5);
     this.playing = false;
   }
@@ -50,7 +62,7 @@ export default class Oscillator {
     this.context.close();
   }
 
-  createOscillator(options: OscillatorOption = {}) {
+  createOscillator(options: OscillatorOption = {}): OscillatorNode {
     const oscillator = this.context.createOscillator();
     if (options.kind) oscillator.type = options.kind;
     if (options.frequency) oscillator.frequency.value = options.frequency;
@@ -71,17 +83,7 @@ export default class Oscillator {
   }
 
   setPulseWidth(pulseWidth: number) {
-    const real = [0]
-    const imag = [0]
-    for (let i = 1; i < 8192; i += 1) {
-      const realTerm = 4 / (i * Math.PI) * Math.sin(Math.PI * i * pulseWidth);
-      real.push(realTerm);
-      imag.push(0);
-    }
-    this.oscillator.setPeriodicWave(
-      /* eslint-disable no-undef */
-      this.context.createPeriodicWave(new Float32Array(real), new Float32Array(imag)),
-    )
+    this.oscillator.setPeriodicWave(this.waves[`${pulseWidth}`]);
   }
 
   setFrequency(frequency: number) {

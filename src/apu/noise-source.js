@@ -29,7 +29,7 @@ export default class NoiseSource {
     node.buffer = buffer;
     node.loop = true;
     this.gain = this.context.createGain();
-    this.gain.gain.value = 0.04;
+    this.gain.gain.value = 0.01;
     node.connect(this.gain);
     this.bandpass = this.context.createBiquadFilter();
     this.gain.connect(this.bandpass);
@@ -39,13 +39,14 @@ export default class NoiseSource {
     this.source.start(0);
   }
 
+  /* eslint-disable */
   setVolume(volume: number) {
     volume = Math.max(0, Math.min(1, volume));
-    this.gain.gain.value = volume;
+    // this.gain.gain.value = volume;
   }
 
   setFrequency(frequency: number) {
-    this.bandpass.frequency.value = frequency > 22050 ? 22050 : frequency;
+    // this.bandpass.frequency.value = frequency > 22050 ? 22050 : frequency;
   }
 
   close() {

@@ -83,12 +83,11 @@ export default class Cpu {
       ...defaultRegisters,
       P: { ...defaultRegisters.P }
     };
-    // HACK: For rom, not set reset handler.
     this.registers.PC = this.read(0xFFFC, "Word") || 0x8000;
     log.info(`pc = ${(this.registers.PC).toString(16)}`);
   }
 
-  getAddrOrDataAndAdditionalCycle(mode: AddressingMode): AddrOrDataAndAdditionalCycle {
+  getAddrOrDataWithAdditionalCycle(mode: AddressingMode): AddrOrDataAndAdditionalCycle {
     switch (mode) {
       case 'accumulator': {
         return {
@@ -170,7 +169,6 @@ export default class Cpu {
         const addrOrData = this.fetch(this.registers.PC);
         const baseAddr = this.read(addrOrData) + (this.read((addrOrData + 1) & 0xFF) << 8);
         const addr = baseAddr + this.registers.Y;
-        // if (addr > 0xFFFF) debugger;
         return {
           addrOrData: addr & 0xFFFF,
           additionalCycle: (addr & 0xFF00) !== (baseAddr & 0xFF00) ? 1 : 0,
@@ -723,14 +721,16 @@ export default class Cpu {
     this.registers.PC = this.read(0xFFFE, "Word");
   }
 
-  exec(): number {
+  run(): number {
     if (this.interrupts.isNmiAssert) {
       this.processNmi();
     }
-    // if (this.interrupts.isIrqAssert) this.processIrq();
+    if (this.interrupts.isIrqAssert) {
+      this.processIrq();
+    }
     const opecode = this.fetch(this.registers.PC);
     const { baseName, mode, cycle } = this.opecodeList[opecode];
-    const { addrOrData, additionalCycle } = this.getAddrOrDataAndAdditionalCycle(mode);
+    const { addrOrData, additionalCycle } = this.getAddrOrDataWithAdditionalCycle(mode);
     this.execInstruction(baseName, addrOrData, mode);
     return cycle + additionalCycle + (this.hasBranched ? 1 : 0);
   }

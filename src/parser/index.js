@@ -1,4 +1,7 @@
 /* @flow */
+
+import log from '../helper/log';
+
 const NES_HEADER_SIZE = 0x0010;
 const PROGRAM_ROM_SIZE = 0x4000;
 const CHARACTER_ROM_SIZE = 0x2000;
@@ -15,12 +18,12 @@ export const parse = (nesBuffer: ArrayBuffer): NesROM => {
     throw new Error('This file is not NES format.');
   }
   const programROMPages = nes[4];
-  console.log('prom pages =', programROMPages);
+  log.info('prom pages =', programROMPages);
   const characterROMPages = nes[5];
-  console.log('crom pages =', characterROMPages);
+  log.info('crom pages =', characterROMPages);
   const isHorizontalMirror = !(nes[6] & 0x01);
   const mapper = (((nes[6] & 0xF0) >> 4) | nes[7] & 0xF0);
-  console.log('mapper', mapper);
+  log.info('mapper', mapper);
   const characterROMStart = NES_HEADER_SIZE + programROMPages * PROGRAM_ROM_SIZE;
   const characterROMEnd = characterROMStart + characterROMPages * CHARACTER_ROM_SIZE;
 

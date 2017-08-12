@@ -14,31 +14,30 @@ export type Palette = $ReadOnlyArray<Byte>;
 
 export type SpriteType = 'background' | 'sprite'
 
-export interface SpriteWithAttribute {
+export type SpriteWithAttribute = $Exact<{
   sprite: Sprite;
   x: Byte;
   y: Byte;
   attr: Byte;
   spriteId: number;
-}
+}>;
 
-export interface Background {
+export type Background = $Exact<{
   sprite: Sprite;
   paletteId: Byte;
   scrollX: Byte;
   scrollY: Byte;
-}
+}>;
 
-export interface RenderingData {
+export type RenderingData = $Exact<{
   palette: Palette;
   background: ?$ReadOnlyArray<Background>;
-  sprites: ?$ReadOnlyArray<SpriteWithAttribute>;
-}
-export interface Config {
-  isHorizontalMirror: boolean;
-}
+sprites: ?$ReadOnlyArray<SpriteWithAttribute>;
+}>;
 
-// let d;
+export type Config = $Exact<{
+  isHorizontalMirror: boolean;
+}>;
 
 export default class Ppu {
 
@@ -162,7 +161,6 @@ export default class Ppu {
       }
       palette.push(this.vram.read(addr));
     }
-    // console.log('palette', palette)
     return palette;
   }
 
@@ -178,14 +176,11 @@ export default class Ppu {
     const y = this.spriteRam.read(0);
     const id = this.spriteRam.read(1);
     if (id === 0) return false;
-    // console.log(
-    //   y,
-    //   this.spriteRam.read(1),
-    //   this.spriteRam.read(2),
-    //   this.spriteRam.read(3)
-    // )
-    // console.log(y, this.isBackgroundEnable, this.isSpriteEnable, this.spriteRam.read(3), this.registers[0x01].toString(16))
     return y === this.line && this.isBackgroundEnable && this.isSpriteEnable;
+  }
+
+  get hasVblankIqrEnabled(): boolean {
+    return !!(this.registers[0] & 0x80);
   }
 
   get isBackgroundEnable(): boolean {
@@ -212,9 +207,9 @@ export default class Ppu {
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
   // Get the pattern of the sprite searched with the remaining clock.
-  exec(cycle: number): RenderingData | null {
+  run(cycle: number): ?RenderingData {
     this.cycle += cycle;
-    if (this.line === 0) {
+    if(this.line === 0) {
       this.background = [];
       this.buildSprites();
     }
@@ -232,8 +227,7 @@ export default class Ppu {
       }
       if (this.line === 241) {
         this.setVblank();
-
-        if (this.registers[0] & 0x80) {
+        if (this.hasVblankIqrEnabled) {
           this.interrupts.assertNmi();
         }
       }
@@ -332,8 +326,8 @@ export default class Ppu {
     for (let i = 0; i < 16; i = (i + 1) | 0) {
       for (let j = 0; j < 8; j = (j + 1) | 0) {
         const addr = spriteId * 16 + i + offset;
-        const rom = this.readCharacterRAM(addr);
-        if (rom & (0x80 >> j)) {
+        const ram = this.readCharacterRAM(addr);
+        if (ram & (0x80 >> j)) {
           sprite[i % 8][j] += 0x01 << (i / 8);
         }
       }
@@ -349,8 +343,23 @@ export default class Ppu {
     this.bus.writeByPpu(addr, data);
   }
 
+  readVram(): Byte {
+    const buf = this.vramReadBuf;
+    if (this.vramAddr >= 0x2000) {
+      const addr = this.calcVramAddr();
+      this.vramAddr += this.vramOffset;
+      if (addr >= 0x3F00) {
+        return this.vram.read(addr);
+      }
+      this.vramReadBuf = this.vram.read(addr);
+    } else {
+      this.vramReadBuf = this.readCharacterRAM(this.vramAddr);
+      this.vramAddr += this.vramOffset;
+    }
+    return buf;
+  }
+
   read(addr: Word): Byte {
-    // console.log('read', addr, this.vramAddr.toString(16), this.spriteRamAddr)
     /*
     | bit  | description                                 |
     +------+---------------------------------------------+
@@ -373,19 +382,7 @@ export default class Ppu {
       return this.spriteRam.read(this.spriteRamAddr);
     }
     if (addr === 0x0007) {
-      const buf = this.vramReadBuf;
-      if (this.vramAddr >= 0x2000) {
-        const addr = this.calcVramAddr();
-        this.vramAddr += this.vramOffset;
-        if (addr >= 0x3F00) {
-          return this.vram.read(addr);
-        }
-        this.vramReadBuf = this.vram.read(addr);
-      } else {
-        this.vramReadBuf = this.readCharacterRAM(this.vramAddr);
-        this.vramAddr += this.vramOffset;
-      }
-      return buf;
+      return this.readVram();
     }
     return 0;
   }
@@ -434,7 +431,6 @@ export default class Ppu {
       this.isLowerVramAddr = false;
       this.isValidVramAddr = true;
     } else {
-      if (this.vramAddr >= 0x4000) throw new Error('TODO: should mirror down');
       this.vramAddr = data << 8;
       this.isLowerVramAddr = true;
       this.isValidVramAddr = false;

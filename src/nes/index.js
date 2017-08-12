@@ -92,22 +92,15 @@ export class NES {
     // console.time('loop') // eslint-disable-line no-console
     while (true) { // eslint-disable-line no-constant-condition
       let cycle: number = 0;
-      if (this.dma.isDmaProcessing /* && this.ppu.isVblank() */) {
+      if (this.dma.isDmaProcessing) {
         this.dma.runDma();
         cycle = 514;
       }
-      cycle += this.cpu.exec();
-      const renderingData = this.ppu.exec(cycle * 3);
+      cycle += this.cpu.run();
+      const renderingData = this.ppu.run(cycle * 3);
       this.apu.exec(cycle);
       if (renderingData) {
-        const { background, sprites, palette } = renderingData;
-        if (background) {
-          this.canvasRenderer.renderBackground(background, palette);
-        }
-        if (sprites) {
-          this.canvasRenderer.renderSprites(sprites, palette);
-        }
-        // debugger;
+        this.canvasRenderer.render(renderingData);
         break;
       }
     }

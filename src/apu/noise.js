@@ -55,13 +55,13 @@ export default class Noise {
   // When clocked by the frame counter, the length counter is decremented except when:
   // The length counter is 0, or The halt flag is set
   updateCounter() {
-    if (this.isLengthCounterEnable) {
-      if (this.lengthCounter > 0) {
-        this.lengthCounter--;
-      } else {
-        this.source.setVolume(0);
-      }
-    }
+    // if (this.isLengthCounterEnable) {
+    //   if (this.lengthCounter > 0) {
+    //     this.lengthCounter--;
+    //   } else {
+    //     this.source.setVolume(0);
+    //   }
+    // }
   }
 
   write(addr: Byte, data: Byte) {
