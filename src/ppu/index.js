@@ -5,12 +5,14 @@ import type { Byte, Word } from '../types/common';
 import RAM from '../ram';
 import PpuBus from '../bus/ppu-bus';
 import Interrupts from '../interrupts';
+import Palette from './palette';
+import type { PaletteRam } from './palette';
 
 const SPRITES_NUMBER = 0x100;
 
 export type Sprite = $ReadOnlyArray<$ReadOnlyArray<number>>;
 
-export type Palette = $ReadOnlyArray<Byte>;
+// export type Palette = $ReadOnlyArray<Byte>;
 
 export type SpriteType = 'background' | 'sprite'
 
@@ -30,7 +32,7 @@ export type Background = $Exact<{
 }>;
 
 export type RenderingData = $Exact<{
-  palette: Palette;
+  palette: PaletteRam;
   background: ?$ReadOnlyArray<Background>;
 sprites: ?$ReadOnlyArray<SpriteWithAttribute>;
 }>;
@@ -135,6 +137,7 @@ export default class Ppu {
     this.config = config;
     this.scrollX = 0;
     this.scrollY = 0;
+    this.palette = new Palette();
   }
 
   get vramOffset(): Byte {
@@ -145,23 +148,8 @@ export default class Ppu {
     return this.registers[0x00] & 0x03;
   }
 
-  getPalette(): Palette {
-    const palette = [];
-    for (let i = 0; i < 0x20; i = (i + 1) | 0) {
-      const isBackgroundMirror = (i === 0x04) || (i === 0x08) || (i === 0x0c);
-      const isSpriteMirror = (i === 0x10) || (i === 0x14) || (i === 0x18) || (i === 0x1c);
-      //NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
-      let addr;
-      if (isSpriteMirror) {
-        addr = (0x1F00 + (i - 0x10));
-      } else if (isBackgroundMirror) {
-        addr = 0x1F00;
-      } else {
-        addr = i + 0x1F00;
-      }
-      palette.push(this.vram.read(addr));
-    }
-    return palette;
+  getPalette(): PaletteRam {
+    return this.palette.read();
   }
 
   clearSpriteHit() {
@@ -273,7 +261,6 @@ export default class Ppu {
         |            |            |
         +------------+------------+             
       */
-      // this.nameTableId = 2
       const scrollTileX = ~~((this.scrollX + ((this.nameTableId % 2) * 256)) / 8);
       const tileX = x + scrollTileX;
       const clampedTileX = tileX % 32;
@@ -439,13 +426,7 @@ export default class Ppu {
 
   calcVramAddr(): Word {
     let addr = this.vramAddr - 0x2000;
-    if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
-      addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
-      const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
-      // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c      
-      addr = isMirror ? (addr - 0x10) : addr;
-      // NOTE: Palette should be mirrored within $3f00-$3fff.
-    } else if (this.vramAddr >= 0x3000 && this.vramAddr < 0x3f00) {
+    if (this.vramAddr >= 0x3000 && this.vramAddr < 0x3f00) {
       addr -= 0x1000;
     }
     return addr;
@@ -453,8 +434,12 @@ export default class Ppu {
 
   writeVramData(data: Byte) {
     if (this.vramAddr >= 0x2000) {
-      const addr = this.calcVramAddr();
-      this.writeVram(addr, data);
+      if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
+        this.palette.write(this.vramAddr - 0x3f00, data);
+      } else {
+        const addr = this.calcVramAddr();
+        this.writeVram(addr, data);
+      }
     } else {
       this.writeCharacterRAM(this.vramAddr, data);
     }
