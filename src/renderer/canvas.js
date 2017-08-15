@@ -1,6 +1,6 @@
 /* @flow */
 
-import type { SpriteWithAttribute, Background, RenderingData } from '../ppu';
+import type { SpriteWithAttribute, Tile, RenderingData } from '../ppu';
 import type { PaletteRam } from '../ppu/palette';
 import { colors } from './colors';
 // import { imageData2Css } from './image-data2css';
@@ -8,7 +8,7 @@ import { colors } from './colors';
 export default class CanvasRenderer {
   ctx: ?CanvasRenderingContext2D;
   image: ImageData;
-  background: $ReadOnlyArray<Background>;
+  background: $ReadOnlyArray<Tile>;
 
   constructor(elementName: string) {
     const canvas = ((document.getElementById(elementName): any): HTMLCanvasElement);
@@ -40,7 +40,7 @@ export default class CanvasRenderer {
     }
   }
 
-  renderBackground(background: $ReadOnlyArray<Background>, palette: PaletteRam) {
+  renderBackground(background: $ReadOnlyArray<Tile>, palette: PaletteRam) {
     this.background = background;
     if (!this.ctx) return;
     // TODO: css renderer, move to css-renderer.js
@@ -65,7 +65,7 @@ export default class CanvasRenderer {
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderTile({ sprite, paletteId, scrollX, scrollY }: Background, tileX: number, tileY: number, palette: PaletteRam) {
+  renderTile({ sprite, paletteId, scrollX, scrollY }: Tile, tileX: number, tileY: number, palette: PaletteRam) {
     if (!this.ctx) return;
     const offsetX = scrollX % 8;
     const offsetY = scrollY % 8;
