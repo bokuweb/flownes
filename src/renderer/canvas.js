@@ -1,6 +1,7 @@
 /* @flow */
 
-import type { SpriteWithAttribute, Background, Palette, RenderingData } from '../ppu';
+import type { SpriteWithAttribute, Background, RenderingData } from '../ppu';
+import type { PaletteRam } from '../ppu/palette';
 import { colors } from './colors';
 // import { imageData2Css } from './image-data2css';
 
@@ -39,8 +40,7 @@ export default class CanvasRenderer {
     }
   }
 
-  renderBackground(background: $ReadOnlyArray<Background>, palette: Palette) {
-    // this.pallete = pallete;
+  renderBackground(background: $ReadOnlyArray<Background>, palette: PaletteRam) {
     this.background = background;
     if (!this.ctx) return;
     // TODO: css renderer, move to css-renderer.js
@@ -55,7 +55,7 @@ export default class CanvasRenderer {
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderSprites(sprites: $ReadOnlyArray<SpriteWithAttribute>, palette: Palette) {
+  renderSprites(sprites: $ReadOnlyArray<SpriteWithAttribute>, palette: PaletteRam) {
     if (!this.ctx) return;
     for (const sprite of sprites) {
       if (sprite) {
@@ -65,7 +65,7 @@ export default class CanvasRenderer {
     this.ctx.putImageData(this.image, 0, 0);
   }
 
-  renderTile({ sprite, paletteId, scrollX, scrollY }: Background, tileX: number, tileY: number, palette: Palette) {
+  renderTile({ sprite, paletteId, scrollX, scrollY }: Background, tileX: number, tileY: number, palette: PaletteRam) {
     if (!this.ctx) return;
     const offsetX = scrollX % 8;
     const offsetY = scrollY % 8;
@@ -88,7 +88,7 @@ export default class CanvasRenderer {
     }
   }
 
-  renderSprite(sprite: SpriteWithAttribute, palette: Palette) {
+  renderSprite(sprite: SpriteWithAttribute, palette: PaletteRam) {
     if (!this.ctx) return;
     const { data } = this.image;
     const isVerticalReverse = !!(sprite.attr & 0x80);
