@@ -6,11 +6,11 @@ export default class KeyEvents {
 
   setup(onKeyDown: (index: ?number) => void, onKeyUp: (index: ?number) => void) {
     if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', (event: KeyboardEvent) => {
+      document.addEventListener('keydown', (event: KeyboardEvent) => {
         if (onKeyDown) onKeyDown(this.getKeyIndex(event.keyCode));
       });
 
-      window.addEventListener('keyup', (event: KeyboardEvent) => {
+      document.addEventListener('keyup', (event: KeyboardEvent) => {
         if (onKeyUp) onKeyUp(this.getKeyIndex(event.keyCode));
       });
     }

@@ -94,10 +94,23 @@ test.serial('should render nestest', async t => {
   const nes = new NES();
   nes.setup(nesFile);
   nes.start();
+
+  setTimeout(() => {
+    const e = new Event('keydown');
+    e.key = 'S';
+    e.keyCode = e.key.charCodeAt(0);
+    e.which = e.key.charCodeAt(0);
+    e.altKey = false;
+    e.ctrlKey = false;
+    e.shiftKey = false;
+    e.metaKey = false;
+    document.dispatchEvent(e);
+  }, 500);
+
   await (() => new Promise((done) => setTimeout(() => {
     screenshot('screenshot/actual/nestest.png').then(done);
     nes.close();
-  }, 1000)))();
+  }, 2000)))();
   t.pass();
 });
 
