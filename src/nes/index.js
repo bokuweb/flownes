@@ -53,7 +53,7 @@ export class NES {
   | 0xC000-0xFFFF  |  program ROM HIGH          |                |
   */
 
-  setup(nes: ArrayBuffer) {
+  load(nes: ArrayBuffer) {
     const { characterROM, programROM, isHorizontalMirror } = parse(nes);
     if (process.env.NODE_ENV !== 'production') {
       const nesDebugger = new Debugger();
@@ -98,7 +98,7 @@ export class NES {
       }
       cycle += this.cpu.run();
       const renderingData = this.ppu.run(cycle * 3);
-      this.apu.exec(cycle);
+      this.apu.run(cycle);
       if (renderingData) {
         this.canvasRenderer.render(renderingData);
         break;
