@@ -38,11 +38,12 @@ export default class CanvasRenderer {
     if (sprites) {
       this.renderSprites(sprites, palette);
     }
+    if (!this.ctx) return;
+    this.ctx.putImageData(this.image, 0, 0);
   }
 
   renderBackground(background: $ReadOnlyArray<Tile>, palette: PaletteRam) {
     this.background = background;
-    if (!this.ctx) return;
     // TODO: css renderer, move to css-renderer.js
     // console.time('css renderer');
     // this.div.style.boxShadow = imageData2Css(background);
@@ -52,21 +53,17 @@ export default class CanvasRenderer {
       const y = ~~(i / 33) * 8;
       this.renderTile(background[i], x, y, palette);
     }
-    this.ctx.putImageData(this.image, 0, 0);
   }
 
   renderSprites(sprites: $ReadOnlyArray<SpriteWithAttribute>, palette: PaletteRam) {
-    if (!this.ctx) return;
     for (const sprite of sprites) {
       if (sprite) {
         this.renderSprite(sprite, palette);
       }
     }
-    this.ctx.putImageData(this.image, 0, 0);
   }
 
   renderTile({ sprite, paletteId, scrollX, scrollY }: Tile, tileX: number, tileY: number, palette: PaletteRam) {
-    if (!this.ctx) return;
     const offsetX = scrollX % 8;
     const offsetY = scrollY % 8;
     const { data } = this.image;
@@ -89,7 +86,6 @@ export default class CanvasRenderer {
   }
 
   renderSprite(sprite: SpriteWithAttribute, palette: PaletteRam) {
-    if (!this.ctx) return;
     const { data } = this.image;
     const isVerticalReverse = !!(sprite.attr & 0x80);
     const isHorizontalReverse = !!(sprite.attr & 0x40);
@@ -109,7 +105,7 @@ export default class CanvasRenderer {
           data[index] = color[0];
           data[index + 1] = color[1];
           data[index + 2] = color[2];
-          data[index + 3] = 0xFF;
+          // data[index + 3] = 0xFF;
         }
       }
     }

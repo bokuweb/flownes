@@ -162,10 +162,10 @@ export default class Ppu {
     const y = this.spriteRam.read(0);
     const id = this.spriteRam.read(1);
     if (id === 0) return false;
-    return y === this.line && this.isBackgroundEnable && this.isSpriteEnable;
+    return (y === this.line) && this.isBackgroundEnable && this.isSpriteEnable;
   }
 
-  get hasVblankIqrEnabled(): boolean {
+  get hasVblankIrqEnabled(): boolean {
     return !!(this.registers[0] & 0x80);
   }
 
@@ -221,10 +221,6 @@ export default class Ppu {
     return ~~((tileX % 4) / 2) + (~~((tileY % 4) / 2)) * 2;
   }
 
-  // getPaletteId(tileX: Byte, tileY: Byte): Byte {
-
-  // }
-
   getAttribute(tileX: Byte, tileY: Byte, offset: Word): Byte {
     const addr = ~~(tileX / 4) + (~~(tileY / 4) * 8) + 0x03C0 + offset;
     return this.vram.read(this.mirrorDownSpriteAddr(addr));
@@ -237,12 +233,12 @@ export default class Ppu {
   }
 
   mirrorDownSpriteAddr(addr: Word): Word {
-    if (this.config.isHorizontalMirror) {
-      if (addr >= 0x0400 && addr < 0x0800 || addr >= 0x0C00) {
-        addr -= 0x400;
-      }
+    if (!this.config.isHorizontalMirror) return addr;
+    if (addr >= 0x0400 && addr < 0x0800 || addr >= 0x0C00) {
+      return addr -= 0x400;
     }
     return addr;
+
   }
 
   // The PPU draws one line at 341 clocks and prepares for the next line.
@@ -269,7 +265,7 @@ export default class Ppu {
       }
       if (this.line === 241) {
         this.setVblank();
-        if (this.hasVblankIqrEnabled) {
+        if (this.hasVblankIrqEnabled) {
           this.interrupts.assertNmi();
         }
       }
@@ -323,6 +319,7 @@ export default class Ppu {
   }
 
   buildSprites() {
+    const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
     for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       // INFO: Offset sprite Y position, because First and last 8line is not rendered.
       const y = this.spriteRam.read(i) - 8;
@@ -330,7 +327,6 @@ export default class Ppu {
       const spriteId = this.spriteRam.read(i + 1);
       const attr = this.spriteRam.read(i + 2);
       const x = this.spriteRam.read(i + 3);
-      const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
       this.sprites[i / 4] = { sprite, x, y, attr, spriteId };
     }
@@ -343,7 +339,7 @@ export default class Ppu {
         const addr = spriteId * 16 + i + offset;
         const ram = this.readCharacterRAM(addr);
         if (ram & (0x80 >> j)) {
-          sprite[i % 8][j] += 0x01 << (i / 8);
+          sprite[i % 8][j] += 0x01 << ~~(i / 8);
         }
       }
     }
