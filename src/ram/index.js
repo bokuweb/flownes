@@ -4,10 +4,10 @@ import type { Byte, Word } from '../types/common';
 
 export default class RAM {
 
-  ram: Array<Byte>;
+  ram: Uint8Array;
 
   constructor(size: number) {
-    this.ram = new Array(size);
+    this.ram = new Uint8Array(size);
     this.ram.fill(0);
   }
 

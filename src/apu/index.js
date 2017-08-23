@@ -33,7 +33,7 @@ export default class Apu {
     this.enableIrq = false;
   }
 
-  exec(cycle: number) {
+  run(cycle: number) {
     this.cycle += cycle;
     if (this.cycle >= DIVIDE_COUNT_FOR_240HZ) {
       // invoked by 240hz

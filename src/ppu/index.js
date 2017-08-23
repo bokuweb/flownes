@@ -5,12 +5,12 @@ import type { Byte, Word } from '../types/common';
 import RAM from '../ram';
 import PpuBus from '../bus/ppu-bus';
 import Interrupts from '../interrupts';
+import Palette from './palette';
+import type { PaletteRam } from './palette';
 
 const SPRITES_NUMBER = 0x100;
 
 export type Sprite = $ReadOnlyArray<$ReadOnlyArray<number>>;
-
-export type Palette = $ReadOnlyArray<Byte>;
 
 export type SpriteType = 'background' | 'sprite'
 
@@ -22,7 +22,7 @@ export type SpriteWithAttribute = $Exact<{
   spriteId: number;
 }>;
 
-export type Background = $Exact<{
+export type Tile = $Exact<{
   sprite: Sprite;
   paletteId: Byte;
   scrollX: Byte;
@@ -30,8 +30,8 @@ export type Background = $Exact<{
 }>;
 
 export type RenderingData = $Exact<{
-  palette: Palette;
-  background: ?$ReadOnlyArray<Background>;
+  palette: PaletteRam;
+  background: ?$ReadOnlyArray<Tile>;
 sprites: ?$ReadOnlyArray<SpriteWithAttribute>;
 }>;
 
@@ -107,7 +107,7 @@ export default class Ppu {
   vramReadBuf: Byte;
   spriteRam: RAM;
   bus: PpuBus;
-  background: Array<Background>;
+  background: Array<Tile>;
   sprites: Array<SpriteWithAttribute>;
   palette: Palette;
   interrupts: Interrupts;
@@ -135,6 +135,7 @@ export default class Ppu {
     this.config = config;
     this.scrollX = 0;
     this.scrollY = 0;
+    this.palette = new Palette();
   }
 
   get vramOffset(): Byte {
@@ -145,23 +146,8 @@ export default class Ppu {
     return this.registers[0x00] & 0x03;
   }
 
-  getPalette(): Palette {
-    const palette = [];
-    for (let i = 0; i < 0x20; i = (i + 1) | 0) {
-      const isBackgroundMirror = (i === 0x04) || (i === 0x08) || (i === 0x0c);
-      const isSpriteMirror = (i === 0x10) || (i === 0x14) || (i === 0x18) || (i === 0x1c);
-      //NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c 
-      let addr;
-      if (isSpriteMirror) {
-        addr = (0x1F00 + (i - 0x10));
-      } else if (isBackgroundMirror) {
-        addr = 0x1F00;
-      } else {
-        addr = i + 0x1F00;
-      }
-      palette.push(this.vram.read(addr));
-    }
-    return palette;
+  getPalette(): PaletteRam {
+    return this.palette.read();
   }
 
   clearSpriteHit() {
@@ -176,10 +162,10 @@ export default class Ppu {
     const y = this.spriteRam.read(0);
     const id = this.spriteRam.read(1);
     if (id === 0) return false;
-    return y === this.line && this.isBackgroundEnable && this.isSpriteEnable;
+    return (y === this.line) && this.isBackgroundEnable && this.isSpriteEnable;
   }
 
-  get hasVblankIqrEnabled(): boolean {
+  get hasVblankIrqEnabled(): boolean {
     return !!(this.registers[0] & 0x80);
   }
 
@@ -189,6 +175,34 @@ export default class Ppu {
 
   get isSpriteEnable(): boolean {
     return !!(this.registers[0x01] & 0x10);
+  }
+
+  get scrollTileX(): Byte {
+    /*
+      Name table id and address
+      +------------+------------+
+      |            |            | 
+      |  0(0x2000) |  1(0x2400) | 
+      |            |            |
+      +------------+------------+ 
+      |            |            | 
+      |  2(0x2800) |  3(0x2C00) | 
+      |            |            |
+      +------------+------------+             
+    */
+    return ~~((this.scrollX + ((this.nameTableId % 2) * 256)) / 8);
+  }
+
+  get scrollTileY(): Byte {
+    return ~~((this.scrollY + (~~(this.nameTableId / 2) * 240)) / 8);
+  }
+
+  get tileY(): Byte {
+    return ~~(this.line / 8) + this.scrollTileY;
+  }
+
+  get backgroundTableOffset(): Word {
+    return (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
   }
 
   setVblank() {
@@ -203,6 +217,30 @@ export default class Ppu {
     this.registers[0x02] &= 0x7F;
   }
 
+  getBlockId(tileX: Byte, tileY: Byte): Byte {
+    return ~~((tileX % 4) / 2) + (~~((tileY % 4) / 2)) * 2;
+  }
+
+  getAttribute(tileX: Byte, tileY: Byte, offset: Word): Byte {
+    const addr = ~~(tileX / 4) + (~~(tileY / 4) * 8) + 0x03C0 + offset;
+    return this.vram.read(this.mirrorDownSpriteAddr(addr));
+  }
+
+  getSpriteId(tileX: Byte, tileY: Byte, offset: Word): Byte {
+    const tileNumber = tileY * 32 + tileX;
+    const spriteAddr = this.mirrorDownSpriteAddr(tileNumber + offset);
+    return this.vram.read(spriteAddr);
+  }
+
+  mirrorDownSpriteAddr(addr: Word): Word {
+    if (!this.config.isHorizontalMirror) return addr;
+    if (addr >= 0x0400 && addr < 0x0800 || addr >= 0x0C00) {
+      return addr -= 0x400;
+    }
+    return addr;
+
+  }
+
   // The PPU draws one line at 341 clocks and prepares for the next line.
   // While drawing the BG and sprite at the first 256 clocks,
   // it searches for sprites to be drawn on the next scan line.
@@ -210,7 +248,7 @@ export default class Ppu {
   run(cycle: number): ?RenderingData {
     this.cycle += cycle;
     if(this.line === 0) {
-      this.background = [];
+      this.background.length = 0;
       this.buildSprites();
     }
 
@@ -222,12 +260,12 @@ export default class Ppu {
         this.setSpriteHit();
       }
 
-      if (this.line <= 240) {
+      if (this.line <= 240 && this.line % 8 === 0 && this.scrollY <= 240) {
         this.buildBackground();
       }
       if (this.line === 241) {
         this.setVblank();
-        if (this.hasVblankIqrEnabled) {
+        if (this.hasVblankIrqEnabled) {
           this.interrupts.assertNmi();
         }
       }
@@ -247,67 +285,41 @@ export default class Ppu {
     return null;
   }
 
+  buildTile(tileX: Byte, tileY: Byte, offset: Word): Tile {
+    // INFO see. http://hp.vector.co.jp/authors/VA042397/nes/ppu.html
+    const blockId = this.getBlockId(tileX, tileY);
+    const spriteId = this.getSpriteId(tileX, tileY, offset);
+    const attr = this.getAttribute(tileX, tileY, offset);
+    const paletteId = (attr >> (blockId * 2)) & 0x03;
+    const sprite = this.buildSprite(spriteId, this.backgroundTableOffset);
+    return {
+      sprite,
+      paletteId,
+      scrollX: this.scrollX,
+      scrollY: this.scrollY,
+    };
+  }
+
   buildBackground() {
-    if (this.line % 8) return;
-    // HACK: Ignore background when scrollY > 240
     // INFO: Horizontal offsets range from 0 to 255. "Normal" vertical offsets range from 0 to 239,
     // while values of 240 to 255 are treated as -16 through -1 in a way, but tile data is incorrectly
     // fetched from the attribute table.
-    if (this.scrollY > 240) return;
-    const scrollTileY = ~~((this.scrollY + (~~(this.nameTableId / 2) * 240)) / 8);
-    const tileY = ~~(this.line / 8) + scrollTileY;
-    const clampedTileY = tileY % 30;
-    const tableIdOffset = (~~(tileY / 30) % 2) ? 2 : 0;
+    const clampedTileY = this.tileY % 30;
+    const tableIdOffset = (~~(this.tileY / 30) % 2) ? 2 : 0;
     // background of a line.
     // Build viewport + 1 tile for background scroll.
     for (let x = 0; x < 32 + 1; x = (x + 1) | 0) {
-      /*
-        Name table id and address
-        +------------+------------+
-        |            |            | 
-        |  0(0x2000) |  1(0x2400) | 
-        |            |            |
-        +------------+------------+ 
-        |            |            | 
-        |  2(0x2800) |  3(0x2C00) | 
-        |            |            |
-        +------------+------------+             
-      */
-      // this.nameTableId = 2
-      const scrollTileX = ~~((this.scrollX + ((this.nameTableId % 2) * 256)) / 8);
-      const tileX = x + scrollTileX;
+      const tileX = (x + this.scrollTileX);
       const clampedTileX = tileX % 32;
       const nameTableId = (~~(tileX / 32) % 2) + tableIdOffset;
-      const tileNumber = clampedTileY * 32 + clampedTileX;
       const offsetAddrByNameTable = nameTableId * 0x400;
-      // INFO see. http://hp.vector.co.jp/authors/VA042397/nes/ppu.html
-      const blockId = ~~((clampedTileX % 4) / 2) + (~~((clampedTileY % 4) / 2)) * 2;
-      let spriteAddr = tileNumber + offsetAddrByNameTable;
-      let attrAddr = ~~(clampedTileX / 4) + (~~(clampedTileY / 4) * 8) + 0x03C0 + offsetAddrByNameTable;
-
-      if (this.config.isHorizontalMirror) {
-        if (spriteAddr >= 0x0400 && spriteAddr < 0x0800 || spriteAddr >= 0x0C00) {
-          spriteAddr -= 0x400;
-        }
-        if (attrAddr >= 0x0400 && attrAddr < 0x0800 || attrAddr >= 0x0C00) {
-          attrAddr -= 0x400;
-        }
-      }
-      const spriteId = this.vram.read(spriteAddr);
-      const attr = this.vram.read(attrAddr);
-      const paletteId = (attr >> (blockId * 2)) & 0x03;
-      const offset = (this.registers[0] & 0x10) ? 0x1000 : 0x0000;
-      const sprite = this.buildSprite(spriteId, offset);
-      this.background.push({
-        sprite,
-        paletteId,
-        scrollX: this.scrollX,
-        scrollY: this.scrollY,
-      });
+      const tile = this.buildTile(clampedTileX, clampedTileY, offsetAddrByNameTable);
+      this.background.push(tile);
     }
   }
 
   buildSprites() {
+    const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
     for (let i = 0; i < SPRITES_NUMBER; i = (i + 4) | 0) {
       // INFO: Offset sprite Y position, because First and last 8line is not rendered.
       const y = this.spriteRam.read(i) - 8;
@@ -315,7 +327,6 @@ export default class Ppu {
       const spriteId = this.spriteRam.read(i + 1);
       const attr = this.spriteRam.read(i + 2);
       const x = this.spriteRam.read(i + 3);
-      const offset = (this.registers[0] & 0x08) ? 0x1000 : 0x0000;
       const sprite = this.buildSprite(spriteId, offset);
       this.sprites[i / 4] = { sprite, x, y, attr, spriteId };
     }
@@ -328,7 +339,7 @@ export default class Ppu {
         const addr = spriteId * 16 + i + offset;
         const ram = this.readCharacterRAM(addr);
         if (ram & (0x80 >> j)) {
-          sprite[i % 8][j] += 0x01 << (i / 8);
+          sprite[i % 8][j] += 0x01 << ~~(i / 8);
         }
       }
     }
@@ -438,23 +449,18 @@ export default class Ppu {
   }
 
   calcVramAddr(): Word {
-    let addr = this.vramAddr - 0x2000;
-    if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
-      addr = (addr & 0xff00) | ((addr & 0xFF) % 0x20);
-      const isMirror = (addr === 0x1f10) || (addr === 0x1f14) || (addr === 0x1f18) || (addr === 0x1f1c);
-      // NOTE: 0x3f10, 0x3f14, 0x3f18, 0x3f1c is mirror of 0x3f00, 0x3f04, 0x3f08, 0x3f0c      
-      addr = isMirror ? (addr - 0x10) : addr;
-      // NOTE: Palette should be mirrored within $3f00-$3fff.
-    } else if (this.vramAddr >= 0x3000 && this.vramAddr < 0x3f00) {
-      addr -= 0x1000;
-    }
-    return addr;
+    return (this.vramAddr >= 0x3000 && this.vramAddr < 0x3f00)
+      ? this.vramAddr -= 0x3000
+      : this.vramAddr - 0x2000;
   }
 
   writeVramData(data: Byte) {
     if (this.vramAddr >= 0x2000) {
-      const addr = this.calcVramAddr();
-      this.writeVram(addr, data);
+      if (this.vramAddr >= 0x3f00 && this.vramAddr < 0x4000) {
+        this.palette.write(this.vramAddr - 0x3f00, data);
+      } else {
+        this.writeVram(this.calcVramAddr(), data);
+      }
     } else {
       this.writeCharacterRAM(this.vramAddr, data);
     }
@@ -473,8 +479,7 @@ export default class Ppu {
     // after the DMA OAMADDR should be set to 0 before the end of vblank to prevent potential OAM corruption (See: Errata).
     // However, due to OAMADDR writes also having a "corruption" effect[5] this technique is not recommended.
     const addr = index + this.spriteRamAddr;
-    if (addr > 0x100) return;
-    this.spriteRam.write(addr, data);
+    this.spriteRam.write(addr % 0x100, data);
   }
 }
 
