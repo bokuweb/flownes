@@ -1,6 +1,6 @@
 # 🎮 flownes 🎮 
 
-NES emulator written by flowtype and ES2015+
+ A NES emulator written in ES2015+ with flowtype
 
 [![CircleCI](https://circleci.com/gh/bokuweb/flownes.svg?style=svg)](https://circleci.com/gh/bokuweb/flownes)
 [![Gemnasium](https://img.shields.io/gemnasium/mathiasbynens/he.svg)]()
