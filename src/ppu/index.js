@@ -160,8 +160,8 @@ export default class Ppu {
 
   hasSpriteHit(): boolean {
     const y = this.spriteRam.read(0);
-    const id = this.spriteRam.read(1);
-    if (id === 0) return false;
+    // const id = this.spriteRam.read(1);
+    // if (id === 0) return false;
     return (y === this.line) && this.isBackgroundEnable && this.isSpriteEnable;
   }
 
